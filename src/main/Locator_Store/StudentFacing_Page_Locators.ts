@@ -42,9 +42,10 @@ export class StudentFacingPageLocators {
   /**
    * Login button on login page
    * Used in: LoginPage.clickLogin()
+   * Handles both "Log In" (stage) and "Login" (prod)
    */
   get loginButton() {
-    return this.page.getByRole('button', { name: 'Log In' });
+    return this.page.getByRole('button', { name: /^Log ?In$/i });
   }
 
   // ============================================

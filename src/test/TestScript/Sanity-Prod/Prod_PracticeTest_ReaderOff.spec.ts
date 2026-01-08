@@ -14,7 +14,7 @@ import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators
 
 const _EXPECTED_URL_PATTERN = '/ViewResult/FLAGTestResult/';
 const EXPECTED_PERCENTAGE = '100.0%';
-const EXPECTED_ASSESSMENT_NAME = process.env.EXPECTED_ASSESSMENT_NAME;
+const EXPECTED_ASSESSMENT_NAME = process.env.Practice_Assessment;
 const EXPECTED_INSTITUTION = process.env.Institution_zzcab;
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store Prod';
@@ -58,33 +58,32 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
     await browser.close();
   });
 
+  test('TC1: MU batch creation', async ({}, testInfo) => {
+    logger = new Logger(page, 'TC1__MU_batch_creation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
+    atiLoginPage.setLogger(logger);
+    myATIPage.setLogger(logger);
+    assessmentPage.setLogger(logger);
+    assessmentPage.setLogger(logger);
+    assertions.setLogger(logger);
  
-   test('TC1: MU batch creation', async ({}, testInfo) => {
-     logger = new Logger(page, 'TC1__MU_batch_creation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
-     atiLoginPage.setLogger(logger);
-     myATIPage.setLogger(logger);
-     assessmentPage.setLogger(logger);
-     assessmentPage.setLogger(logger);
-     assertions.setLogger(logger);
+    logger.separator('TC1: MU BATCH CREATION');
  
-     logger.separator('TC1: MU BATCH CREATION');
- 
-     try {
-       const stopTimer = logger.startTimer('Batch creation');
-       extractedBatchId = await batchCreation.createBatch(
-         EXPECTED_ASSESSMENT_NAME,
-         EXPECTED_INSTITUTION
-       );
-       stopTimer();
+    try {
+      const stopTimer = logger.startTimer('Batch creation');
+      extractedBatchId = await batchCreation.createBatch(
+        EXPECTED_ASSESSMENT_NAME,
+        EXPECTED_INSTITUTION
+      );
+      stopTimer();
    
-       assertions.assertValidNumericId(extractedBatchId, 5);
-       logger.success(`Batch created with ID: ${extractedBatchId}`);
-       logger.separator();
-     } catch (error: any) {
-       await logger?.error('TC1 FAIL: ' + error.message, error);
-       throw error;
-     }
-   });
+      assertions.assertValidNumericId(extractedBatchId, 5);
+      logger.success(`Batch created with ID: ${extractedBatchId}`);
+      logger.separator();
+    } catch (error: any) {
+      await logger?.error('TC1 FAIL: ' + error.message, error);
+      throw error;
+    }
+  });
 
   test('TC2: ATI login and verify Home page elements', async ({}, testInfo) => {
     logger = new Logger(page, 'TC2__ATI_Login_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });

@@ -14,13 +14,13 @@ import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators
 
 const _EXPECTED_URL_PATTERN = '/ViewResult/IPPTestResult/';
 const EXPECTED_PERCENTAGE = '100.0%';
-const EXPECTED_ASSESSMENT_NAME = process.env.Practice_Assessment;
+const EXPECTED_ASSESSMENT_NAME = process.env.EXPECTED_ASSESSMENT_NAME;
 const EXPECTED_INSTITUTION = process.env.Institution_zzcab;
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
-const ASSESSMENT_TYPE = 'Question Store Prod';
-const SCENARIO_NAME = 'Prod_PracticeTest_ReaderOn';
+const ASSESSMENT_TYPE = 'Question Store_Stage';
+const SCENARIO_NAME = 'Stg_Practice_TTS_On';
 
-test.describe.serial('@sanity Prod_PracticeTest_ReaderOn', () => {
+test.describe.serial('@regression Stg_Practice_TTS_On', () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;
@@ -76,7 +76,7 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOn', () => {
         EXPECTED_INSTITUTION
       );
       stopTimer();
-
+  
       assertions.assertValidNumericId(extractedBatchId, 5);
       logger.success(`Batch created with ID: ${extractedBatchId}`);
       logger.separator();
@@ -99,20 +99,20 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOn', () => {
       logger.step('Navigate to base URL');
       await page.goto(process.env.baseUrl);
       await logger.logNavigation(process.env.baseUrl || '');
-
+  
       logger.step('Enter student credentials');
       await atiLoginPage.fillStuUserName(process.env.stuUserNamezzcab || '');
       await atiLoginPage.fillStuPassword(process.env.stuPasswordzzcab || '');
-
+  
       logger.step('Click login button');
       await atiLoginPage.clickLogin();
       logger.success('Logged into ATI with zzdev credentials');
-
+  
       // Wait for Home page URL to load properly
       logger.step('Verify Home page URL loaded');
       await assertions.assertPageHasURL(/\/Home/);
       logger.success('Home page URL loaded successfully');
-
+  
       logger.endSection('TC2: ATI Login Validation');
     } catch (error: any) {
       await logger?.error('TC2 FAIL: ' + error.message, error);
@@ -133,13 +133,13 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOn', () => {
         { name: 'Profile navigation link', locator: locators.profileNavigationLink },
         { name: 'Add a Product text', locator: locators.addProductText },
       ];
-
+  
       for (const element of navigationElements) {
         logger.step(`Checking ${element.name}`);
         await assertions.assertVisible(element.locator);
         logger.success(`${element.name} is visible`);
       }
-
+  
       logger.endSection('TC3: Home Page Navigation Elements Validation');
     } catch (error: any) {
       await logger?.error('TC3 FAIL: ' + error.message, error);
@@ -187,31 +187,31 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOn', () => {
       logger.step('Click on Assessments tab');
       await myATIPage.clickOnAssessmentsTab();
       logger.success('Clicked on Assessments tab');
-
+  
       logger.step('Verify Add Product dialog appears');
       await assertions.assertRoleVisible('heading', 'Add a product to your account');
       logger.success('Add Product dialog is visible');
-
+  
       await assertions.assertVisible(locators.cancelButton);
       await assertions.assertVisible(locators.continueButton);
       await assertions.assertVisible(locators.idTextbox);
       logger.success('Dialog elements verified');
-
+  
       logger.step(`Enter Batch ID: ${extractedBatchId.trim()}`);
       await locators.idTextbox.fill(extractedBatchId.trim());
       logger.success('Batch ID entered');
-
+  
       await locators.continueButton.click();
       logger.success('Continue clicked after ID entry');
-
+  
       logger.step('Enter password');
       await assertions.assertVisible(locators.passwordTextboxDialog);
       await locators.passwordTextboxDialog.fill(process.env.muassessmentpassword || '');
       logger.success('Password entered');
-
+  
       await locators.continueButton.click();
       logger.success('Continue clicked after password entry');
-
+  
       logger.step('Verify navigation to Assessment page');
       await myATIPage.waitForPageLoadAndVerifyNavigation('/Assessment');
       logger.endSection('TC5: Add Product Dialog and Credentials Validation');
@@ -373,14 +373,14 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOn', () => {
       const extractedPercentage = (percentageValue ?? '').trim();
       assertions.assertPercentage(extractedPercentage, EXPECTED_PERCENTAGE);
       logger?.success('TC15 PASS: IPP page shows 100% score on UI');
-
+  
       // Optionally, verify IPP heading and take screenshot
       await assessmentPage.verifyElementByRole(
         'heading',
         'Individual Performance Profile',
         'IPP Page Heading'
       );
-      await assessmentPage.takeScreenshot('Prod_PracticeTest_ReaderOn', extractedBatchId);
+      await assessmentPage.takeScreenshot('Stg_Practice_TTS_On', extractedBatchId);
     } catch (error: any) {
       await logger?.error('TC15 FAIL: ' + error.message, error);
       throw error;
