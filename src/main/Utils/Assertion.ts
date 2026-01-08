@@ -524,4 +524,43 @@ export class Assertions {
     expect(actual.trim()).toBe(expected);
     expect(actual).toMatch(/^\d+(\.\d+)?%$/);
   }
+
+  /**
+   * Wait for and assert that the APPROVE button is visible and enabled before clicking
+   * @param timeout - Timeout in milliseconds (default: 15000)
+   */
+  async waitAndAssertApproveButtonVisible(timeout: number = 15000): Promise<void> {
+    const approveButton = this.page.locator('//span[text()="APPROVE"]');
+    this.logger?.info('Waiting for APPROVE button to be visible...');
+    await approveButton.waitFor({ state: 'visible', timeout });
+    await expect(approveButton).toBeVisible();
+    await expect(approveButton).toBeEnabled();
+    this.logger?.success('✅ APPROVE button is visible and enabled');
+  }
+
+  /**
+   * Wait for and assert that the DENY button is visible and enabled
+   * @param timeout - Timeout in milliseconds (default: 15000)
+   */
+  async waitAndAssertDenyButtonVisible(timeout: number = 15000): Promise<void> {
+    const denyButton = this.page.locator('//span[text()="DENY"]');
+    this.logger?.info('Waiting for DENY button to be visible...');
+    await denyButton.waitFor({ state: 'visible', timeout });
+    await expect(denyButton).toBeVisible();
+    await expect(denyButton).toBeEnabled();
+    this.logger?.success('✅ DENY button is visible and enabled');
+  }
+
+  /**
+   * Wait for and assert that the Start Proctoring button is visible and enabled
+   * @param timeout - Timeout in milliseconds (default: 15000)
+   */
+  async waitAndAssertStartProctorButtonVisible(timeout: number = 15000): Promise<void> {
+    const startProctorButton = this.page.locator('//div[@class="flex flex-row justify-center items-stretch"]/button');
+    this.logger?.info('Waiting for Start Proctoring button to be visible...');
+    await startProctorButton.waitFor({ state: 'visible', timeout });
+    await expect(startProctorButton).toBeVisible();
+    await expect(startProctorButton).toBeEnabled();
+    this.logger?.success('✅ Start Proctoring button is visible and enabled');
+  }
 }

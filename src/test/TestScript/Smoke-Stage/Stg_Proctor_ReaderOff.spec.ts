@@ -16,8 +16,7 @@ const SCENARIO_NAME = 'Stg_Proctor_ReaderOff';
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store_Stage';
 const EXPECTED_PERCENTAGE = '100.0%';
-// const ASSESSMENT_ID = '27099597'; // Hardcoded Assessment ID for proctoring
-// const BATCH_ID = '27099597'; // Hardcoded Batch ID for adding product
+
 
 /**
  * Smoke Test - Proctor Flow
@@ -180,37 +179,35 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
     
-    try {
-      await proctorUtil.startProctoring();
-      await page.waitForLoadState('load');
-  
-      // Create a new student tab and login
-      studentTab = await context.newPage();
-      await studentTab.goto(process.env.baseUrl!, { waitUntil: 'load' });
-      
-      // Student login
-      const studentLoginPage = new LoginPage(studentTab);
-      await studentLoginPage.fillStuUserName(process.env.stuUsernamezzcab!);
-      await studentLoginPage.fillStuPassword(process.env.stuPasswordzzcab!);
-      await studentLoginPage.clickLogin();
-      await studentTab.waitForLoadState('load');
-      
-      logger.success('Student logged in successfully in new tab');
-  
-      await studentTab.bringToFront();
-      await studentTab.waitForTimeout(2000);
-  
-  
-  
-      // Create ProctorUtility instance for student tab and fill attestation
-      
-      await studentTab.waitForLoadState('load');
-      
-      logger.success('TC5 PASS: Student logged in ');
-    } catch (error: any) {
-      await logger?.error('TC5 FAIL: ' + error.message, error);
-      throw error;
-    }
+    // Hard assertion: Verify Start Proctoring button is visible and enabled before clicking
+    await assertions.waitAndAssertStartProctorButtonVisible(15000);
+    
+    await proctorUtil.startProctoring();
+    await page.waitForLoadState('load');
+
+    // Create a new student tab and login
+    studentTab = await context.newPage();
+    await studentTab.goto(process.env.baseUrl!, { waitUntil: 'load' });
+    
+    // Student login
+    const studentLoginPage = new LoginPage(studentTab);
+    await studentLoginPage.fillStuUserName(process.env.stuUsernamezzcab!);
+    await studentLoginPage.fillStuPassword(process.env.stuPasswordzzcab!);
+    await studentLoginPage.clickLogin();
+    await studentTab.waitForLoadState('load');
+    
+    logger.success('Student logged in successfully in new tab');
+
+    await studentTab.bringToFront();
+    await studentTab.waitForTimeout(2000);
+
+
+
+    // Create ProctorUtility instance for student tab and fill attestation
+    
+    await studentTab.waitForLoadState('load');
+    
+    logger.success('TC5 PASS: Student logged in ');
   });
 
   test('TC6: Add Product - Enter Password and Complete', async ({}, testInfo) => {
@@ -329,36 +326,38 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
     
-    try {
-      // Switch back to faculty tab
-      await page.bringToFront();
-      await page.reload();
-      await page.waitForLoadState('load');
-  
-      await proctorUtil.approveByProctor();
-      await page.waitForLoadState('load');
-  
-      await studentTab.bringToFront();
-      await studentTab.waitForLoadState('load');
-  
-      await page.waitForTimeout(5000);
-  
-      const studentProctorUtil = new ProctorUtility(studentTab);
-  
-      await studentProctorUtil.startTest();
-      await page.waitForLoadState('load');
-  
-      logger.success('TC7 PASS: Test approved and started successfully');
-      
-      // Switch back to student tab for assessment
-    } catch (error: any) {
-      await logger?.error('TC7 FAIL: ' + error.message, error);
-      throw error;
-    }
+    // Switch back to faculty tab
+    await page.bringToFront();
+    await page.reload();
+    await page.waitForLoadState('load');
+    
+    // Hard assertion: Verify APPROVE button is visible and enabled before clicking
+    await assertions.waitAndAssertApproveButtonVisible(15000);
+    
+    // Hard assertion: Verify DENY button is visible and enabled
+    await assertions.waitAndAssertDenyButtonVisible(15000);
+
+    await proctorUtil.approveByProctor();
+    await page.waitForLoadState('load');
+
+    await studentTab.bringToFront();
+    await studentTab.waitForLoadState('load');
+
+    await page.waitForTimeout(5000);
+
+    const studentProctorUtil = new ProctorUtility(studentTab);
+
+    await studentProctorUtil.startTest();
+    await page.waitForLoadState('load');
+
+    logger.success('TC7 PASS: Test approved and started successfully');
+    
+    // Switch back to student tab for assessment
+    
   });
 
   test('TC8: Flag, Continue, Previous, Unflag robust flow', async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC7__Flag_Unflag_Flow', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
+    logger = new Logger(studentTab, 'TC8__Flag_Unflag_Flow', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
     assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
     await page.waitForTimeout(10000);
