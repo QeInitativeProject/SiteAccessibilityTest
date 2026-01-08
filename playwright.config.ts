@@ -8,8 +8,8 @@ const currentEnv = process.env.ENV || 'stage';
 // Only load env if not already loaded
 if (!process.env.baseUrl) {
   console.log(`🌍 Loading environment: ${currentEnv}`);
-  const envPath = path.resolve(__dirname, `./env/.env.${currentEnv}`);
-  const result = dotenv.config({ path: envPath, override: false });
+  const envPath = path.resolve(__dirname, `./src/ENV/.env.${currentEnv}`);
+  const result = dotenv.config({ path: envPath });
 
   if (result.error) {
     console.error(`❌ Failed to load environment file: ${envPath}`);

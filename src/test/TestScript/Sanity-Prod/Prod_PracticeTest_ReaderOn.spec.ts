@@ -17,7 +17,7 @@ const EXPECTED_PERCENTAGE = '100.0%';
 const EXPECTED_ASSESSMENT_NAME = process.env.EXPECTED_ASSESSMENT_NAME;
 const EXPECTED_INSTITUTION = process.env.Institution_zzcab;
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
-const ASSESSMENT_TYPE = 'Scoring_QA_STAGE';
+const ASSESSMENT_TYPE = 'Question Store Prod';
 const SCENARIO_NAME = 'Prod_PracticeTest_ReaderOn';
 
 test.describe.serial('@smoke Prod_PracticeTest_ReaderOn', () => {

@@ -16,7 +16,7 @@ const _EXPECTED_URL_PATTERN = '/ViewResult/FLAGTestResult/';
 const EXPECTED_PERCENTAGE = '100.0%';
 const _EXPECTED_ASSESSMENT_NAME = 'practicestg_shyan';
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
-const ASSESSMENT_TYPE = 'Scoring_QA_STAGE';
+const ASSESSMENT_TYPE = 'Question Store_Stage';
 const SCENARIO_NAME = 'Stg_PracticeTest_ReaderOff';
 
 test.describe.serial('@smoke Stg_PracticeTest_ReaderOff', () => {

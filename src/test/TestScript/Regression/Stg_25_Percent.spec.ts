@@ -16,7 +16,7 @@ const _EXPECTED_URL_PATTERN = '/ViewResult/IPPTestResult/';
 const EXPECTED_PERCENTAGE = '25.0%';
 const _EXPECTED_ASSESSMENT_NAME = 'scoringstg_shyan';
 const QUESTION_ANSWER_FILE = '1_Correct_QnA.json';
-const ASSESSMENT_TYPE = 'Scoring_QA_STAGE';
+const ASSESSMENT_TYPE = 'Question Store_Stage';
 const SCENARIO_NAME = 'Stg_25_Percent';
 
 test.describe.serial('@regression Stg_25_Percent', () => {

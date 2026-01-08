@@ -59,9 +59,20 @@ export class QnAUtil {
       // Just filename provided - construct path from project root
       // Use __dirname to get current file location and navigate to project root
       const projectRoot = path.resolve(__dirname, '../../../');
+      
+      // Map assessment type to correct folder name
+      let folderName: string;
+      if (assessmentType.includes('STAGE')) {
+        folderName = 'Question Store_Stage';
+      } else if (assessmentType.includes('PROD')) {
+        folderName = 'Question Store Prod';
+      } else {
+        folderName = assessmentType; // Fallback to original value
+      }
+      
       jsonFilePath = path.join(
         projectRoot,
-        `src/test/TestData/Question Store/${assessmentType}/${jsonFileName}`
+        `src/test/TestData/${folderName}/${jsonFileName}`
       );
     }
 
