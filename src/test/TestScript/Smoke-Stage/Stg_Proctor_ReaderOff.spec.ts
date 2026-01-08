@@ -62,10 +62,8 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     test.afterEach(async ({}, testInfo) => {
     if (testInfo.status !== testInfo.expectedStatus) {
       await logger?.captureScreenshot('test_failure');
-    } else {
-      // Capture success screenshot for passed tests
-      await logger?.captureSuccessScreenshot();
     }
+    // Success screenshot removed - only capturing final IPP screenshot in TC7
   });
 
   test.afterAll(async ({}, testInfo) => {
@@ -81,16 +79,21 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
   
       logger.separator('TC1: MU BATCH CREATION');
   
-      const stopTimer = logger.startTimer('Batch creation');
-      extractedBatchId = await batchCreation.createBatch(
-        EXPECTED_ASSESSMENT_NAME!,
-        EXPECTED_INSTITUTION!
-      );
-      stopTimer();
-  
-      assertions.assertValidNumericId(extractedBatchId, 5);
-      logger.success(`Batch created with ID: ${extractedBatchId}`);
-      logger.separator();
+      try {
+        const stopTimer = logger.startTimer('Batch creation');
+        extractedBatchId = await batchCreation.createBatch(
+          EXPECTED_ASSESSMENT_NAME!,
+          EXPECTED_INSTITUTION!
+        );
+        stopTimer();
+    
+        assertions.assertValidNumericId(extractedBatchId, 5);
+        logger.success(`Batch created with ID: ${extractedBatchId}`);
+        logger.separator();
+      } catch (error: any) {
+        await logger?.error('TC1 FAIL: ' + error.message, error);
+        throw error;
+      }
     });
 
   test('TC2: Faculty login to ATI', async ({}, testInfo) => {
@@ -101,14 +104,20 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     assertions.setLogger(logger);
 
     logger.step('Login to the Application Started');
-    await page.goto(process.env.baseUrl!, { waitUntil: 'load' });
-    await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab!);
-    await atiLoginPage.fillfacPassword(process.env.facPasswordzzcab!);
-    await atiLoginPage.clickLogin();
-    await page.waitForLoadState('load');
-    await assertions.assertURLNotContains('/login');
-    logger.success('Successfully logged into ATI with fresh session');
-    logger.success('TC2 PASS: Faculty logged in successfully');
+
+    try {
+      await page.goto(process.env.baseUrl!, { waitUntil: 'load' });
+      await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab!);
+      await atiLoginPage.fillfacPassword(process.env.facPasswordzzcab!);
+      await atiLoginPage.clickLogin();
+      await page.waitForLoadState('load');
+      await assertions.assertURLNotContains('/login');
+      logger.success('Successfully logged into ATI with fresh session');
+      logger.success('TC2 PASS: Faculty logged in successfully');
+    } catch (error: any) {
+      await logger?.error('TC2 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC3: Navigate to Proctor Tab', async ({}, testInfo) => {
@@ -117,13 +126,19 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     facHomePage.setLogger(logger);
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
-    await facHomePage.clickOnMenuBar();
-    await page.waitForLoadState('load');
 
-    await proctorUtil.navigateToProctorTab();
-    await page.waitForLoadState('load');
-    logger.success('TC3 PASS: Navigated to Proctor Tab');
-    await page.waitForTimeout(10000);
+    try {
+      await facHomePage.clickOnMenuBar();
+      await page.waitForLoadState('load');
+  
+      await proctorUtil.navigateToProctorTab();
+      await page.waitForLoadState('load');
+      logger.success('TC3 PASS: Navigated to Proctor Tab');
+      await page.waitForTimeout(10000);
+    } catch (error: any) {
+      await logger?.error('TC3 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC4: Enter Assessment ID and Setup Proctoring', async ({}, testInfo) => {
@@ -136,20 +151,26 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     
     logger.step('TC4: Setup Proctoring with Assessment ID');
     logger.success(`Using Assessment ID: ${extractedBatchId}`);
-    await page.waitForLoadState('load');
-    await page.waitForTimeout(20000);
-    
-    await proctorUtil.fillAssessmentID(extractedBatchId);
-    await page.waitForLoadState('load');
 
-    await proctorUtil.completeProctorAgreementPage();
-    await page.waitForLoadState('load');
-
-    await page.waitForTimeout(3000);
-
-    await proctorUtil.checkInStudents();
-    await page.waitForLoadState('load');
-    logger.success('TC4 PASS: Assessment ID entered and proctoring setup complete');
+    try {
+      await page.waitForLoadState('load');
+      await page.waitForTimeout(20000);
+      
+      await proctorUtil.fillAssessmentID(extractedBatchId);
+      await page.waitForLoadState('load');
+  
+      await proctorUtil.completeProctorAgreementPage();
+      await page.waitForLoadState('load');
+  
+      await page.waitForTimeout(3000);
+  
+      await proctorUtil.checkInStudents();
+      await page.waitForLoadState('load');
+      logger.success('TC4 PASS: Assessment ID entered and proctoring setup complete');
+    } catch (error: any) {
+      await logger?.error('TC4 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC5: Start Proctoring Session and Student Login', async ({}, testInfo) => {
@@ -159,32 +180,37 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
     
-    await proctorUtil.startProctoring();
-    await page.waitForLoadState('load');
-
-    // Create a new student tab and login
-    studentTab = await context.newPage();
-    await studentTab.goto(process.env.baseUrl!, { waitUntil: 'load' });
-    
-    // Student login
-    const studentLoginPage = new LoginPage(studentTab);
-    await studentLoginPage.fillStuUserName(process.env.stuUsernamezzcab!);
-    await studentLoginPage.fillStuPassword(process.env.stuPasswordzzcab!);
-    await studentLoginPage.clickLogin();
-    await studentTab.waitForLoadState('load');
-    
-    logger.success('Student logged in successfully in new tab');
-
-    await studentTab.bringToFront();
-    await studentTab.waitForTimeout(2000);
-
-
-
-    // Create ProctorUtility instance for student tab and fill attestation
-    
-    await studentTab.waitForLoadState('load');
-    
-    logger.success('TC5 PASS: Student logged in ');
+    try {
+      await proctorUtil.startProctoring();
+      await page.waitForLoadState('load');
+  
+      // Create a new student tab and login
+      studentTab = await context.newPage();
+      await studentTab.goto(process.env.baseUrl!, { waitUntil: 'load' });
+      
+      // Student login
+      const studentLoginPage = new LoginPage(studentTab);
+      await studentLoginPage.fillStuUserName(process.env.stuUsernamezzcab!);
+      await studentLoginPage.fillStuPassword(process.env.stuPasswordzzcab!);
+      await studentLoginPage.clickLogin();
+      await studentTab.waitForLoadState('load');
+      
+      logger.success('Student logged in successfully in new tab');
+  
+      await studentTab.bringToFront();
+      await studentTab.waitForTimeout(2000);
+  
+  
+  
+      // Create ProctorUtility instance for student tab and fill attestation
+      
+      await studentTab.waitForLoadState('load');
+      
+      logger.success('TC5 PASS: Student logged in ');
+    } catch (error: any) {
+      await logger?.error('TC5 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC6: Add Product - Enter Password and Complete', async ({}, testInfo) => {
@@ -209,86 +235,91 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     logger.step('5. Click Continue');
     logger.step('6. Navigate to Assessment page');
 
-    // Wait for page to be ready after attestation
-    await studentTab.waitForLoadState('load');
-    await studentTab.waitForLoadState('domcontentloaded');
-    await studentTab.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => 
-      logger.info('Network idle timeout - continuing anyway')
-    );
-    
-    // Wait for any potential overlays to disappear
-    await studentTab.waitForTimeout(5000);
-    
-    // Hard assertion: Validate URL before clicking My ATI
-    const currentUrl = studentTab.url();
-    logger.info(`Current URL: ${currentUrl}`);
-    studentAssertions.assertStringContains(currentUrl, 'atitesting.com');
-    logger.success('✅ On correct domain');
-
-    // Navigate to My ATI tab with enhanced validation
-    await myATIPage.clickOnMyATITab();
-    await studentTab.waitForLoadState('load');
-    logger.success('✅ Clicked on My ATI tab');
-
-    // Hard assertion: Validate navigation to My ATI
-    await studentTab.waitForTimeout(3000);
-    const myATIUrl = studentTab.url();
-    logger.info(`My ATI URL: ${myATIUrl}`);
-    
-    // Wait for page to stabilize
-    await studentTab.waitForTimeout(10000);
-
-    // Click on Assessments tab (this opens the Add Product dialog)
-    await myATIPage.clickOnAssessmentsTab();
-    await studentTab.waitForTimeout(2000);
-    logger.success('✅ Add Product dialog opened');
-
-    // Hard assertion: Validate ID textbox is visible
-    const idTextbox = locators.idTextbox;
-    await studentAssertions.waitAndAssertVisible(idTextbox, 15000);
-    logger.success('✅ ID textbox is visible');
-    
-    await studentAssertions.assertEnabled(idTextbox);
-    logger.success('✅ ID textbox is enabled');
-    
-    await studentAssertions.assertEditable(idTextbox);
-    logger.success('✅ ID textbox is editable');
-
-    // Enter Batch ID
-    await idTextbox.fill(extractedBatchId.trim());
-    logger.success(`✅ Batch ID entered: ${extractedBatchId.trim()}`);
-    
-    // Hard assertion: Validate entered value
-    await studentAssertions.assertHasValue(idTextbox, extractedBatchId.trim());
-    logger.success('✅ Batch ID value validated');
-
-    // Click Continue after entering Batch ID
-    const continueButton = locators.continueButton;
-    await studentAssertions.waitAndAssertVisible(continueButton, 10000);
-    logger.success('✅ Continue button is visible');
-    
-    await studentAssertions.assertEnabled(continueButton);
-    logger.success('✅ Continue button is enabled');
-    
-    await continueButton.click();
-    await studentTab.waitForTimeout(2000);
-    logger.success('✅ Continue clicked after ID entry');
-
-    // Fill attestation page
-    const studentProctorUtil = new ProctorUtility(studentTab);
-    studentProctorUtil.setLogger(logger);
-    await studentProctorUtil.fillAttestationPage();
-    
-    // Verify navigation to Assessment page with hard assertions
-    await myATIPage.waitForPageLoadAndVerifyNavigation('/Assessment');
-    logger.success('✅ Navigated to Assessment page');
-    
-    // Hard assertion: Validate final URL
-    const finalUrl = studentTab.url();
-    studentAssertions.assertStringContains(finalUrl, '/Assessment');
-    logger.success(`✅ Final URL validated: ${finalUrl}`);
-
-    logger.success('TC6 PASS: Product added successfully with all validations.');
+    try {
+      // Wait for page to be ready after attestation
+      await studentTab.waitForLoadState('load');
+      await studentTab.waitForLoadState('domcontentloaded');
+      await studentTab.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => 
+        logger.info('Network idle timeout - continuing anyway')
+      );
+      
+      // Wait for any potential overlays to disappear
+      await studentTab.waitForTimeout(5000);
+      
+      // Hard assertion: Validate URL before clicking My ATI
+      const currentUrl = studentTab.url();
+      logger.info(`Current URL: ${currentUrl}`);
+      studentAssertions.assertStringContains(currentUrl, 'atitesting.com');
+      logger.success('✅ On correct domain');
+  
+      // Navigate to My ATI tab with enhanced validation
+      await myATIPage.clickOnMyATITab();
+      await studentTab.waitForLoadState('load');
+      logger.success('✅ Clicked on My ATI tab');
+  
+      // Hard assertion: Validate navigation to My ATI
+      await studentTab.waitForTimeout(3000);
+      const myATIUrl = studentTab.url();
+      logger.info(`My ATI URL: ${myATIUrl}`);
+      
+      // Wait for page to stabilize
+      await studentTab.waitForTimeout(10000);
+  
+      // Click on Assessments tab (this opens the Add Product dialog)
+      await myATIPage.clickOnAssessmentsTab();
+      await studentTab.waitForTimeout(2000);
+      logger.success('✅ Add Product dialog opened');
+  
+      // Hard assertion: Validate ID textbox is visible
+      const idTextbox = locators.idTextbox;
+      await studentAssertions.waitAndAssertVisible(idTextbox, 15000);
+      logger.success('✅ ID textbox is visible');
+      
+      await studentAssertions.assertEnabled(idTextbox);
+      logger.success('✅ ID textbox is enabled');
+      
+      await studentAssertions.assertEditable(idTextbox);
+      logger.success('✅ ID textbox is editable');
+  
+      // Enter Batch ID
+      await idTextbox.fill(extractedBatchId.trim());
+      logger.success(`✅ Batch ID entered: ${extractedBatchId.trim()}`);
+      
+      // Hard assertion: Validate entered value
+      await studentAssertions.assertHasValue(idTextbox, extractedBatchId.trim());
+      logger.success('✅ Batch ID value validated');
+  
+      // Click Continue after entering Batch ID
+      const continueButton = locators.continueButton;
+      await studentAssertions.waitAndAssertVisible(continueButton, 10000);
+      logger.success('✅ Continue button is visible');
+      
+      await studentAssertions.assertEnabled(continueButton);
+      logger.success('✅ Continue button is enabled');
+      
+      await continueButton.click();
+      await studentTab.waitForTimeout(2000);
+      logger.success('✅ Continue clicked after ID entry');
+  
+      // Fill attestation page
+      const studentProctorUtil = new ProctorUtility(studentTab);
+      studentProctorUtil.setLogger(logger);
+      await studentProctorUtil.fillAttestationPage();
+      
+      // Verify navigation to Assessment page with hard assertions
+      await myATIPage.waitForPageLoadAndVerifyNavigation('/Assessment');
+      logger.success('✅ Navigated to Assessment page');
+      
+      // Hard assertion: Validate final URL
+      const finalUrl = studentTab.url();
+      studentAssertions.assertStringContains(finalUrl, '/Assessment');
+      logger.success(`✅ Final URL validated: ${finalUrl}`);
+  
+      logger.success('TC6 PASS: Product added successfully with all validations.');
+    } catch (error: any) {
+      await logger?.error('TC6 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC7: Approve and Start Test', async ({}, testInfo) => {
@@ -298,28 +329,32 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
     
-    // Switch back to faculty tab
-    await page.bringToFront();
-    await page.reload();
-    await page.waitForLoadState('load');
-
-    await proctorUtil.approveByProctor();
-    await page.waitForLoadState('load');
-
-    await studentTab.bringToFront();
-    await studentTab.waitForLoadState('load');
-
-    await page.waitForTimeout(5000);
-
-    const studentProctorUtil = new ProctorUtility(studentTab);
-
-    await studentProctorUtil.startTest();
-    await page.waitForLoadState('load');
-
-    logger.success('TC7 PASS: Test approved and started successfully');
-    
-    // Switch back to student tab for assessment
-    
+    try {
+      // Switch back to faculty tab
+      await page.bringToFront();
+      await page.reload();
+      await page.waitForLoadState('load');
+  
+      await proctorUtil.approveByProctor();
+      await page.waitForLoadState('load');
+  
+      await studentTab.bringToFront();
+      await studentTab.waitForLoadState('load');
+  
+      await page.waitForTimeout(5000);
+  
+      const studentProctorUtil = new ProctorUtility(studentTab);
+  
+      await studentProctorUtil.startTest();
+      await page.waitForLoadState('load');
+  
+      logger.success('TC7 PASS: Test approved and started successfully');
+      
+      // Switch back to student tab for assessment
+    } catch (error: any) {
+      await logger?.error('TC7 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC8: Flag, Continue, Previous, Unflag robust flow', async ({}, testInfo) => {
@@ -356,8 +391,13 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     logger.step('2. Verify calculator input and operations');
     logger.step('3. Close calculator');
 
-    await assessmentPage.verifyCalculatorFunctionality();
-    logger.success('TC9 PASS: Calculator functionality verified');
+    try {
+      await assessmentPage.verifyCalculatorFunctionality();
+      logger.success('TC9 PASS: Calculator functionality verified');
+    } catch (error: any) {
+      await logger?.error('TC9 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC10: Pause and Resume assessment', async ({}, testInfo) => {
@@ -370,8 +410,13 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     logger.step('2. Verify pause state');
     logger.step('3. Resume the assessment');
 
-    await assessmentPage.verifyPauseAndResumeFunctionality();
-    logger.success('TC10 PASS: Pause and resume functionality verified');
+    try {
+      await assessmentPage.verifyPauseAndResumeFunctionality();
+      logger.success('TC10 PASS: Pause and resume functionality verified');
+    } catch (error: any) {
+      await logger?.error('TC10 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC11: Answer assessment', async ({}, testInfo) => {
@@ -384,8 +429,13 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     logger.step('2. Answer all assessment questions');
     logger.step('3. Verify answers submitted');
 
-    await assessmentPage.answerAssessmentQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE);
-    logger.success('TC11 PASS: Assessment questions answered');
+    try {
+      await assessmentPage.answerAssessmentQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE);
+      logger.success('TC11 PASS: Assessment questions answered');
+    } catch (error: any) {
+      await logger?.error('TC11 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC12: Finish assessment and IPP page loaded', async ({}, testInfo) => {
@@ -398,8 +448,13 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     logger.step('2. Navigate to IPP page');
     logger.step('3. Verify IPP page URL');
 
-    await assessmentPage.finalizeAssessmentAndViewResults();
-    logger.success('TC12 PASS: Assessment finished and IPP page loaded');
+    try {
+      await assessmentPage.finalizeAssessmentAndViewResults();
+      logger.success('TC12 PASS: Assessment finished and IPP page loaded');
+    } catch (error: any) {
+      await logger?.error('TC12 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC13: IPP page shows 100% score', async ({}, testInfo) => {
@@ -413,20 +468,25 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     logger.step('3. Verify IPP heading');
     logger.step('4. Take screenshot for validation');
 
-    await assertions.waitAndAssertVisible(locators.percentageScore);
-    const percentageValue = await locators.percentageScore.textContent();
-    const extractedPercentage = (percentageValue ?? '').trim();
-    assertions.assertPercentage(extractedPercentage, EXPECTED_PERCENTAGE);
-    logger.success('TC13 PASS: IPP page shows 100% score on UI');
-
-    // Verify IPP heading and take screenshot
-    await assessmentPage.verifyElementByRole(
-      'heading',
-      'Individual Performance Profile',
-      'IPP Page Heading'
-    );
-    await assessmentPage.takeScreenshot('Stg_Proctor_ReaderOff', extractedBatchId);
-    
-    logger.success('Proctor Flow Smoke Test Completed with 100% Score');
+    try {
+      await assertions.waitAndAssertVisible(locators.percentageScore);
+      const percentageValue = await locators.percentageScore.textContent();
+      const extractedPercentage = (percentageValue ?? '').trim();
+      assertions.assertPercentage(extractedPercentage, EXPECTED_PERCENTAGE);
+      logger.success('TC13 PASS: IPP page shows 100% score on UI');
+  
+      // Verify IPP heading and take screenshot
+      await assessmentPage.verifyElementByRole(
+        'heading',
+        'Individual Performance Profile',
+        'IPP Page Heading'
+      );
+      await assessmentPage.takeScreenshot('Stg_Proctor_ReaderOff', extractedBatchId);
+      
+      logger.success('Proctor Flow Smoke Test Completed with 100% Score');
+    } catch (error: any) {
+      await logger?.error('TC13 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 });

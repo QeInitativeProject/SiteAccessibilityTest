@@ -62,10 +62,8 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
     test.afterEach(async ({}, testInfo) => {
     if (testInfo.status !== testInfo.expectedStatus) {
       await logger?.captureScreenshot('test_failure');
-    } else {
-      // Capture success screenshot for passed tests
-      await logger?.captureSuccessScreenshot();
     }
+    // Success screenshot removed - only capturing final IPP screenshot in TC8
   });
  
   test.afterAll(async ({}, testInfo) => {

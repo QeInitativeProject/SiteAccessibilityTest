@@ -69,16 +69,21 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
  
      logger.separator('TC1: MU BATCH CREATION');
  
-     const stopTimer = logger.startTimer('Batch creation');
-     extractedBatchId = await batchCreation.createBatch(
-       EXPECTED_ASSESSMENT_NAME,
-       EXPECTED_INSTITUTION
-     );
-     stopTimer();
- 
-     assertions.assertValidNumericId(extractedBatchId, 5);
-     logger.success(`Batch created with ID: ${extractedBatchId}`);
-     logger.separator();
+     try {
+       const stopTimer = logger.startTimer('Batch creation');
+       extractedBatchId = await batchCreation.createBatch(
+         EXPECTED_ASSESSMENT_NAME,
+         EXPECTED_INSTITUTION
+       );
+       stopTimer();
+   
+       assertions.assertValidNumericId(extractedBatchId, 5);
+       logger.success(`Batch created with ID: ${extractedBatchId}`);
+       logger.separator();
+     } catch (error: any) {
+       await logger?.error('TC1 FAIL: ' + error.message, error);
+       throw error;
+     }
    });
 
   test('TC2: ATI login and verify Home page elements', async ({}, testInfo) => {
@@ -93,17 +98,22 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
     logger.step('2. Enter student credentials');
     logger.step('3. Verify Home page URL loaded');
 
-    await page.goto(process.env.baseUrl);
-    await atiLoginPage.fillStuUserName(process.env.studentUsernamezzcab!);
-    await atiLoginPage.fillStuPassword(process.env.studentPasswordzzcab!);
-    await atiLoginPage.clickLogin();
-    logger?.success('Logged into ATI with zzdev credentials');
+    try {
+      await page.goto(process.env.baseUrl);
+      await atiLoginPage.fillStuUserName(process.env.studentUsernamezzcab!);
+      await atiLoginPage.fillStuPassword(process.env.studentPasswordzzcab!);
+      await atiLoginPage.clickLogin();
+      logger?.success('Logged into ATI with zzdev credentials');
 
-    // Wait for Home page URL to load properly
-    await assertions.assertPageHasURL(/\/Home/);
-    logger?.success('Home page URL loaded successfully');
+      // Wait for Home page URL to load properly
+      await assertions.assertPageHasURL(/\/Home/);
+      logger?.success('Home page URL loaded successfully');
 
-    logger?.success('TC Login successful and Home page loaded');
+      logger?.success('TC Login successful and Home page loaded');
+    } catch (error: any) {
+      await logger?.error('TC2 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC3: Verify Home page navigation elements', async ({}, testInfo) => {
@@ -121,26 +131,31 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
     logger?.step('5. Profile navigation link');
     logger?.step('6. Add a Product text');
 
-    // Assert all navigation links are visible using Assertions class
-    await assertions.assertVisible(locators.homeNavigationLink);
-    logger?.success('✓ Home navigation link is visible');
+    try {
+      // Assert all navigation links are visible using Assertions class
+      await assertions.assertVisible(locators.homeNavigationLink);
+      logger?.success('✓ Home navigation link is visible');
 
-    await assertions.assertVisible(locators.myATINavigationLink);
-    logger?.success('✓ My ATI navigation link is visible');
+      await assertions.assertVisible(locators.myATINavigationLink);
+      logger?.success('✓ My ATI navigation link is visible');
 
-    await assertions.assertVisible(locators.resultsNavigationLink);
-    logger?.success('✓ Results navigation link is visible');
+      await assertions.assertVisible(locators.resultsNavigationLink);
+      logger?.success('✓ Results navigation link is visible');
 
-    await assertions.assertVisible(locators.helpNavigationLink);
-    logger?.success('✓ Help navigation link is visible');
+      await assertions.assertVisible(locators.helpNavigationLink);
+      logger?.success('✓ Help navigation link is visible');
 
-    await assertions.assertVisible(locators.profileNavigationLink);
-    logger?.success('✓ Profile navigation link is visible');
+      await assertions.assertVisible(locators.profileNavigationLink);
+      logger?.success('✓ Profile navigation link is visible');
 
-    await assertions.assertVisible(locators.addProductText);
-    logger?.success('✓ Add a Product text is visible');
+      await assertions.assertVisible(locators.addProductText);
+      logger?.success('✓ Add a Product text is visible');
 
-    logger?.success('TC All Home page navigation elements verified successfully');
+      logger?.success('TC All Home page navigation elements verified successfully');
+    } catch (error: any) {
+      await logger?.error('TC3 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC4: Verify My ATI page functionality', async ({}, testInfo) => {
@@ -205,65 +220,70 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
     logger?.step('5. Click Continue');
     logger?.step('6. Navigate to Assessment page');
 
-    // Click on Assessments tab
-    await myATIPage.clickOnAssessmentsTab();
-    logger?.step('Clicked on Assessments tab');
+    try {
+      // Click on Assessments tab
+      await myATIPage.clickOnAssessmentsTab();
+      logger?.step('Clicked on Assessments tab');
 
-    // Verify Add Product dialog appears
-    await assertions.assertRoleVisible('heading', 'Add a product to your account');
-    logger?.success('✅ Add Product dialog is visible');
+      // Verify Add Product dialog appears
+      await assertions.assertRoleVisible('heading', 'Add a product to your account');
+      logger?.success('✅ Add Product dialog is visible');
 
-    // Verify Cancel and Continue buttons are visible when dialog appears
-    await assertions.assertVisible(locators.cancelButton);
-    logger?.success('✅ Cancel button is visible in Add Product dialog');
+      // Verify Cancel and Continue buttons are visible when dialog appears
+      await assertions.assertVisible(locators.cancelButton);
+      logger?.success('✅ Cancel button is visible in Add Product dialog');
 
-    await assertions.assertVisible(locators.continueButton);
-    logger?.success('✅ Continue button is visible in Add Product dialog');
+      await assertions.assertVisible(locators.continueButton);
+      logger?.success('✅ Continue button is visible in Add Product dialog');
 
-    // Verify ID textbox is visible
-    await assertions.assertVisible(locators.idTextbox);
-    logger?.success('✅ ID textbox is visible');
+      // Verify ID textbox is visible
+      await assertions.assertVisible(locators.idTextbox);
+      logger?.success('✅ ID textbox is visible');
 
-    // Enter Batch ID
-    await locators.idTextbox.fill(extractedBatchId.trim());
-    logger?.success(`✅ Batch ID entered: ${extractedBatchId.trim()}`);
+      // Enter Batch ID
+      await locators.idTextbox.fill(extractedBatchId.trim());
+      logger?.success(`✅ Batch ID entered: ${extractedBatchId.trim()}`);
 
-    // Verify Cancel and Continue buttons are still visible after entering Batch ID
-    await assertions.assertVisible(locators.cancelButton);
-    logger?.success('✅ Cancel button is visible after entering Batch ID');
+      // Verify Cancel and Continue buttons are still visible after entering Batch ID
+      await assertions.assertVisible(locators.cancelButton);
+      logger?.success('✅ Cancel button is visible after entering Batch ID');
 
-    await assertions.assertVisible(locators.continueButton);
-    logger?.success('✅ Continue button is visible after entering Batch ID');
+      await assertions.assertVisible(locators.continueButton);
+      logger?.success('✅ Continue button is visible after entering Batch ID');
 
-    // Click Continue button after entering Batch ID
-    await locators.continueButton.click();
-    logger?.success('✅ Continue clicked after ID entry');
+      // Click Continue button after entering Batch ID
+      await locators.continueButton.click();
+      logger?.success('✅ Continue clicked after ID entry');
 
-    // Verify Password textbox is visible
-    await assertions.assertVisible(locators.passwordTextboxDialog);
-    logger?.success('✅ Password textbox is visible');
+      // Verify Password textbox is visible
+      await assertions.assertVisible(locators.passwordTextboxDialog);
+      logger?.success('✅ Password textbox is visible');
 
-    // Enter Password
-    await locators.passwordTextboxDialog.fill(process.env.muassessmentpassword || '');
-    logger?.success(`✅ Password entered`);
+      // Enter Password
+      await locators.passwordTextboxDialog.fill(process.env.muassessmentpassword || '');
+      logger?.success(`✅ Password entered`);
 
-    // Verify Cancel and Continue buttons are visible after entering Password
-    await assertions.assertVisible(locators.cancelButton);
-    logger?.success('✅ Cancel button is visible after entering Password');
+      // Verify Cancel and Continue buttons are visible after entering Password
+      await assertions.assertVisible(locators.cancelButton);
+      logger?.success('✅ Cancel button is visible after entering Password');
 
-    // Verify Continue button is visible after entering both Batch ID and Password
-    await assertions.assertVisible(locators.continueButton);
-    logger?.success('✅ Continue button is visible after entering Batch ID and Password');
-    await locators.continueButton.click();
-    logger?.success('✅ Continue clicked after password entry');
+      // Verify Continue button is visible after entering both Batch ID and Password
+      await assertions.assertVisible(locators.continueButton);
+      logger?.success('✅ Continue button is visible after entering Batch ID and Password');
+      await locators.continueButton.click();
+      logger?.success('✅ Continue clicked after password entry');
 
-    // Verify navigation to Assessment page
-    await myATIPage.waitForPageLoadAndVerifyNavigation('/Assessment');
-    logger?.success('✅ Navigated to Assessment page');
+      // Verify navigation to Assessment page
+      await myATIPage.waitForPageLoadAndVerifyNavigation('/Assessment');
+      logger?.success('✅ Navigated to Assessment page');
 
-    logger?.success(
-      'TC5 PASS: Add Product dialog verified, credentials entered, and navigated to Assessment page.'
-    );
+      logger?.success(
+        'TC5 PASS: Add Product dialog verified, credentials entered, and navigated to Assessment page.'
+      );
+    } catch (error: any) {
+      await logger?.error('TC5 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC6: Flag, Continue, Previous, Unflag robust flow', async ({}, testInfo) => {
@@ -300,8 +320,13 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
     logger?.step('1. Verify blue banner visibility');
     logger?.step('2. Validate background color (#d7eef4)');
 
-    await assessmentPage.verifyBlueBannerVisibility('#d7eef4');
-    logger?.success('TC Blue banner is visible');
+    try {
+      await assessmentPage.verifyBlueBannerVisibility('#d7eef4');
+      logger?.success('TC Blue banner is visible');
+    } catch (error: any) {
+      await logger?.error('TC7 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC8: Calculator functionality', async ({}, testInfo) => {
@@ -316,8 +341,13 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
     logger?.step('2. Verify calculator input and operations');
     logger?.step('3. Close calculator');
 
-    await assessmentPage.verifyCalculatorFunctionality();
-    logger?.success('TC Calculator functionality verified');
+    try {
+      await assessmentPage.verifyCalculatorFunctionality();
+      logger?.success('TC Calculator functionality verified');
+    } catch (error: any) {
+      await logger?.error('TC8 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC9: Pause and Resume assessment', async ({}, testInfo) => {
@@ -332,9 +362,14 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
     logger?.step('2. Verify pause state');
     logger?.step('3. Resume the assessment');
 
-    // Ensure assessment frame is loaded and visible
-    await assessmentPage.verifyPauseAndResumeFunctionality();
-    logger?.success('TC Pause and resume functionality verified');
+    try {
+      // Ensure assessment frame is loaded and visible
+      await assessmentPage.verifyPauseAndResumeFunctionality();
+      logger?.success('TC Pause and resume functionality verified');
+    } catch (error: any) {
+      await logger?.error('TC9 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC10: answer assessment', async ({}, testInfo) => {
@@ -349,8 +384,13 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
     logger?.step('2. Answer all assessment questions');
     logger?.step('3. Verify answers submitted');
 
-    await assessmentPage.answerAssessmentQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE);
-    logger?.success('TC Assessment finished and IPP page loaded');
+    try {
+      await assessmentPage.answerAssessmentQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE);
+      logger?.success('TC Assessment finished and IPP page loaded');
+    } catch (error: any) {
+      await logger?.error('TC10 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
   test('TC11: Finish assessment and IPP page loaded', async ({}, testInfo) => {
     logger = new Logger(page, 'TC11__Finalize_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC11' });
@@ -364,8 +404,13 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
     logger?.step('2. Navigate to IPP page');
     logger?.step('3. Verify IPP page URL');
 
-    await assessmentPage.finalizeAssessmentAndViewResults();
-    logger?.success('TC Assessment finished and IPP page loaded');
+    try {
+      await assessmentPage.finalizeAssessmentAndViewResults();
+      logger?.success('TC Assessment finished and IPP page loaded');
+    } catch (error: any) {
+      await logger?.error('TC11 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 
   test('TC12: IPP page shows 100% score', async ({}, testInfo) => {
@@ -381,18 +426,23 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
     logger?.step('3. Verify IPP heading');
     logger?.step('4. Take screenshot for validation');
 
-    await assertions.waitAndAssertVisible(locators.percentageScore);
-    const percentageValue = await locators.percentageScore.textContent();
-    const extractedPercentage = (percentageValue ?? '').trim();
-    assertions.assertPercentage(extractedPercentage, EXPECTED_PERCENTAGE);
-    logger?.success('TC IPP page shows 100% score on UI');
+    try {
+      await assertions.waitAndAssertVisible(locators.percentageScore);
+      const percentageValue = await locators.percentageScore.textContent();
+      const extractedPercentage = (percentageValue ?? '').trim();
+      assertions.assertPercentage(extractedPercentage, EXPECTED_PERCENTAGE);
+      logger?.success('TC IPP page shows 100% score on UI');
 
-    // Optionally, verify IPP heading and take screenshot
-    await assessmentPage.verifyElementByRole(
-      'heading',
-      'Individual Performance Profile',
-      'IPP Page Heading'
-    );
-    await assessmentPage.takeScreenshot('Prod_PracticeTest_ReaderOff', extractedBatchId);
+      // Optionally, verify IPP heading and take screenshot
+      await assessmentPage.verifyElementByRole(
+        'heading',
+        'Individual Performance Profile',
+        'IPP Page Heading'
+      );
+      await assessmentPage.takeScreenshot('Prod_PracticeTest_ReaderOff', extractedBatchId);
+    } catch (error: any) {
+      await logger?.error('TC12 FAIL: ' + error.message, error);
+      throw error;
+    }
   });
 });
