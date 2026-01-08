@@ -1,0 +1,61 @@
+{
+  "name": "asmt_playwright_ui_framework",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:debug": "npx playwright test --debug",
+    "test:report": "npx playwright show-report",
+    "regression": "npx playwright test Regression --workers=1",
+    "regression:parallel": "npx playwright test Regression --workers=4",
+    "regression:ui": "npx playwright test Regression --ui",
+    "regression:debug": "npx playwright test Regression --debug",
+    "regression:trace": "npx playwright test Regression --workers=1 --trace on",
+    "regression:video": "npx playwright test Regression --workers=1 --video on",
+    "regression:retry": "npx playwright test Regression --workers=1 --retries=2",
+    "regression:report": "npx playwright test Regression --workers=1 && npx playwright show-report",
+    "smoke": "npx playwright test Smoke --workers=1",
+    "smoke:parallel": "npx playwright test Smoke --workers=4",
+    "smoke:ui": "npx playwright test Smoke --ui",
+    "smoke:debug": "npx playwright test Smoke --debug",
+    "smoke:trace": "npx playwright test Smoke --workers=1 --trace on",
+    "smoke:video": "npx playwright test Smoke --workers=1 --video on",
+    "smoke:retry": "npx playwright test Smoke --workers=1 --retries=2",
+    "smoke:report": "npx playwright test Smoke --workers=1 && npx playwright show-report",
+    "proctor": "npx playwright test Smoke/Proctor.spec.ts --workers=1",
+    "proctor:ui": "npx playwright test Smoke/Proctor.spec.ts --ui",
+    "proctor:debug": "npx playwright test Smoke/Proctor.spec.ts --debug",
+    "proctor:trace": "npx playwright test Smoke/Proctor.spec.ts --workers=1 --trace on",
+    "proctor:video": "npx playwright test Smoke/Proctor.spec.ts --workers=1 --video on",
+    "proctor:retry": "npx playwright test Smoke/Proctor.spec.ts --workers=1 --retries=2",
+    "proctor:slowmo": "npx playwright test Smoke/Proctor.spec.ts --workers=1 --slow-mo=1000",
+    "proctor:specific": "npx playwright test Smoke/Proctor.spec.ts --workers=1 -g",
+    "all": "npx playwright test --workers=1",
+    "all:parallel": "npx playwright test --workers=4",
+    "all:retry": "npx playwright test --workers=1 --retries=2",
+    "clean:artifacts": "node delete-old-playwright-artifacts.js",
+    "report": "playwright show-report",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "playwright",
+    "typescript",
+    "automation",
+    "testing"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^20.19.26",
+    "moment": "^2.30.1",
+    "monocart-reporter": "^2.9.23",
+    "nodemon": "^3.0.2",
+    "playwright": "^1.41.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3"
+  }
+}
