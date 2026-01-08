@@ -25,7 +25,7 @@ const EXPECTED_PERCENTAGE = '100.0%';
  * @author [Ashish Ranjan]
  */
 
-test.describe.serial('@Smoke - Prod_Proctor_ReaderOff', { tag: '@smoke' }, () => {
+test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;

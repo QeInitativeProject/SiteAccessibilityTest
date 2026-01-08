@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Get environment from ENV variable or default to 'stage'
-const currentEnv = process.env.ENV || 'stage';
+// Get environment from ENV variable or default to 'prod'
+const currentEnv = process.env.ENV || 'prod';
 
 // Only load env if not already loaded
 if (!process.env.baseUrl) {

@@ -20,7 +20,7 @@ const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store Prod';
 const SCENARIO_NAME = 'Prod_PracticeTest_ReaderOn';
 
-test.describe.serial('@smoke Prod_PracticeTest_ReaderOn', () => {
+test.describe.serial('@sanity Prod_PracticeTest_ReaderOn', () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;
