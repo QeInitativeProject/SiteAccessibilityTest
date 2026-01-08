@@ -55,7 +55,7 @@ export default defineConfig({
   use: {
     navigationTimeout: 2 * 60000,
     actionTimeout: 3 * 60000,
-    headless: false,
+    headless: true,
     ignoreHTTPSErrors: true,
 
     trace: 'on-first-retry', // Automatic trace capture on retry/failure

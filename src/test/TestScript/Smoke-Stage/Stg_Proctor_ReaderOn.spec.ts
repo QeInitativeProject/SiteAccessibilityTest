@@ -16,8 +16,7 @@ const SCENARIO_NAME = 'Stg_Proctor_ReaderOn';
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store_Stage';
 const EXPECTED_PERCENTAGE = '100.0%';
-// const ASSESSMENT_ID = '27099597'; // Hardcoded Assessment ID for proctoring
-// const BATCH_ID = '27099597'; // Hardcoded Batch ID for adding product
+
  
 /**
  * Smoke Test - Proctor Flow
@@ -145,6 +144,7 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
  
     await page.waitForLoadState('load');
     await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(20000);
  
    
     logger.step('TC3: Navigate to Proctor Tab - Comprehensive Validations');
@@ -212,7 +212,7 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
     assertions.setLogger(logger);
     await page.waitForTimeout(10000)
    
-    logger.step('TC3: Setup Proctoring with Assessment ID');
+    logger.step('TC4: Setup Proctoring with Assessment ID');
     logger.success(`Using Assessment ID: ${extractedBatchId}`);
  
     try {
@@ -229,7 +229,7 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
    
       await proctorUtil.checkInStudents();
       await page.waitForLoadState('load');
-      logger.success('TC3 PASS: Assessment ID entered and proctoring setup complete');
+      logger.success('TC4 PASS: Assessment ID entered and proctoring setup complete');
     } catch (error: any) {
       await logger?.error('TC4 FAIL: ' + error.message, error);
       throw error;
@@ -244,6 +244,8 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
     assertions.setLogger(logger);
    
     try {
+       // Hard assertion: Verify Start Proctoring button is visible and enabled before clicking
+      await assertions.waitAndAssertStartProctorButtonVisible(15000);
       await proctorUtil.startProctoring();
       await page.waitForLoadState('load');
    
@@ -286,7 +288,7 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
     assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
  
-    logger.step('TC5: Add Product to Student Account');
+    logger.step('TC6: Add Product to Student Account');
     logger.step('1. Click on My ATI tab');
     logger.step('2. Click on Assessments tab to open Add Product dialog');
     logger.step('3. Enter Batch ID');
@@ -326,23 +328,13 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
       await studentTab.waitForTimeout(2000);
       logger.success('✅ Continue clicked after ID entry');
    
-      // // Enter Password
-      // await assertions.assertVisible(locators.passwordTextboxDialog);
-      // await locators.passwordTextboxDialog.fill(process.env.muassessmentpassword || '');
-      // logger.success(`✅ Password entered`);
-   
-      // // Click Continue after entering Password
-      // await assertions.assertVisible(locators.continueButton);
-      // await locators.continueButton.click();
-      // logger.success('✅ Continue clicked after password entry');
-   
       const studentProctorUtil = new ProctorUtility(studentTab);
       await studentProctorUtil.fillAttestationPage();
       // Verify navigation to Assessment page
       await myATIPage.waitForPageLoadAndVerifyNavigation('/Assessment');
       logger.success('✅ Navigated to Assessment page');
    
-      logger.success('TC5 PASS: Product added successfully.');
+      logger.success('TC6 PASS: Product added successfully.');
     } catch (error: any) {
       await logger?.error('TC6 FAIL: ' + error.message, error);
       throw error;
@@ -361,6 +353,12 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
       await page.bringToFront();
       await page.reload();
       await page.waitForLoadState('load');
+
+    // Hard assertion: Verify APPROVE button is visible and enabled before clicking
+      await assertions.waitAndAssertApproveButtonVisible(15000);
+    
+    // Hard assertion: Verify DENY button is visible and enabled
+      await assertions.waitAndAssertDenyButtonVisible(15000);
    
       await proctorUtil.approveByProctor();
       await page.waitForLoadState('load');
@@ -375,7 +373,7 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
       await studentProctorUtil.startTest();
       await page.waitForLoadState('load');
    
-      logger.success('TC6 PASS: Test approved and started successfully');
+      logger.success('TC7 PASS: Test approved and started successfully');
      
       // Switch back to student tab for assessment
     } catch (error: any) {
@@ -390,7 +388,7 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
     assertions.setLogger(logger);
     await page.waitForTimeout(10000);
  
-    logger.step('TC7: Flag/Unflag Flow Validation');
+    logger.step('TC8: Flag/Unflag Flow Validation');
     logger.step('1. Flag a question');
     logger.step('2. Continue to next question');
     logger.step('3. Go back to previous question');
@@ -399,15 +397,15 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
     try {
       await studentTab.waitForLoadState('load');
       await assessmentPage.flagContinuePreviousUnflagFlow(assertions);
-      logger.success('TC7 PASS: Full Flag-Continue-Previous-Unflag flow succeeded.');
+      logger.success('TC8 PASS: Full Flag-Continue-Previous-Unflag flow succeeded.');
     } catch (error: any) {
-      logger.error('TC7 FAIL: Full Flag-Continue-Previous-Unflag flow failed: ' + error);
+      logger.error('TC8 FAIL: Full Flag-Continue-Previous-Unflag flow failed: ' + error);
       throw error;
     }
   });
  
   test('TC9: Validate that text to speech functionality content is visible', async () => {
-    logger?.step('TC7: Text-to-Speech Content Visibility Validation ===');
+    logger?.step('TC9: Text-to-Speech Content Visibility Validation ===');
     logger?.step('1. Settings button visibility');
     logger?.step('2. "Click and Listen" text visibility');
     logger?.step('3. "playlist_play" icon visibility');
@@ -422,7 +420,7 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
   });
  
   test('TC10: Validate that text to speech toggle is functional', async () => {
-    logger?.step('TC8: Text-to-Speech Toggle Functionality Validation ===');
+    logger?.step('TC10: Text-to-Speech Toggle Functionality Validation ===');
     logger?.step('1. Verify toggle starts OFF');
     logger?.step('2. Turn toggle ON and verify state change');
     logger?.step('3. Turn toggle OFF and verify state change');
@@ -431,7 +429,7 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
     try {
       await assessmentPage.validateToggleFunctionality();
       await assessmentPage.turnToggleOn();
-      logger?.success('TC8 PASS: Toggle is now ON and ready for subsequent tests');
+      logger?.success('TC10 PASS: Toggle is now ON and ready for subsequent tests');
     } catch (error: any) {
       await logger?.error('TC10 FAIL: ' + error.message, error);
       throw error;
@@ -439,7 +437,7 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
   });
  
   test('TC11: Validate settings button is clickable and speech rate, pitch rate is visible', async () => {
-    logger?.step('TC9: Settings Controls Visibility Validation ===');
+    logger?.step('TC11: Settings Controls Visibility Validation ===');
     logger?.step('1. Settings button is visible and clickable');
     logger?.step('2. "Pitch" text is visible');
     logger?.step('3. "Speech rate" text is visible');
@@ -458,18 +456,18 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
    
  
   test('TC12: Calculator functionality', async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC9__Calculator_Functionality', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
+    logger = new Logger(studentTab, 'TC12__Calculator_Functionality', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
     assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
  
-    logger.step('TC9: Calculator Functionality Validation');
+    logger.step('TC12: Calculator Functionality Validation');
     logger.step('1. Open calculator');
     logger.step('2. Verify calculator input and operations');
     logger.step('3. Close calculator');
  
     try {
       await assessmentPage.verifyCalculatorFunctionality();
-      logger.success('TC9 PASS: Calculator functionality verified');
+      logger.success('TC12 PASS: Calculator functionality verified');
     } catch (error: any) {
       await logger?.error('TC12 FAIL: ' + error.message, error);
       throw error;
@@ -477,18 +475,18 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
   });
  
   test('TC13: Pause and Resume assessment', async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC10__Pause_and_Resume', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC10' });
+    logger = new Logger(studentTab, 'TC13__Pause_and_Resume', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC10' });
     assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
  
-    logger.step('TC10: Pause and Resume Functionality Validation');
+    logger.step('TC13: Pause and Resume Functionality Validation');
     logger.step('1. Pause the assessment');
     logger.step('2. Verify pause state');
     logger.step('3. Resume the assessment');
  
     try {
       await assessmentPage.verifyPauseAndResumeFunctionality();
-      logger.success('TC10 PASS: Pause and resume functionality verified');
+      logger.success('TC13 PASS: Pause and resume functionality verified');
     } catch (error: any) {
       await logger?.error('TC13 FAIL: ' + error.message, error);
       throw error;
@@ -496,18 +494,18 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
   });
  
   test('TC14: Answer assessment', async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC11__Answer_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC11' });
+    logger = new Logger(studentTab, 'TC14__Answer_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC11' });
     assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
  
-    logger.step('TC11: Answer Assessment Questions Validation');
+    logger.step('TC14: Answer Assessment Questions Validation');
     logger.step('1. Load questions from JSON file (4_Correct_QnA.json)');
     logger.step('2. Answer all assessment questions');
     logger.step('3. Verify answers submitted');
  
     try {
       await assessmentPage.answerAssessmentQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE);
-      logger.success('TC11 PASS: Assessment questions answered');
+      logger.success('TC14 PASS: Assessment questions answered');
     } catch (error: any) {
       await logger?.error('TC14 FAIL: ' + error.message, error);
       throw error;
@@ -515,18 +513,18 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
   });
  
   test('TC15: Finish assessment and IPP page loaded', async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC12__Finalize_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC12' });
+    logger = new Logger(studentTab, 'TC15__Finalize_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC12' });
     assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
  
-    logger.step('TC12: Finalize Assessment Validation');
+    logger.step('TC15: Finalize Assessment Validation');
     logger.step('1. Click Finish button');
     logger.step('2. Navigate to IPP page');
     logger.step('3. Verify IPP page URL');
  
     try {
       await assessmentPage.finalizeAssessmentAndViewResults();
-      logger.success('TC12 PASS: Assessment finished and IPP page loaded');
+      logger.success('TC15 PASS: Assessment finished and IPP page loaded');
     } catch (error: any) {
       await logger?.error('TC15 FAIL: ' + error.message, error);
       throw error;
@@ -534,11 +532,11 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
   });
  
   test('TC16: IPP page shows 100% score', async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC13__IPP_Score_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC13' });
+    logger = new Logger(studentTab, 'TC16__IPP_Score_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC13' });
     assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
  
-    logger.step('TC13: IPP Score Validation');
+    logger.step('TC16: IPP Score Validation');
     logger.step('1. Verify percentage score on IPP page');
     logger.step('2. Assert score equals 100.0%');
     logger.step('3. Verify IPP heading');
@@ -549,7 +547,7 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
       const percentageValue = await locators.percentageScore.textContent();
       const extractedPercentage = (percentageValue ?? '').trim();
       assertions.assertPercentage(extractedPercentage, EXPECTED_PERCENTAGE);
-      logger.success('TC13 PASS: IPP page shows 100% score on UI');
+      logger.success('TC16 PASS: IPP page shows 100% score on UI');
    
       // Verify IPP heading and take screenshot
       await assessmentPage.verifyElementByRole(
