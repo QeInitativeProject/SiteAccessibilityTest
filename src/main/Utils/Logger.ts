@@ -92,9 +92,9 @@ export class Logger {
     this.attemptId = options?.attemptId || Date.now().toString();
     this.tcNumber = options?.tcNumber;
 
-    // Default options
+    // Default options - Disable file logging by default, enable only on error
     this.options = {
-      enableFileLogging: options?.enableFileLogging ?? true,
+      enableFileLogging: options?.enableFileLogging ?? false, // Changed to false
       enableConsoleLogging: options?.enableConsoleLogging ?? true,
       logDirectory: options?.logDirectory ?? 'test-results/logs',
       screenshotOnError: options?.screenshotOnError ?? true,
@@ -104,10 +104,10 @@ export class Logger {
       tcNumber: options?.tcNumber ?? '',
     };
 
-    // Initialize log file
-    if (this.options.enableFileLogging) {
-      this.initializeLogFile();
-    }
+    // Don't initialize log file immediately - only create when error occurs
+    // if (this.options.enableFileLogging) {
+    //   this.initializeLogFile();
+    // }
   }
 
   /**
@@ -342,8 +342,15 @@ ${'='.repeat(80)}
 
   /**
    * Error level log with automatic screenshot and HTML snapshot
+   * Enables file logging when error occurs
    */
   async error(message: string, error?: any): Promise<void> {
+    // Enable file logging on first error if not already enabled
+    if (!this.options.enableFileLogging) {
+      this.options.enableFileLogging = true;
+      this.initializeLogFile();
+    }
+    
     this.log(LogLevel.ERROR, message, error);
 
     // Capture failure log with TC number
@@ -419,15 +426,48 @@ ${'='.repeat(80)}
   }
 
   /**
-   * Capture screenshot with custom name
+   * Capture screenshot with enhanced error handling
    */
   async captureScreenshot(name: string): Promise<string | null> {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const sanitizedName = name.replace(/[^a-zA-Z0-9]/g, '_');
 
-      // Capture screenshot as buffer
-      const screenshot = await this.page.screenshot({ fullPage: true });
+      // Check if page is still valid before taking screenshot
+      if (!this.page || this.page.isClosed()) {
+        this.warning('Cannot capture screenshot: Page is closed or invalid');
+        return null;
+      }
+
+      // Wait a moment for any animations/transitions to complete
+      await this.page.waitForTimeout(500);
+
+      // Capture screenshot as buffer with error handling
+      let screenshot: Buffer;
+      try {
+        screenshot = await this.page.screenshot({ 
+          fullPage: true,
+          timeout: 5000  // 5 second timeout for screenshot
+        });
+      } catch (screenshotError) {
+        // If fullPage fails, try viewport screenshot
+        this.warning('Full page screenshot failed, attempting viewport screenshot');
+        try {
+          screenshot = await this.page.screenshot({ 
+            fullPage: false,
+            timeout: 5000
+          });
+        } catch (viewportError) {
+          this.warning(`Screenshot capture failed: ${viewportError}`);
+          return null;
+        }
+      }
+
+      // Verify screenshot is not empty
+      if (!screenshot || screenshot.length === 0) {
+        this.warning('Screenshot buffer is empty');
+        return null;
+      }
 
       // Check if this is a success or failure screenshot
       const isSuccessScreenshot = name.toLowerCase().includes('success');

@@ -12,14 +12,14 @@ import { Assertions } from '@utils/Assertion';
 import { Logger } from '@utils/Logger';
 import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators';
 
-const _EXPECTED_URL_PATTERN = '/ViewResult/FLAGTestResult/';
-const EXPECTED_PERCENTAGE = '100.0%';
-const _EXPECTED_ASSESSMENT_NAME = 'practicestg_shyan';
-const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
+const _EXPECTED_URL_PATTERN = '/ViewResult/IPPTestResult/';
+const EXPECTED_PERCENTAGE = '0.0%';
+const _EXPECTED_ASSESSMENT_NAME = 'scoringstg_shyan';
+const QUESTION_ANSWER_FILE = '0_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Scoring_QA_STAGE';
-const SCENARIO_NAME = 'PracticeTest_ReaderOff';
+const SCENARIO_NAME = 'Stg_0_Percent';
 
-test.describe.serial('@smoke PracticeTest_ReaderOff', () => {
+test.describe.serial('@regression Stg_0_Percent', () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;
@@ -46,7 +46,7 @@ test.describe.serial('@smoke PracticeTest_ReaderOff', () => {
     locators = new StudentFacingPageLocators(page);
   });
 
-  test.afterEach(async ({}, testInfo) => {
+    test.afterEach(async ({}, testInfo) => {
     if (testInfo.status !== testInfo.expectedStatus) {
       await logger?.captureScreenshot('test_failure');
     }
@@ -88,7 +88,7 @@ test.describe.serial('@smoke PracticeTest_ReaderOff', () => {
     logger.step('3. Verify Home page URL loaded');
 
     await page.goto(process.env.baseUrl);
-    await atiLoginPage.fillStuUserName(process.env.stuUsernamezzdev1);
+    await atiLoginPage.fillStuUserName(process.env.stuUsernamezzdev);
     await atiLoginPage.fillStuPassword(process.env.stuPasswordzzdev);
     await atiLoginPage.clickLogin();
     logger?.success('Logged into ATI with zzdev credentials');
@@ -97,17 +97,12 @@ test.describe.serial('@smoke PracticeTest_ReaderOff', () => {
     await assertions.assertPageHasURL(/\/Home/);
     logger?.success('Home page URL loaded successfully');
 
-    logger?.success('TC Login successful and Home page loaded');
+    logger?.success('TC2 PASS: Login successful and Home page loaded');
   });
 
   test('TC3: Verify Home page navigation elements', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC3__Home_Page_Navigation_Elements', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
-    atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
-
-    logger.step('TC3: Home Page Navigation Elements Validation');
+    logger = new Logger(page, 'TC3__Home_Page_Navigation_Elements_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
+    logger?.step('TC3: Home Page Navigation Elements Validation');
     logger?.step('1. Home navigation link');
     logger?.step('2. My ATI navigation link');
     logger?.step('3. Results navigation link');
@@ -134,17 +129,12 @@ test.describe.serial('@smoke PracticeTest_ReaderOff', () => {
     await assertions.assertVisible(locators.addProductText);
     logger?.success('✓ Add a Product text is visible');
 
-    logger?.success('TC All Home page navigation elements verified successfully');
+    logger?.success('TC3 PASS: All Home page navigation elements verified successfully');
   });
 
   test('TC4: Verify My ATI page functionality', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC4__My_ATI_Page_Functionality', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
-    atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
-
-    logger.step('TC4: My ATI Page Functionality Validation');
+    logger = new Logger(page, 'TC4__My_ATI_Page_Functionality_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
+    logger?.step('TC4: My ATI Page Functionality Validation');
     logger?.step('1. Click on My ATI tab');
     logger?.step('2. Verify Products page URL');
     logger?.step('3. Assessments Tab link visibility');
@@ -155,7 +145,7 @@ test.describe.serial('@smoke PracticeTest_ReaderOff', () => {
     try {
       // Click on My ATI tab
       await myATIPage.clickOnMyATITab();
-      logger?.step('Clicked on My ATI tab');
+      logger?.success('Clicked on My ATI tab');
 
       // Wait for Products page URL to load properly
       await assertions.assertPageHasURL(/\/Products/);
@@ -177,7 +167,7 @@ test.describe.serial('@smoke PracticeTest_ReaderOff', () => {
       await assertions.assertVisible(locators.nclexPrepTabLink);
       logger?.success('✓ NCLEX Prep Tab link is visible');
 
-      logger?.success('TC My ATI page functionality verified - all elements visible');
+      logger?.success('TC4 PASS: My ATI page functionality verified - all elements visible');
     } catch (error: any) {
       logger?.error('TC4 FAIL: ' + error.message);
       throw error;
@@ -185,13 +175,8 @@ test.describe.serial('@smoke PracticeTest_ReaderOff', () => {
   });
 
   test('TC5: Click on Assessments tab, verify Add Product dialog, enter credentials and continue', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC5__Add_Product_Dialog', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
-    atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
-
-    logger.step('TC5: Add Product Dialog and Credentials Validation');
+    logger = new Logger(page, 'TC5__Add_Product_Dialog_and_Credentials_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
+    logger?.step('TC5: Add Product Dialog and Credentials Validation');
     logger?.step('1. Click on Assessments tab');
     logger?.step('2. Verify Add Product dialog appears');
     logger?.step('3. Enter Batch ID from TC1');
@@ -201,7 +186,7 @@ test.describe.serial('@smoke PracticeTest_ReaderOff', () => {
 
     // Click on Assessments tab
     await myATIPage.clickOnAssessmentsTab();
-    logger?.step('Clicked on Assessments tab');
+    logger?.success('Clicked on Assessments tab');
 
     // Verify Add Product dialog appears
     await assertions.assertRoleVisible('heading', 'Add a product to your account');
@@ -256,18 +241,13 @@ test.describe.serial('@smoke PracticeTest_ReaderOff', () => {
     logger?.success('✅ Navigated to Assessment page');
 
     logger?.success(
-      'TC5 PASS: Add Product dialog verified, credentials entered, and navigated to Assessment page.'
+      '\nTC5 PASS: Add Product dialog verified, credentials entered, and navigated to Assessment page.'
     );
   });
 
   test('TC6: Flag, Continue, Previous, Unflag robust flow', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC6__Flag_Unflag_Flow', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
-    atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
-
-    logger.step('TC6: Flag/Unflag Flow Validation');
+    logger = new Logger(page, 'TC6__Flag_Unflag_Flow_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
+    logger?.step('TC6: Flag/Unflag Flow Validation');
     logger?.step('1. Flag a question');
     logger?.step('2. Continue to next question');
     logger?.step('3. Go back to previous question');
@@ -276,7 +256,7 @@ test.describe.serial('@smoke PracticeTest_ReaderOff', () => {
     try {
       await myATIPage.waitForPageLoadAndVerifyNavigation('/Assessment');
       await assessmentPage.flagContinuePreviousUnflagFlow(assertions);
-      logger?.success('TC Full Flag-Continue-Previous-Unflag flow succeeded.');
+      logger?.success('TC6 PASS: Full Flag-Continue-Previous-Unflag flow succeeded.');
     } catch (error: any) {
       logger?.error('TC6 FAIL: Full Flag-Continue-Previous-Unflag flow failed: ' + error);
       throw error;
@@ -285,101 +265,71 @@ test.describe.serial('@smoke PracticeTest_ReaderOff', () => {
 
   test('TC7: Verify blue banner is visible with correct background color', async ({}, testInfo) => {
     logger = new Logger(page, 'TC7__Blue_Banner_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
-    atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
-
-    logger.step('TC7: Blue Banner Validation');
+    logger?.step('TC7: Blue Banner Validation');
     logger?.step('1. Verify blue banner visibility');
     logger?.step('2. Validate background color (#d7eef4)');
 
     await assessmentPage.verifyBlueBannerVisibility('#d7eef4');
-    logger?.success('TC Blue banner is visible');
+    logger?.success('TC7 PASS: Blue banner is visible');
   });
 
   test('TC8: Calculator functionality', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC8__Calculator_Functionality', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
-    atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
-
-    logger.step('TC8: Calculator Functionality Validation');
+    logger = new Logger(page, 'TC8__Calculator_Functionality_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
+    logger?.step('TC8: Calculator Functionality Validation');
     logger?.step('1. Open calculator');
     logger?.step('2. Verify calculator input and operations');
     logger?.step('3. Close calculator');
 
     await assessmentPage.verifyCalculatorFunctionality();
-    logger?.success('TC Calculator functionality verified');
+    logger?.success('TC8 PASS: Calculator functionality verified');
   });
 
   test('TC9: Pause and Resume assessment', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC9__Pause_and_Resume', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
-    atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
-
-    logger.step('TC9: Pause and Resume Functionality Validation');
+    logger = new Logger(page, 'TC9__Pause_and_Resume_Functionality_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
+    logger?.step('TC9: Pause and Resume Functionality Validation');
     logger?.step('1. Pause the assessment');
     logger?.step('2. Verify pause state');
     logger?.step('3. Resume the assessment');
 
     // Ensure assessment frame is loaded and visible
     await assessmentPage.verifyPauseAndResumeFunctionality();
-    logger?.success('TC Pause and resume functionality verified');
+    logger?.success('TC9 PASS: Pause and resume functionality verified');
   });
 
   test('TC10: answer assessment', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC10__Answer_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC10' });
-    atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
-
-    logger.step('TC10: Answer Assessment Questions Validation');
-    logger?.step('1. Load questions from JSON file (4_Correct_QnA.json)');
+    logger = new Logger(page, 'TC10__Answer_Assessment_Questions_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
+    logger?.step('TC10: Answer Assessment Questions Validation');
+    logger?.step('1. Load questions from JSON file (0_Correct_QnA.json)');
     logger?.step('2. Answer all assessment questions');
     logger?.step('3. Verify answers submitted');
 
     await assessmentPage.answerAssessmentQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE);
-    logger?.success('TC Assessment finished and IPP page loaded');
+    logger?.success('TC10 PASS: Assessment finished and IPP page loaded');
   });
   test('TC11: Finish assessment and IPP page loaded', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC11__Finalize_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC11' });
-    atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
-
-    logger.step('TC11: Finalize Assessment Validation');
+    logger = new Logger(page, 'TC11__Finalize_Assessment_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
+    logger?.step('TC11: Finalize Assessment Validation');
     logger?.step('1. Click Finish button');
     logger?.step('2. Navigate to IPP page');
     logger?.step('3. Verify IPP page URL');
 
     await assessmentPage.finalizeAssessmentAndViewResults();
-    logger?.success('TC Assessment finished and IPP page loaded');
+    logger?.success('TC11 PASS: Assessment finished and IPP page loaded');
   });
 
-  test('TC12: IPP page shows 100% score', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC12__IPP_Score_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC12' });
-    atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
-
-    logger.step('TC12: IPP Score Validation');
+  test('TC12: IPP page shows 0% score', async ({}, testInfo) => {
+    logger = new Logger(page, 'TC12__IPP_Score_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
+    logger?.step('TC12: IPP Score Validation');
     logger?.step('1. Verify percentage score on IPP page');
-    logger?.step('2. Assert score equals 100.0%');
+    logger?.step('2. Assert score equals 0.0%');
     logger?.step('3. Verify IPP heading');
     logger?.step('4. Take screenshot for validation');
 
     await assertions.waitAndAssertVisible(locators.percentageScore);
     const percentageValue = await locators.percentageScore.textContent();
-    const extractedPercentage = (percentageValue ?? '').trim();
+    const extractedPercentage = percentageValue?.trim() || '';
     assertions.assertPercentage(extractedPercentage, EXPECTED_PERCENTAGE);
-    logger?.success('TC IPP page shows 100% score on UI');
+    logger?.success('TC12 PASS: IPP page shows 0% score on UI');
 
     // Optionally, verify IPP heading and take screenshot
     await assessmentPage.verifyElementByRole(
@@ -387,6 +337,6 @@ test.describe.serial('@smoke PracticeTest_ReaderOff', () => {
       'Individual Performance Profile',
       'IPP Page Heading'
     );
-    await assessmentPage.takeScreenshot('100_Percent_IPP_Page', extractedBatchId);
+    await assessmentPage.takeScreenshot('Stg_0_Percent', extractedBatchId);
   });
 });

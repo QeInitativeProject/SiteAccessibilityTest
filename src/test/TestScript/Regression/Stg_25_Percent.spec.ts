@@ -13,13 +13,13 @@ import { Logger } from '@utils/Logger';
 import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators';
 
 const _EXPECTED_URL_PATTERN = '/ViewResult/IPPTestResult/';
-const EXPECTED_PERCENTAGE = '100.0%';
+const EXPECTED_PERCENTAGE = '25.0%';
 const _EXPECTED_ASSESSMENT_NAME = 'scoringstg_shyan';
-const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
+const QUESTION_ANSWER_FILE = '1_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Scoring_QA_STAGE';
-const SCENARIO_NAME = 'Practice_test_100_Percent_Score';
+const SCENARIO_NAME = 'Stg_25_Percent';
 
-test.describe.serial('@regression Practice test -100_Percent_Score', () => {
+test.describe.serial('@regression Stg_25_Percent', () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;
@@ -53,12 +53,12 @@ test.describe.serial('@regression Practice test -100_Percent_Score', () => {
     // Success screenshots removed - only capturing final IPP screenshot
   });
 
-  test.afterAll(async ({}, testInfo) => {
+  test.afterAll(async ({}, _testInfo) => {
     await browser.close();
   });
 
   test('TC1: MU batch creation', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC1: MU Batch Creation Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
+    logger = new Logger(page, 'TC1__MU_Batch_Creation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     atiLoginPage.setLogger(logger);
     myATIPage.setLogger(logger);
     assessmentPage.setLogger(logger);
@@ -86,7 +86,7 @@ test.describe.serial('@regression Practice test -100_Percent_Score', () => {
     logger.step('3. Verify Home page URL loaded');
 
     await page.goto(process.env.baseUrl);
-    await atiLoginPage.fillStuUserName(process.env.stuUsernamezzdev1);
+    await atiLoginPage.fillStuUserName(process.env.stuUsernamezzdev4);
     await atiLoginPage.fillStuPassword(process.env.stuPasswordzzdev);
     await atiLoginPage.clickLogin();
     logger?.success('Logged into ATI with zzdev credentials');
@@ -297,7 +297,7 @@ test.describe.serial('@regression Practice test -100_Percent_Score', () => {
   test('TC10: answer assessment', async ({}, testInfo) => {
     logger = new Logger(page, 'TC10__Answer_Assessment_Questions_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     logger?.step('TC10: Answer Assessment Questions Validation');
-    logger?.step('1. Load questions from JSON file (4_Correct_QnA.json)');
+    logger?.step('1. Load questions from JSON file (1_Correct_QnA.json)');
     logger?.step('2. Answer all assessment questions');
     logger?.step('3. Verify answers submitted');
 
@@ -315,19 +315,19 @@ test.describe.serial('@regression Practice test -100_Percent_Score', () => {
     logger?.success('TC11 PASS: Assessment finished and IPP page loaded');
   });
 
-  test('TC12: IPP page shows 100% score', async ({}, testInfo) => {
+  test('TC12: IPP page shows 25% score', async ({}, testInfo) => {
     logger = new Logger(page, 'TC12__IPP_Score_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     logger?.step('TC12: IPP Score Validation');
     logger?.step('1. Verify percentage score on IPP page');
-    logger?.step('2. Assert score equals 100.0%');
+    logger?.step('2. Assert score equals 25.0%');
     logger?.step('3. Verify IPP heading');
     logger?.step('4. Take screenshot for validation');
 
     await assertions.waitAndAssertVisible(locators.percentageScore);
     const percentageValue = await locators.percentageScore.textContent();
-    const extractedPercentage = percentageValue?.trim() || '';
+    const extractedPercentage = (percentageValue ?? '').trim();
     assertions.assertPercentage(extractedPercentage, EXPECTED_PERCENTAGE);
-    logger?.success('TC12 PASS: IPP page shows 100% score on UI');
+    logger?.success('TC12 PASS: IPP page shows 25% score on UI');
 
     // Optionally, verify IPP heading and take screenshot
     await assessmentPage.verifyElementByRole(
@@ -335,6 +335,6 @@ test.describe.serial('@regression Practice test -100_Percent_Score', () => {
       'Individual Performance Profile',
       'IPP Page Heading'
     );
-    await assessmentPage.takeScreenshot('100_Percent_IPP_Page', extractedBatchId);
+    await assessmentPage.takeScreenshot('Stg_25_Percent', extractedBatchId);
   });
 });

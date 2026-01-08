@@ -12,7 +12,7 @@ import { BatchCreation } from '@utils/BatchCreation';
 
 const EXPECTED_ASSESSMENT_NAME = process.env.ProctoredAssessment;
 const EXPECTED_INSTITUTION = process.env.Institution_zzcab;
-const SCENARIO_NAME = 'Proctor_Flow';
+const SCENARIO_NAME = 'Prod_Proctor_ReaderOff';
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Scoring_QA_STAGE';
 const EXPECTED_PERCENTAGE = '100.0%';
@@ -25,7 +25,7 @@ const EXPECTED_PERCENTAGE = '100.0%';
  * @author [Ashish Ranjan]
  */
 
-test.describe.serial('@Smoke - Proctor Flow', { tag: '@smoke' }, () => {
+test.describe.serial('@Smoke - Prod_Proctor_ReaderOff', { tag: '@smoke' }, () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;
@@ -425,7 +425,7 @@ test.describe.serial('@Smoke - Proctor Flow', { tag: '@smoke' }, () => {
       'Individual Performance Profile',
       'IPP Page Heading'
     );
-    await assessmentPage.takeScreenshot('Proctor_100_Percent_IPP_Page', extractedBatchId);
+    await assessmentPage.takeScreenshot('Prod_Proctor_ReaderOff', extractedBatchId);
     
     logger.success('Proctor Flow Smoke Test Completed with 100% Score');
   });

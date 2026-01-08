@@ -18,9 +18,9 @@ const EXPECTED_ASSESSMENT_NAME = process.env.EXPECTED_ASSESSMENT_NAME;
 const EXPECTED_INSTITUTION = process.env.Institution_zzcab;
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Scoring_QA_STAGE';
-const SCENARIO_NAME = 'Practice_test_screenreaderon';
+const SCENARIO_NAME = 'Prod_PracticeTest_ReaderOn';
 
-test.describe.serial('@smoke Practice test -screenreaderon', () => {
+test.describe.serial('@smoke Prod_PracticeTest_ReaderOn', () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;
@@ -317,6 +317,6 @@ test.describe.serial('@smoke Practice test -screenreaderon', () => {
       'Individual Performance Profile',
       'IPP Page Heading'
     );
-    await assessmentPage.takeScreenshot('100_Percent_IPP_Page', extractedBatchId);
+    await assessmentPage.takeScreenshot('Prod_PracticeTest_ReaderOn', extractedBatchId);
   });
 });
