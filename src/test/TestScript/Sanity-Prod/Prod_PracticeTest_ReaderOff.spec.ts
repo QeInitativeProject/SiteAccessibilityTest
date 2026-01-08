@@ -14,7 +14,8 @@ import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators
 
 const _EXPECTED_URL_PATTERN = '/ViewResult/FLAGTestResult/';
 const EXPECTED_PERCENTAGE = '100.0%';
-const _EXPECTED_ASSESSMENT_NAME = 'practicestg_shyan';
+const EXPECTED_ASSESSMENT_NAME = process.env.EXPECTED_ASSESSMENT_NAME;
+const EXPECTED_INSTITUTION = process.env.Institution_zzcab;
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store Prod';
 const SCENARIO_NAME = 'Prod_PracticeTest_ReaderOff';
@@ -57,23 +58,28 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
     await browser.close();
   });
 
-  test('TC1: MU batch creation', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC1__MU_Batch_Creation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
-    atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
-
-    logger.separator('TC1: MU BATCH CREATION');
-
-    const stopTimer = logger.startTimer('Batch creation');
-    extractedBatchId = await batchCreation.createBatch();
-    stopTimer();
-
-    assertions.assertValidNumericId(extractedBatchId, 5);
-    logger.success(`Batch created with ID: ${extractedBatchId}`);
-    logger.separator();
-  });
+ 
+   test('TC1: MU batch creation', async ({}, testInfo) => {
+     logger = new Logger(page, 'TC1__MU_batch_creation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
+     atiLoginPage.setLogger(logger);
+     myATIPage.setLogger(logger);
+     assessmentPage.setLogger(logger);
+     assessmentPage.setLogger(logger);
+     assertions.setLogger(logger);
+ 
+     logger.separator('TC1: MU BATCH CREATION');
+ 
+     const stopTimer = logger.startTimer('Batch creation');
+     extractedBatchId = await batchCreation.createBatch(
+       EXPECTED_ASSESSMENT_NAME,
+       EXPECTED_INSTITUTION
+     );
+     stopTimer();
+ 
+     assertions.assertValidNumericId(extractedBatchId, 5);
+     logger.success(`Batch created with ID: ${extractedBatchId}`);
+     logger.separator();
+   });
 
   test('TC2: ATI login and verify Home page elements', async ({}, testInfo) => {
     logger = new Logger(page, 'TC2__ATI_Login_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });
@@ -88,8 +94,8 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
     logger.step('3. Verify Home page URL loaded');
 
     await page.goto(process.env.baseUrl);
-    await atiLoginPage.fillStuUserName(process.env.stuUsernamezzdev1);
-    await atiLoginPage.fillStuPassword(process.env.stuPasswordzzdev);
+    await atiLoginPage.fillStuUserName(process.env.studentUsernamezzcab!);
+    await atiLoginPage.fillStuPassword(process.env.studentPasswordzzcab!);
     await atiLoginPage.clickLogin();
     logger?.success('Logged into ATI with zzdev credentials');
 

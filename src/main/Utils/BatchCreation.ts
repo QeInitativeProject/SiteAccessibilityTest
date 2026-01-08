@@ -57,13 +57,11 @@ export class BatchCreation {
     await muLocators.addNewAssessmentButton.click();
 
     await this.muPage.waitForLoadState('load');
-    await this.muPage.waitForLoadState('domcontentloaded');
     this.logger?.debug('Page loaded, preparing to fill batch details');
 
     const institutionValue = institution || process.env.Institution || '';
     const assessmentValue = assessmentName || process.env.Assessment || '';
 
-    // Step 1: Select Institution
     this.logger?.step(`Selecting institution: ${institutionValue}`);
     await muLoginPage.selectDropdownByTypingWithHighlight(
       muLocators.institutionDropdown,
@@ -72,66 +70,6 @@ export class BatchCreation {
       'Institution'
     );
 
-    // Step 2: Verify Institution selection was successful
-    this.logger?.step('Verifying Institution dropdown value...');
-    try {
-      const selectedInstitution = await muLocators.institutionDropdown.inputValue();
-      this.logger?.info(`Institution dropdown value: "${selectedInstitution}"`);
-      
-      if (selectedInstitution && selectedInstitution.trim() !== '') {
-        this.logger?.success(`✅ Institution successfully selected: ${selectedInstitution}`);
-      } else {
-        this.logger?.warning('⚠️ Institution dropdown appears empty - may not have selected properly');
-      }
-    } catch (e) {
-      this.logger?.warning(`Could not verify Institution selection: ${e}`);
-    }
-
-    // Step 3: Check Assessment dropdown state BEFORE waiting (diagnostic)
-    try {
-      const initialDisabledState = await muLocators.assessmentDropdown.getAttribute('disabled');
-      this.logger?.info(`Assessment dropdown initial state - disabled: ${initialDisabledState !== null}`);
-    } catch (e) {
-      this.logger?.warning(`Could not check initial Assessment dropdown state: ${e}`);
-    }
-
-    // Step 4: Wait for postback after Institution selection
-    this.logger?.step('Waiting for ASP.NET postback to complete...');
-    
-    // Give time for postback to start and complete
-    await this.muPage.waitForTimeout(2000);
-    
-    // Wait for network to be idle (important for ASP.NET postback)
-    try {
-      await this.muPage.waitForLoadState('networkidle', { timeout: 20000 });
-      this.logger?.success('Network idle - postback completed');
-    } catch (e) {
-      this.logger?.info('Network idle timeout - postback may still be in progress');
-    }
-    
-    // Additional wait for DOM updates after postback
-    await this.muPage.waitForTimeout(2000);
-
-    // Step 5: Check if Assessment dropdown is now enabled (diagnostic logging only)
-    this.logger?.step('Checking Assessment dropdown state after postback...');
-    try {
-      const finalDisabledState = await muLocators.assessmentDropdown.getAttribute('disabled');
-      const isEnabled = finalDisabledState === null;
-      
-      if (isEnabled) {
-        this.logger?.success('✅ Assessment dropdown is ENABLED - ready for selection');
-      } else {
-        this.logger?.warning('⚠️ Assessment dropdown is still DISABLED - will try to select anyway');
-        
-        // Log all available options in Assessment dropdown for debugging
-        const optionCount = await muLocators.assessmentDropdown.locator('option').count();
-        this.logger?.info(`Assessment dropdown has ${optionCount} options`);
-      }
-    } catch (e) {
-      this.logger?.warning(`Could not verify Assessment dropdown state: ${e}`);
-    }
-
-    // Step 6: Proceed with Assessment selection (let the method handle timing)
     this.logger?.step(`Selecting assessment: ${assessmentValue}`);
     await muLoginPage.selectDropdownByTypingWithHighlight(
       muLocators.assessmentDropdown,

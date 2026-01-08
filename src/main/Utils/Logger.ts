@@ -92,9 +92,9 @@ export class Logger {
     this.attemptId = options?.attemptId || Date.now().toString();
     this.tcNumber = options?.tcNumber;
 
-    // Default options - Disable file logging by default, enable only on error
+    // Default options - Enable file logging by default
     this.options = {
-      enableFileLogging: options?.enableFileLogging ?? false, // Changed to false
+      enableFileLogging: options?.enableFileLogging ?? true, // Enabled by default
       enableConsoleLogging: options?.enableConsoleLogging ?? true,
       logDirectory: options?.logDirectory ?? 'test-results/logs',
       screenshotOnError: options?.screenshotOnError ?? true,
@@ -104,10 +104,10 @@ export class Logger {
       tcNumber: options?.tcNumber ?? '',
     };
 
-    // Don't initialize log file immediately - only create when error occurs
-    // if (this.options.enableFileLogging) {
-    //   this.initializeLogFile();
-    // }
+    // Initialize log file if file logging is enabled
+    if (this.options.enableFileLogging) {
+      this.initializeLogFile();
+    }
   }
 
   /**
