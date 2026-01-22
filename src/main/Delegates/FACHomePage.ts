@@ -1,4 +1,4 @@
-import type { Page, TestInfo } from 'playwright/test';
+import type { Page, TestInfo } from '@playwright/test';
 import { expect } from '@playwright/test';
 import { LoginPage } from './LoginPage';
 import { MyATIPage } from './MyATIPage';

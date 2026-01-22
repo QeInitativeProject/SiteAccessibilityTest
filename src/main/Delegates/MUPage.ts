@@ -1,4 +1,4 @@
-import type { Page, TestInfo } from 'playwright/test';
+import type { Page, TestInfo } from '@playwright/test';
 import { ATICommonMethod } from '../Utils/ATICommonMethod';
 import { Logger } from '../Utils/Logger';
 

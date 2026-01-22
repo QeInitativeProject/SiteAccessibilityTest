@@ -1,5 +1,5 @@
 import { test } from '@playwright/test';
-import type { Browser, BrowserContext, Page } from 'playwright';
+import { Browser, BrowserContext, Page } from '@playwright/test';
 import { LoginPage } from '@delegates/LoginPage';
 import { FACHomePage } from '@delegates/FACHomePage';
 import { MyATIPage } from '@delegates/MyATIPage';
@@ -41,8 +41,8 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
   let extractedBatchId: string;
 
   test.beforeAll(async () => {
-    const { chromium } = await import('playwright');
-    browser = await chromium.launch();
+    const { chromium } = await import('@playwright/test');
+    browser = await chromium.launch({ headless: process.env.CI ? true : false });
     context = await browser.newContext();
     page = await context.newPage();
     atiLoginPage = new LoginPage(page);
@@ -106,8 +106,8 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
 
     try {
       await page.goto(process.env.baseUrl!, { waitUntil: 'load' });
-      await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab!);
-      await atiLoginPage.fillfacPassword(process.env.facPasswordzzcab!);
+      await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab1!);
+      await atiLoginPage.fillfacPassword(process.env.facPassword!);
       await atiLoginPage.clickLogin();
       await page.waitForLoadState('load');
       await assertions.assertURLNotContains('/login');
@@ -191,8 +191,8 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOff', { tag: '@smoke' }, () => 
     
     // Student login
     const studentLoginPage = new LoginPage(studentTab);
-    await studentLoginPage.fillStuUserName(process.env.stuUsernamezzcab!);
-    await studentLoginPage.fillStuPassword(process.env.stuPasswordzzcab!);
+    await studentLoginPage.fillStuUserName(process.env.stuUsernamezzcab1!);
+    await studentLoginPage.fillStuPassword(process.env.stuPasswordzzcab1!);
     await studentLoginPage.clickLogin();
     await studentTab.waitForLoadState('load');
     

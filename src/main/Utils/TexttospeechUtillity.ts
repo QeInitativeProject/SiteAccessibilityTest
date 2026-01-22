@@ -1,5 +1,5 @@
 import type { TestInfo } from '@playwright/test';
-import type { FrameLocator, Page } from 'playwright';
+import { FrameLocator, Page } from '@playwright/test';
 import { Assertions } from './Assertion';
 import { Logger } from './Logger';
 import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators';

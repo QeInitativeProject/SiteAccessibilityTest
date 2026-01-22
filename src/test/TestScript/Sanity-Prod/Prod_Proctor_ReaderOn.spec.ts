@@ -1,5 +1,5 @@
 import { test } from '@playwright/test';
-import type { Browser, BrowserContext, Page } from 'playwright';
+import { Browser, BrowserContext, Page } from '@playwright/test';
 import { LoginPage } from '@delegates/LoginPage';
 import { FACHomePage } from '@delegates/FACHomePage';
 import { MyATIPage } from '@delegates/MyATIPage';
@@ -42,7 +42,7 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOn', { tag: '@sanity' }, () =
   let extractedBatchId: string;
  
   test.beforeAll(async () => {
-    const { chromium } = await import('playwright');
+    const { chromium } = await import('@playwright/test');
     browser = await chromium.launch();
     context = await browser.newContext();
     page = await context.newPage();

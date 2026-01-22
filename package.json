@@ -7,6 +7,7 @@
     "test:debug": "npx playwright test --debug",
     "test:report": "npx playwright show-report",
     "clean:artifacts": "node delete-old-playwright-artifacts.js",
+    "clear": "npm run clean:artifacts",
     "report": "playwright show-report",
     "type-check": "tsc --noEmit",
     "all": "npm run clean:artifacts && npx playwright test --workers=1",
@@ -62,9 +63,8 @@
     "@playwright/test": "^1.57.0",
     "@types/node": "^20.19.26",
     "moment": "^2.30.1",
-    "monocart-reporter": "^2.9.23",
     "nodemon": "^3.0.2",
-    "playwright": "^1.41.1",
+    "playwright": "^1.57.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
