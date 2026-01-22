@@ -1,5 +1,5 @@
 import { expect, type TestInfo } from '@playwright/test';
-import type { Page } from 'playwright';
+import { Page } from '@playwright/test';
 import { Logger } from '../Utils/Logger';
 import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators';
 

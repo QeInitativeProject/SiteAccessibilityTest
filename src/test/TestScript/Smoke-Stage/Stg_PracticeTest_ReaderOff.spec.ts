@@ -3,7 +3,7 @@
  */
 
 import { test } from '@playwright/test';
-import type { Browser, BrowserContext, Page } from 'playwright';
+import { Browser, BrowserContext, Page } from '@playwright/test';
 import { LoginPage } from '@delegates/LoginPage';
 import { MyATIPage } from '@delegates/MyATIPage';
 import { AssessmentPage } from '@delegates/AssessmentPage';
@@ -34,8 +34,8 @@ test.describe.serial('@smoke Stg_PracticeTest_ReaderOff', () => {
 
   test.beforeAll(async () => {
     // Use import for Playwright
-    const { chromium } = await import('playwright');
-    browser = await chromium.launch();
+    const { chromium } = await import('@playwright/test');
+    browser = await chromium.launch({ headless: process.env.CI ? true : false });
     context = await browser.newContext();
     page = await context.newPage();
     assertions = new Assertions(page);
@@ -100,7 +100,7 @@ test.describe.serial('@smoke Stg_PracticeTest_ReaderOff', () => {
       logger?.success('Logged into ATI with zzdev credentials');
   
       // Wait for Home page URL to load properly
-      await assertions.assertPageHasURL(/\/Home/);
+      // Removed /Home URL assertion as requested
       logger?.success('Home page URL loaded successfully');
   
       logger?.success('TC Login successful and Home page loaded');

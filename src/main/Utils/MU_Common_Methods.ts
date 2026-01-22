@@ -1,5 +1,5 @@
 import { expect, type TestInfo } from '@playwright/test';
-import type { Locator, Page } from 'playwright';
+import { Locator, Page } from '@playwright/test';
 import { MU_Batch_Creation_Locators } from '@locators/MU_Batch_Creation_Locators';
 import { Logger } from './Logger';
 

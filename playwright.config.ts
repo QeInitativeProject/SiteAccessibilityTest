@@ -31,6 +31,7 @@ export default defineConfig({
   fullyParallel: false,
 
   forbidOnly: !!process.env.CI,
+  // Retries only failed tests in CI (not the whole suite)
   retries: process.env.CI ? 2 : 0,
 
   // ✅ Workers for parallel execution
@@ -55,7 +56,7 @@ export default defineConfig({
   use: {
     navigationTimeout: 2 * 60000,
     actionTimeout: 3 * 60000,
-    headless: true,
+    headless: process.env.CI ? true : false,
     ignoreHTTPSErrors: true,
 
     trace: 'on-first-retry', // Automatic trace capture on retry/failure

@@ -1,5 +1,5 @@
 import { expect, type TestInfo } from '@playwright/test';
-import type { FrameLocator, Page } from 'playwright';
+import { FrameLocator, Page } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Logger } from './Logger';

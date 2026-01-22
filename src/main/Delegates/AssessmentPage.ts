@@ -1,4 +1,4 @@
-import type { Page, TestInfo } from 'playwright/test';
+import type { Page, TestInfo } from '@playwright/test';
 import { QnAUtil } from '../Utils/QnAUtil';
 import { TextToSpeechUtility } from '../Utils/TexttospeechUtillity';
 import { Logger } from '../Utils/Logger';
