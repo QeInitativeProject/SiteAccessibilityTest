@@ -84,7 +84,7 @@ regression:stage:
     ENV: "stage"
   script:
     - echo "🔬 Running Regression Tests on ${ENV} environment (Regression folder only)..."
-    - npx playwright test --grep @regression --testDir src/test/TestScript/Regression --workers=100%
+    - npx playwright test --grep @regression  src/test/TestScript/Regression --workers=100%
   when: manual
 
 # ==================== SANITY-PROD (Manual, Prod Only, Folder Restricted) ====================
