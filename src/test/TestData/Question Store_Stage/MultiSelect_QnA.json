@@ -1,0 +1,37 @@
+{
+  "assessments": {
+    "Stg_Multi_Select": {
+      "totalQuestions": 1,
+      "expectedPercentage": "100.0%",
+      "questions": [
+        {
+          "questionNumber": 1,
+          "answerOptions": ["10", "20"],
+          "questionType": "multiselect"
+        }
+      ]
+    },
+    "Stg_Multi_SelectDropdown": {
+      "totalQuestions": 3,
+      "expectedPercentage": "62.5%",
+      "questions": [
+        {
+          "questionText": "What is the normal heart rate of a newborn",
+          "dropdownAnswers": ["5-6 months", "5-6 months", "5-6 months", "12 months"],
+          "questionType": "dropdownTable",
+          "shouldFlag": true
+        },
+        {
+          "questionText": "RAL Testing Activity Statements 8",
+          "dropdownAnswers": ["K", "K", "K"],
+          "questionType": "multiSelectDropdown"
+        },
+        {
+          "questionText": "Copyright Word Report UAT Drop down cloze",
+          "dropdownAnswers": ["Correct", "Correct"],
+          "questionType": "clozeDropdown"
+        }
+      ]
+    }
+  }
+}

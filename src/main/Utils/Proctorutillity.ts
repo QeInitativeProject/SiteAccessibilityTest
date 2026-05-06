@@ -50,12 +50,16 @@ export class ProctorUtility {
    */
   fillAssessmentID = async (assessmentId: string): Promise<void> => {
     this.logger?.step(`Filling assessment ID: ${assessmentId}`);
-    await this.page.locator('//button[@aria-label="Close"]').click({ timeout: 3000 }).catch(() => this.logger?.info('Close button not found or already closed'));
+    await this.page.locator('//mat-label[starts-with(text(),"Search")]').click({ timeout: 3000 }).catch(() => this.logger?.info('Close button not found or already closed'));
     await this.page.locator('//mat-label[starts-with(text(),"Search")]').fill(assessmentId);
     await this.page.keyboard.press('Enter');
     await this.page.waitForTimeout(2000);
     await this.page.locator('//input[@type="checkbox"]').click();
-    await this.page.locator('(//button[@color="primary"])[3]').click();
+    //await this.page.locator('(//span[text()="CONTINUE"])[2]').click();
+    await this.page.locator('//button[@color="primary"]//span[text()="CONTINUE"]').click();
+
+
+    
     this.assessmentID = assessmentId;
     this.logger?.success(`Assessment ID filled: ${assessmentId}`);
   };
@@ -199,6 +203,16 @@ export class ProctorUtility {
     this.logger?.success('Student approved by proctor');
   };
 
+/**
+   * Resume student by proctor
+   */
+  resumeByProctor = async (): Promise<void> => {
+    //await this.page.locator('//span[text()="RESUME"]').click();
+    await this.page.locator('//span[text()="RESUME"]').click({ timeout: 8000 }).catch(() => this.logger?.info('Resume button not found'));
+    this.logger?.success('Student resumed by proctor');
+  };
+
+
   /**
    * Start the test for the student
    */
@@ -208,6 +222,18 @@ export class ProctorUtility {
     await this.page.waitForLoadState('load');
     this.logger?.success('Test started successfully');
   };
+
+ /**
+   * Resume the test for the student
+   */
+  resumeTest = async (): Promise<void> => {
+    await this.page.locator('(//div[@class="proctor-agree-controls"])[2]/button').click();
+    await this.page.locator('//button[@onclick="closeEnterFullscreenDialog()"]').click();
+    await this.page.waitForLoadState('load');
+    this.logger?.success('Test resumed successfully');
+  };
+
+
 
   /**
    * Close the guide/help page if it appears

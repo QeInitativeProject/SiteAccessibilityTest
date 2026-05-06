@@ -545,7 +545,7 @@ export class Assertions {
   async waitAndAssertDenyButtonVisible(timeout: number = 15000): Promise<void> {
     const denyButton = this.page.locator('//span[text()="DENY"]');
     this.logger?.info('Waiting for DENY button to be visible...');
-    await denyButton.waitFor({ state: 'visible', timeout });
+   // await denyButton.waitFor({ state: 'visible', timeout });
     await expect(denyButton).toBeVisible();
     await expect(denyButton).toBeEnabled();
     this.logger?.success('✅ DENY button is visible and enabled');
