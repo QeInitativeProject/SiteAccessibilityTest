@@ -176,7 +176,7 @@ export class StudentFacingPageLocators {
    * Used in: ATICommonMethod.clickOnAssessmentsTab()
    */
   get addProductButtons() {
-    return this.page.getByText('addAdd a Product');
+    return this.page.getByText('Add a Product');
   }
 
   /**
@@ -654,4 +654,10 @@ export class StudentFacingPageLocators {
   getAssessmentFrameByIdLocator(): FrameLocator {
     return this.page.frameLocator('#assessmentFrame');
   }
+
+  
+
+get overallPercentageScore() {
+  return this.page.locator('.reporting-header-score > span[data-atiid="individualScore"]');
+}
 }

@@ -2,6 +2,8 @@ import type { Page, TestInfo } from '@playwright/test';
 import { QnAUtil } from '../Utils/QnAUtil';
 import { TextToSpeechUtility } from '../Utils/TexttospeechUtillity';
 import { Logger } from '../Utils/Logger';
+import { Assertions } from '../Utils/Assertion';
+import { StudentFacingPageLocators } from '../Locator_Store/StudentFacing_Page_Locators';
 
 export class AssessmentPage {
   page: Page;
@@ -193,5 +195,129 @@ export class AssessmentPage {
    */
   validateCloseAndResetFunctionality = async (): Promise<void> => {
     await this.textToSpeechUtil.validateCloseAndResetFunctionality();
+  };
+
+  // ============================================
+  // Multi-Select Assessment Methods
+  // ============================================
+
+  /**
+   * Navigate to previous question and return to current question
+   * Used in: TC8 (Dropdown) - Previous button navigation validation
+   */
+  navigateToPreviousQuestionAndReturn = async (): Promise<void> => {
+    const questionFrame = this.page.frameLocator('#assessmentFrame');
+    
+    // Click Previous button to go back to first question
+    // Wait for button to be visible and clickable (has 'move-to-prev-content-active' class)
+    const previousBtn = questionFrame.locator('#movePrevious.move-to-prev-content-active');
+    await previousBtn.waitFor({ state: 'visible', timeout: 10000 });
+    await previousBtn.click();
+    this.logger?.success('✅ Clicked Previous button - navigated to first question');
+    
+    await this.page.waitForTimeout(5000);
+    
+    // Verify we are on the first question (it should be visible)
+    const stemText = questionFrame.locator('.stem-text');
+    await stemText.first().waitFor({ state: 'visible', timeout: 5000 });
+    this.logger?.success('✅ First question is displayed');
+    
+    // Click Continue to go forward again to second question
+    const continueBtn = questionFrame.locator('#moveNext');
+    await continueBtn.waitFor({ state: 'visible', timeout: 5000 });
+    await continueBtn.click();
+    this.logger?.success('✅ Clicked Continue - returned to second question');
+    
+    await this.page.waitForTimeout(2000);
+  };
+
+  /**
+   * Check for flagged question notification and finalize assessment
+   * Used in: TC11 (Dropdown) - Flagged notification and finalize
+   */
+  checkFlaggedNotificationAndFinalize = async (): Promise<void> => {
+    const questionFrame = this.page.frameLocator('#assessmentFrame');
+    
+    // Look for flagged question notification/count
+    const flaggedNotification = questionFrame.locator('text=/flagged|Flagged/i');
+    const hasNotification = await flaggedNotification.count() > 0;
+    
+    if (hasNotification) {
+      const flaggedText = await flaggedNotification.first().textContent();
+      this.logger?.success(`✅ Flagged question notification displayed: "${flaggedText}"`);
+    } else {
+      this.logger?.info('No flagged question notification found');
+    }
+    
+    // Verify Finalize and View Results button is visible
+    const finalizeBtn = questionFrame.locator('button.primary-button', { hasText: 'Finalize and View Results' });
+    await finalizeBtn.waitFor({ state: 'visible', timeout: 5000 });
+    this.logger?.success('✅ Finalize and View Results button is visible');
+    
+    // Click Finalize and View Results
+    await finalizeBtn.click();
+    this.logger?.success('✅ Clicked Finalize and View Results button');
+
+    // Click Continue button in confirmation dialog
+    const continueBtn = questionFrame.locator('button.secondary-button', { hasText: 'Continue' });
+    await continueBtn.waitFor({ state: 'visible', timeout: 5000 });
+    await continueBtn.click();
+    this.logger?.success('✅ Clicked Continue to confirm finalization');
+  };
+
+  /**
+   * Verify IPP page score and take screenshot
+   * Used in: TC12/TC10 - IPP score validation
+   */
+  verifyIPPScoreAndScreenshot = async (
+    expectedPercentage: string,
+    scenarioName: string,
+    batchId: string,
+    assertions: Assertions
+  ): Promise<void> => {
+    // Wait for IPP page to load
+    await this.page.waitForURL(/ViewResult|IPPTestResult/i, { timeout: 100000 });
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.page.waitForTimeout(3000);
+
+    // Use first() to avoid strict mode violation (2 elements with same attribute)
+    const scoreLocator = this.page.locator('.reporting-header-score > span[data-atiid="individualScore"]').first();
+    await scoreLocator.waitFor({ state: 'visible', timeout: 10000 });
+    const percentageValue = await scoreLocator.textContent();
+    const extractedPercentage = (percentageValue?.trim() || '') + '%';
+    assertions.assertPercentage(extractedPercentage, expectedPercentage);
+    this.logger?.success(`✅ IPP page shows ${expectedPercentage} score on UI`);
+
+    // Verify IPP heading
+    await this.verifyElementByRole('heading', 'Individual Performance Profile', 'IPP Page Heading');
+    
+    // Take screenshot
+    await this.takeScreenshot(scenarioName, batchId);
+    this.logger?.success('✅ Screenshot captured for IPP page');
+  };
+
+  /**
+   * Verify IPP page score using locator from StudentFacingPageLocators
+   * Used in: TC10 (Multi-Select) - IPP score validation  
+   */
+  verifyIPPScoreWithLocator = async (
+    locators: StudentFacingPageLocators,
+    expectedPercentage: string,
+    scenarioName: string,
+    batchId: string,
+    assertions: Assertions
+  ): Promise<void> => {
+    await assertions.waitAndAssertVisible(locators.overallPercentageScore);
+    const percentageValue = await locators.overallPercentageScore.textContent();
+    const extractedPercentage = (percentageValue?.trim() || '') + '%';
+    assertions.assertPercentage(extractedPercentage, expectedPercentage);
+    this.logger?.success(`✅ IPP page shows ${expectedPercentage} score on UI`);
+
+    // Verify IPP heading
+    await this.verifyElementByRole('heading', 'Individual Performance Profile', 'IPP Page Heading');
+    
+    // Take screenshot
+    await this.takeScreenshot(scenarioName, batchId);
+    this.logger?.success('✅ Screenshot captured for IPP page');
   };
 }

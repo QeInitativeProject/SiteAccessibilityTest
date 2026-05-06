@@ -83,6 +83,7 @@ export class ATICommonMethod {
   };
 
   clickOnAssessmentsTab = async () => {
+    await this.page.waitForTimeout(8000);
     this.logger?.step('Clicking on Assessments tab');
     // Find all "Add a Product" buttons and click the first visible one
     const addProductButtons = this.locators.addProductButtons;
