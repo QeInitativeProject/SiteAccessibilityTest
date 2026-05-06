@@ -245,15 +245,15 @@ export class MyATIPage {
     await this.page.waitForTimeout(3000);
     this.logger?.success('✅ Clicked on Assessments tab');
 
-    // Step 2 & 3: Look for the assessment name and click its Continue button
-    const assessmentContinueButton = this.page.locator(`//div[contains(@class,"description") and contains(text(),"${assessmentName}")]/ancestor::li//a[contains(text(),"Continue")]`).first();
+    // Step 2 & 3: Look for the assessment name and click its Continue or Retake button
+    const assessmentContinueButton = this.page.locator(`//div[contains(@class,"description") and contains(text(),"${assessmentName}")]/ancestor::li//a[contains(text(),"Continue") or contains(text(),"Retake")]`).first();
     await assessmentContinueButton.waitFor({ state: 'visible', timeout: 15000 });
     await assessmentContinueButton.click();
-    this.logger?.success(`✅ Clicked Continue on assessment: ${assessmentName}`);
+    this.logger?.success(`✅ Clicked Continue/Retake on assessment: ${assessmentName}`);
 
-    // Step 4: Click Continue button for the respective batch ID
-    const batchIdContinueButton = this.page.locator(`//span[contains(text(),"${batchId}")]/ancestor::li//div[contains(@class,"duplicate-action-proctored")]//a[contains(text(),"Continue")]`).first();
-    await batchIdContinueButton.waitFor({ state: 'visible', timeout: 15000 });
+    const batchIdContinueButton = this.page.locator(`(//span[contains(text(),"${batchId}")]/ancestor::li//div[contains(@class,"duplicate-action-proctored")])[1]`).first();
+   
+    // await batchIdContinueButton.waitFor({ state: 'visible', timeout: 15000 });
     await batchIdContinueButton.click();
     this.logger?.success(`✅ Clicked Continue for batch ID: ${batchId}`);
   };

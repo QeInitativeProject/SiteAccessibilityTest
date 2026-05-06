@@ -87,7 +87,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     }
   });
 
-  /*test('TC1: MU batch creation', async ({}, testInfo) => {
+  test('TC1: MU batch creation', async ({}, testInfo) => {
     logger = new Logger(page, 'TC1__MU_batch_creation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     atiLoginPage.setLogger(logger);
     facHomePage.setLogger(logger);
@@ -309,14 +309,14 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
       // Verify assessment iframe loaded
       const assessmentIframe = studentTab.frameLocator('iframe').first();
       await assessmentIframe.locator('body').waitFor({ state: 'visible', timeout: 30000 });
-      await studentTab.waitForTimeout(3000);
+      await studentTab.waitForTimeout(30000);
 
       logger.success('TC7 PASS: Faculty approved and student started test successfully');
     } catch (error: any) {
       await logger?.error('TC7 FAIL: ' + error.message, error);
       throw error;
     }
-  });
+  }); 
 
   test('TC8: Student accidentally closes the browser tab', async ({}, testInfo) => {
     logger = new Logger(page, 'TC8__Student_Closes_Tab', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
@@ -340,7 +340,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
       await logger?.error('TC8 FAIL: ' + error.message, error);
       throw error;
     }
-  }); */
+  });   
 
   test('TC9: Student logs back in and relaunches the same assessment', async ({}, testInfo) => {
     logger = new Logger(page, 'TC9__Student_Relogin_Relaunch', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
@@ -380,9 +380,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
       await studentTab.waitForLoadState('load');
       await studentTab.waitForTimeout(10000);
 
-      // Reload the same assessment using assessment name and batch ID
-    //  await myATIPage.reloadSameAssessment(EXPECTED_ASSESSMENT_NAME!, extractedBatchId.trim());
-      await myATIPage.reloadSameAssessment(EXPECTED_ASSESSMENT_NAME!, "27288941".trim());
+      await myATIPage.reloadSameAssessment(EXPECTED_ASSESSMENT_NAME!, extractedBatchId.trim());
 
       // Fill attestation page
       const studentProctorUtil = new ProctorUtility(studentTab);
