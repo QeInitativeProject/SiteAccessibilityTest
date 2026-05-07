@@ -12,14 +12,13 @@ import { BatchCreation } from '@utils/BatchCreation';
 const EXPECTED_ASSESSMENT_NAME = process.env.ProctoredAssessment;
 const EXPECTED_INSTITUTION = process.env.Institution_zzcab;
 const SCENARIO_NAME = 'Stg_Proctor_RelaunchAssessment';
-const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
-const ASSESSMENT_TYPE = 'Question Store_Stage';
+
 
 /**
  * Regression Test - Relaunch Assessment Flow
  * Description: Validate that after launching the assessment, if the student accidentally closes the browser tab,
  * then logs back in and relaunches the same assessment, "Resume" and "Deny" options should be visible on the proctor side
- * @author [Ashish Ranjan]
+ * @author [Ashok Singh]
  */
 
 test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@regression' }, () => {
@@ -87,7 +86,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     }
   });
 
-  test('TC1: MU batch creation', async ({}, testInfo) => {
+  test('TC1: MU batch creation', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC1__MU_batch_creation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     atiLoginPage.setLogger(logger);
     facHomePage.setLogger(logger);
@@ -113,7 +112,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     }
   });
 
-  test('TC2: Faculty login to ATI', async ({}, testInfo) => {
+  test('TC2: Faculty login to ATI', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC2__Faculty_login_to_ATI', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });
     atiLoginPage.setLogger(logger);
     facHomePage.setLogger(logger);
@@ -136,7 +135,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     }
   });
 
-  test('TC3: Navigate to Proctor Tab', async ({}, testInfo) => {
+  test('TC3: Navigate to Proctor Tab', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC3__Navigate_to_Proctor_Tab', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
     atiLoginPage.setLogger(logger);
     facHomePage.setLogger(logger);
@@ -157,7 +156,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     }
   });
 
-  test('TC4: Enter Assessment ID and Setup Proctoring', async ({}, testInfo) => {
+  test('TC4: Enter Assessment ID and Setup Proctoring', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC4__Enter_Assessment_ID_and_Setup_Proctoring', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
     atiLoginPage.setLogger(logger);
     facHomePage.setLogger(logger);
@@ -188,7 +187,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     }
   });
 
-  test('TC5: Start Proctoring Session and Student Login', async ({}, testInfo) => {
+  test('TC5: Start Proctoring Session and Student Login', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC5__Start_Proctoring_Session_and_Student_Login', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
     atiLoginPage.setLogger(logger);
     facHomePage.setLogger(logger);
@@ -224,7 +223,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     }
   });
 
-  test('TC6: Add Product - Enter Password and Complete', async ({}, testInfo) => {
+  test('TC6: Add Product - Enter Password and Complete', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(studentTab, 'TC6__Add_Product_Password_Entry', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
     
     // Initialize MyATI page and locators for student tab
@@ -285,7 +284,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     }
   });
 
-  test('TC7: Faculty Approves and Student Starts Test', async ({}, testInfo) => {
+  test('TC7: Faculty Approves and Student Starts Test', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC7__Approve_and_Start_Test', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
@@ -318,7 +317,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     }
   }); 
 
-  test('TC8: Student accidentally closes the browser tab', async ({}, testInfo) => {
+  test('TC8: Student accidentally closes the browser tab', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC8__Student_Closes_Tab', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
@@ -342,7 +341,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     }
   });   
 
-  test('TC9: Student logs back in and relaunches the same assessment', async ({}, testInfo) => {
+  test('TC9: Student logs back in and relaunches the same assessment', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC9__Student_Relogin_Relaunch', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
@@ -402,7 +401,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     }
   });
 
-  test('TC10: Validate RESUME and DENY buttons visible on proctor side', async ({}, testInfo) => {
+  test('TC10: Validate RESUME and DENY buttons visible on proctor side', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC10__Validate_Resume_Deny_Buttons', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC10' });
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
