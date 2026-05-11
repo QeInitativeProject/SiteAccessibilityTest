@@ -200,7 +200,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
     
-    
+
     try {
       await proctorUtil.startProctoring();
       await page.waitForLoadState('load');
@@ -615,7 +615,6 @@ const percentageValue = await locators.overallPercentageScore.textContent();
       } else {
         throw new Error(`Unexpected time format on IPP Page: "${trimmedTime}"`);
       }
-
       // Calculate actual elapsed time from recorded timestamps
       const actualElapsedSeconds = Math.floor((assessmentEndTime - assessmentStartTime) / 1000);
       logger.success(`Actual elapsed time: ${actualElapsedSeconds}s | IPP reported time: ${ippTimeInSeconds}s`);
