@@ -252,7 +252,6 @@ export class MyATIPage {
     this.logger?.success(`✅ Clicked Continue/Retake on assessment: ${assessmentName}`);
 
     const batchIdContinueButton = this.page.locator(`(//span[contains(text(),"${batchId}")]/ancestor::li//div[contains(@class,"duplicate-action-proctored")])[1]`).first();
-   
     // await batchIdContinueButton.waitFor({ state: 'visible', timeout: 15000 });
     await batchIdContinueButton.click();
     this.logger?.success(`✅ Clicked Continue for batch ID: ${batchId}`);

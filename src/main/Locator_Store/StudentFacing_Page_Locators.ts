@@ -667,6 +667,7 @@ export class StudentFacingPageLocators {
     return this.page.locator('div.close-button[aria-label="close"]').first();
   }
 
+
   /**
    * Assessment name displayed on IPP page
    */
@@ -674,6 +675,7 @@ export class StudentFacingPageLocators {
     return this.page.locator('.lesson-header-details ul li span').nth(1);
   }
 
+  
   /**
    * Time spent displayed on IPP page
    */

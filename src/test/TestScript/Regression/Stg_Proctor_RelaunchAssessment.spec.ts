@@ -200,6 +200,7 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
     
+    
     try {
       await proctorUtil.startProctoring();
       await page.waitForLoadState('load');

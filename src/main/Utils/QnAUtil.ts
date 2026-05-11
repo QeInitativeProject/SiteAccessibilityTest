@@ -1507,6 +1507,7 @@ export class QnAUtil {
       
       this.logger?.debug(`Checking Q${q + 1}: "${question.questionText.substring(0, 50)}..."`);
       
+      
       // Tier 1: Exact match
       if (jsonText === uiText) {
         this.logger?.success(`✓ Tier 1 MATCH (exact): "${question.questionText}"`);
