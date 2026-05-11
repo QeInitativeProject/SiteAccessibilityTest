@@ -16,8 +16,6 @@ import { QnAUtil } from '@utils/QnAUtil';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const _EXPECTED_URL_PATTERN = '/ViewResult/IPPTestResult/';
-const _EXPECTED_ASSESSMENT_NAME = 'multiselectstg_test';
 const QUESTION_ANSWER_FILE = 'MultiSelect_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store_Stage';
 const SCENARIO_NAME = 'Stg_Multi_Select';
@@ -30,7 +28,7 @@ const EXPECTED_PERCENTAGE = jsonData.assessments?.Stg_Multi_Select?.expectedPerc
 // Batch ID from environment variable
 const BATCH_ID = process.env.MultiSelectBatchId || '';
 
-test.describe.serial('@regression Stg_Multi_Select', () => {
+test.describe.serial('@regression Stg_Multi_Select', { tag: '@regression' }, () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;
@@ -67,7 +65,7 @@ test.describe.serial('@regression Stg_Multi_Select', () => {
     await browser.close();
   });
 
-  test('TC1: ATI login and verify Home page elements', async ({}, testInfo) => {
+  test('TC1: ATI login and verify Home page elements', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC1: ATI login and verify Home page elements', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     atiLoginPage.setLogger(logger);
     myATIPage.setLogger(logger);
@@ -94,7 +92,7 @@ test.describe.serial('@regression Stg_Multi_Select', () => {
   });
  
   
-  test('TC2: Verify Home page navigation elements', async ({}, testInfo) => {
+  test('TC2: Verify Home page navigation elements', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC2: Verify Home page navigation elements', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });
     myATIPage.setLogger(logger);
     
@@ -110,7 +108,7 @@ test.describe.serial('@regression Stg_Multi_Select', () => {
     }
   });   
 
-  test('TC3: Verify My ATI page functionality', async ({}, testInfo) => {
+  test('TC3: Verify My ATI page functionality', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC3: Verify My ATI page functionality', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
     myATIPage.setLogger(logger);
 
@@ -126,7 +124,7 @@ test.describe.serial('@regression Stg_Multi_Select', () => {
     } 
   }); 
 
-  test('TC4: Click on Assessments tab, verify Add Product dialog, enter credentials and continue', async ({}, testInfo) => {
+  test('TC4: Click on Assessments tab, verify Add Product dialog, enter credentials and continue', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC4: Add Product Dialog and Credentials', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
     myATIPage.setLogger(logger);
     
@@ -149,7 +147,7 @@ test.describe.serial('@regression Stg_Multi_Select', () => {
     }
   });
 
-  test('TC5: Verify assessment page and question interface', async ({}, testInfo) => {
+  test('TC5: Verify assessment page and question interface', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC5: Verify assessment page and question interface', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
     
     try {
@@ -169,7 +167,7 @@ test.describe.serial('@regression Stg_Multi_Select', () => {
   }); 
 
 
-  test('TC6: Pause and Resume MultiItemAssessment', async ({}, testInfo) => {
+  test('TC6: Pause and Resume MultiItemAssessment', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC6: Pause and Resume MultiItemAssessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
     
     try {
@@ -188,7 +186,7 @@ test.describe.serial('@regression Stg_Multi_Select', () => {
 
 
 
-  test('TC7: Validate multi-select question functionality', async ({}, testInfo) => {
+  test('TC7: Validate multi-select question functionality', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC7: Validate multi-select question functionality', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
     qnaUtil.setLogger(logger);
     
@@ -209,7 +207,7 @@ test.describe.serial('@regression Stg_Multi_Select', () => {
 
 
 
-  test('TC8: Finish assessment and IPP page loaded', async ({}, testInfo) => {
+  test('TC8: Finish assessment and IPP page loaded', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC8: Finish assessment and IPP page loaded', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
     
     try {
@@ -226,7 +224,7 @@ test.describe.serial('@regression Stg_Multi_Select', () => {
     }
   });
 
-  test('TC9: IPP page shows multi-select score', async ({}, testInfo) => {
+  test('TC9: IPP page shows multi-select score', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC9: IPP page shows multi-select score', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
     assessmentPage.setLogger(logger);
     

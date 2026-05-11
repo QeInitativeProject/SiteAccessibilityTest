@@ -226,4 +226,34 @@ export class MyATIPage {
     await this.waitForPageLoadAndVerifyNavigation('/Assessment');
     this.logger?.success('✅ Navigated to Assessment page');
   };
+
+  /**
+   * Reload same assessment after student accidentally closed the tab
+   * Steps:
+   * 1. Click on Assessments tab
+   * 2. Look for the assessment name
+   * 3. Click Continue on that assessment name
+   * 4. Click Continue for the respective batch ID
+   * @param assessmentName - The assessment name to look for
+   * @param batchId - The batch ID to select from multiple instances
+   */
+  reloadSameAssessment = async (assessmentName: string, batchId: string): Promise<void> => {
+    this.logger?.step(`Reloading assessment: ${assessmentName} with batch ID: ${batchId}`);
+
+    // Step 1: Click on Assessments tab
+    await this.page.getByRole('link', { name: 'Assessments Tab: Select to' }).click();
+    await this.page.waitForTimeout(3000);
+    this.logger?.success('✅ Clicked on Assessments tab');
+
+    // Step 2 & 3: Look for the assessment name and click its Continue or Retake button
+    const assessmentContinueButton = this.page.locator(`//div[contains(@class,"description") and contains(text(),"${assessmentName}")]/ancestor::li//a[contains(text(),"Continue") or contains(text(),"Retake")]`).first();
+    await assessmentContinueButton.waitFor({ state: 'visible', timeout: 15000 });
+    await assessmentContinueButton.click();
+    this.logger?.success(`✅ Clicked Continue/Retake on assessment: ${assessmentName}`);
+
+    const batchIdContinueButton = this.page.locator(`(//span[contains(text(),"${batchId}")]/ancestor::li//div[contains(@class,"duplicate-action-proctored")])[1]`).first();
+    // await batchIdContinueButton.waitFor({ state: 'visible', timeout: 15000 });
+    await batchIdContinueButton.click();
+    this.logger?.success(`✅ Clicked Continue for batch ID: ${batchId}`);
+  };
 }

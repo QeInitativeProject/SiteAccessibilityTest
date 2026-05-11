@@ -16,8 +16,6 @@ import { QnAUtil } from '@utils/QnAUtil';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const _EXPECTED_URL_PATTERN = '/ViewResult/IPPTestResult/';
-const _EXPECTED_ASSESSMENT_NAME = 'MultiSelectDropdown';
 const QUESTION_ANSWER_FILE = 'MultiSelect_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store_Stage';
 const SCENARIO_NAME = 'Stg_Multi_SelectDropdown';
@@ -30,7 +28,7 @@ const EXPECTED_PERCENTAGE = jsonData.assessments?.Stg_Multi_SelectDropdown?.expe
 // Batch ID from environment variable
 const BATCH_ID = process.env.MultiSelectDropdownBatchId || '';
 
-test.describe.serial('@regression Stg_Multi_SelectDropdown', () => {
+test.describe.serial('@regression Stg_Multi_SelectDropdown', { tag: '@regression' }, () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;
@@ -67,7 +65,7 @@ test.describe.serial('@regression Stg_Multi_SelectDropdown', () => {
     await browser.close();
   });
 
-  test('TC1: ATI login and verify Home page elements', async ({}, testInfo) => {
+  test('TC1: ATI login and verify Home page elements', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC1: ATI login and verify Home page elements', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     atiLoginPage.setLogger(logger);
     myATIPage.setLogger(logger);
@@ -94,7 +92,7 @@ test.describe.serial('@regression Stg_Multi_SelectDropdown', () => {
   });
  
   
-  test('TC2: Verify Home page navigation elements', async ({}, testInfo) => {
+  test('TC2: Verify Home page navigation elements', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC2: Verify Home page navigation elements', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });
     myATIPage.setLogger(logger);
     
@@ -110,7 +108,7 @@ test.describe.serial('@regression Stg_Multi_SelectDropdown', () => {
     }
   });    
 
-  test('TC3: Verify My ATI page functionality', async ({}, testInfo) => {
+  test('TC3: Verify My ATI page functionality', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC3: Verify My ATI page functionality', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
     myATIPage.setLogger(logger);
 
@@ -126,7 +124,7 @@ test.describe.serial('@regression Stg_Multi_SelectDropdown', () => {
     } 
   }); 
 
-  test('TC4: Click on Assessments tab, verify Add Product dialog, enter credentials and continue', async ({}, testInfo) => {
+  test('TC4: Click on Assessments tab, verify Add Product dialog, enter credentials and continue', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC4: Add Product Dialog and Credentials', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
     myATIPage.setLogger(logger);
     
@@ -149,7 +147,7 @@ test.describe.serial('@regression Stg_Multi_SelectDropdown', () => {
     }
   });
 
-  test('TC5: Verify assessment page and question interface', async ({}, testInfo) => {
+  test('TC5: Verify assessment page and question interface', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC5: Verify assessment page and question interface', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
     
     try {
@@ -168,7 +166,7 @@ test.describe.serial('@regression Stg_Multi_SelectDropdown', () => {
     }
   }); 
 
-  test('TC6: Answer first Dropdown question (flag and skip if shouldFlag, otherwise answer)', async ({}, testInfo) => {
+  test('TC6: Answer first Dropdown question (flag and skip if shouldFlag, otherwise answer)', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC6: Answer first Dropdown question', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
     qnaUtil.setLogger(logger);
     
@@ -187,7 +185,7 @@ test.describe.serial('@regression Stg_Multi_SelectDropdown', () => {
     }
   });
 
-  test('TC7: Navigate to previous question, verify, and return to current question', async ({}, testInfo) => {
+  test('TC7: Navigate to previous question, verify, and return to current question', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC7: Navigate to previous question', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
     assessmentPage.setLogger(logger);
     
@@ -203,7 +201,7 @@ test.describe.serial('@regression Stg_Multi_SelectDropdown', () => {
     }
   });
 
-  test('TC8: Answer second Dropdown question (flag and skip if shouldFlag, otherwise answer)', async ({}, testInfo) => {
+  test('TC8: Answer second Dropdown question (flag and skip if shouldFlag, otherwise answer)', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC8: Answer second Dropdown question', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
     qnaUtil.setLogger(logger);
     
@@ -222,7 +220,7 @@ test.describe.serial('@regression Stg_Multi_SelectDropdown', () => {
     }
   });
 
-  test('TC9: Answer third Dropdown question (flag and skip if shouldFlag, otherwise answer)', async ({}, testInfo) => {
+  test('TC9: Answer third Dropdown question (flag and skip if shouldFlag, otherwise answer)', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC9: Answer third Dropdown question', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
     qnaUtil.setLogger(logger);
     
@@ -241,7 +239,7 @@ test.describe.serial('@regression Stg_Multi_SelectDropdown', () => {
     }
   });
 
-  test('TC10: Check for flagged Dropdown question notification and complete assessment', async ({}, testInfo) => {
+  test('TC10: Check for flagged Dropdown question notification and complete assessment', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC10: Check for flagged Dropdown question notification and complete assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC10' });
     assessmentPage.setLogger(logger);
     
@@ -257,7 +255,7 @@ test.describe.serial('@regression Stg_Multi_SelectDropdown', () => {
     }
   });
 
-  test('TC11: Verify percentage score on IPP page', async ({}, testInfo) => {
+  test('TC11: Verify percentage score on IPP page', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC11: Verify percentage score on IPP page', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC11' });
     assessmentPage.setLogger(logger);
     

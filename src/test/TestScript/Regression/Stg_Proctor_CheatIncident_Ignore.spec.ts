@@ -19,10 +19,10 @@ const EXPECTED_PERCENTAGE = '100.0%';
 /**
  * Regression Test - Proctor Cheat Incident Ignore Flow
  * Description: Validate that when faculty/proctor ignores the incident, student should be able to resume the test
- * @author [Ashish Ranjan]
+ * @author [Ashok Singh]
  */
 
-test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke' }, () => {
+test.describe.serial('@regression - Stg_Proctor_CheatIncident_Ignore', { tag: '@regression' }, () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;
@@ -87,7 +87,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC1: MU batch creation', async ({}, testInfo) => {
+  test('TC1: MU batch creation', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC1__MU_batch_creation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     atiLoginPage.setLogger(logger);
     facHomePage.setLogger(logger);
@@ -113,7 +113,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC2: Faculty login to ATI', async ({}, testInfo) => {
+  test('TC2: Faculty login to ATI', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC2__Faculty_login_to_ATI', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });
     atiLoginPage.setLogger(logger);
     facHomePage.setLogger(logger);
@@ -136,7 +136,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC3: Navigate to Proctor Tab', async ({}, testInfo) => {
+  test('TC3: Navigate to Proctor Tab', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC3__Navigate_to_Proctor_Tab', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
     atiLoginPage.setLogger(logger);
     facHomePage.setLogger(logger);
@@ -157,7 +157,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC4: Enter Assessment ID and Setup Proctoring', async ({}, testInfo) => {
+  test('TC4: Enter Assessment ID and Setup Proctoring', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC4__Enter_Assessment_ID_and_Setup_Proctoring', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
     atiLoginPage.setLogger(logger);
     facHomePage.setLogger(logger);
@@ -188,7 +188,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC5: Start Proctoring Session and Student Login', async ({}, testInfo) => {
+  test('TC5: Start Proctoring Session and Student Login', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC5__Start_Proctoring_Session_and_Student_Login', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
     atiLoginPage.setLogger(logger);
     facHomePage.setLogger(logger);
@@ -224,7 +224,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC6: Add Product - Enter Password and Complete', async ({}, testInfo) => {
+  test('TC6: Add Product - Enter Password and Complete', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(studentTab, 'TC6__Add_Product_Password_Entry', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
     
     // Initialize MyATI page and locators for student tab
@@ -285,7 +285,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC7: Resume Test', async ({}, testInfo) => {
+  test('TC7: Resume Test', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC7__Resume_Test', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
@@ -313,7 +313,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC8: Create Cheat Incident in Student Portal', async ({}, testInfo) => {
+  test('TC8: Create Cheat Incident in Student Portal', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(studentTab, 'TC8__Create_Cheat_Incident', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
     assessmentPage.setLogger(logger);
     
@@ -355,7 +355,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC9: Faculty Ignores the Incident', async ({}, testInfo) => {
+  test('TC9: Faculty Ignores the Incident', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC9__Faculty_Ignores_Incident', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
@@ -379,7 +379,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC10: Student Resumes Assessment', async ({}, testInfo) => {
+  test('TC10: Student Resumes Assessment', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(studentTab, 'TC10__Student_Resumes_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC10' });
     assessmentPage.setLogger(logger);
 
@@ -403,7 +403,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC11: Answer assessment', async ({}, testInfo) => {
+  test('TC11: Answer assessment', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(studentTab, 'TC11__Answer_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC11' });
     assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
@@ -417,7 +417,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC12: Finish assessment and IPP page loaded', async ({}, testInfo) => {
+  test('TC12: Finish assessment and IPP page loaded', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(studentTab, 'TC12__Finalize_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC12' });
     assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
@@ -431,7 +431,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC13: IPP page shows 100% score', async ({}, testInfo) => {
+  test('TC13: IPP page shows 100% score', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(studentTab, 'TC13__IPP_Score_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC13' });
     assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
@@ -458,7 +458,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC14: Validate current date is reflecting correctly on IPP', async ({}, testInfo) => {
+  test('TC14: Validate current date is reflecting correctly on IPP', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(studentTab, 'TC14__IPP_Date_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC14' });
     assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
@@ -485,7 +485,7 @@ test.describe.serial('@Smoke - Stg_Proctor_CheatIncident_Ignore', { tag: '@smoke
     }
   });
 
-  test('TC15: Validate proctor side shows same score with Completed status', async ({}, testInfo) => {
+  test('TC15: Validate proctor side shows same score with Completed status', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC15__Proctor_Score_Status_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC15' });
     proctorUtil.setLogger(logger);
     assertions.setLogger(logger);

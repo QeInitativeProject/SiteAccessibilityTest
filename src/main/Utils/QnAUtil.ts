@@ -6,6 +6,110 @@ import { Logger } from './Logger';
 import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators';
 import { Assertions } from './Assertion';
 
+export type QuestionType =
+  | 'multipleChoice'
+  | 'multipleSelect'
+  | 'dropdown'
+  | 'clozeDropdown'
+  | 'dragAndDrop'
+  | 'bowtie'
+  | 'fillInBlankAlpha'
+  | 'fillInBlankNumeric'
+  | 'freeFormEasy'
+  | 'highlightText'
+  | 'highlightTable'
+  | 'hotspotHybrid'
+  | 'likert'
+  | 'matrixMultipleChoice'
+  | 'matrixMultipleResponse'
+  | 'orderedResponse'
+  | 'exhibit'
+  | 'unknown';
+
+/**
+ * Detects the question type from the live DOM inside the assessment iframe.
+ */
+class QuestionTypeDetector {
+  private logger?: Logger;
+
+  constructor(logger?: Logger) {
+    this.logger = logger;
+  }
+
+  async detect(frame: FrameLocator): Promise<QuestionType> {
+    try {
+      // Bowtie: has left/center/right drop zones
+      if (await frame.locator('[class*="bowtie"], [data-testid*="bowtie"]').count() > 0) {
+        return 'bowtie';
+      }
+      // Ordered response / drag-and-drop list
+      if (await frame.locator('[class*="ordered-response"], [data-testid*="ordered"]').count() > 0) {
+        return 'orderedResponse';
+      }
+      // Drag and drop
+      if (await frame.locator('[draggable="true"]').count() > 0) {
+        if (await frame.locator('[class*="drag"], [data-testid*="drag"]').count() > 0) {
+          return 'dragAndDrop';
+        }
+      }
+      // Highlight table
+      if (await frame.locator('table[class*="highlight"], [data-testid*="highlight-table"]').count() > 0) {
+        return 'highlightTable';
+      }
+      // Matrix multiple response
+      if (await frame.locator('[class*="matrix"]').count() > 0) {
+        const checkboxes = await frame.locator('[class*="matrix"] input[type="checkbox"]').count();
+        if (checkboxes > 0) return 'matrixMultipleResponse';
+        return 'matrixMultipleChoice';
+      }
+      // Likert
+      if (await frame.locator('[class*="likert"], [data-testid*="likert"]').count() > 0) {
+        return 'likert';
+      }
+      // Hotspot
+      if (await frame.locator('[class*="hotspot"], [data-testid*="hotspot"]').count() > 0) {
+        return 'hotspotHybrid';
+      }
+      // Highlight text
+      if (await frame.locator('[class*="highlight-text"], [data-testid*="highlight-text"]').count() > 0) {
+        return 'highlightText';
+      }
+      // Cloze dropdown
+      if (await frame.locator('select[class*="cloze"], [data-testid*="cloze"]').count() > 0) {
+        return 'clozeDropdown';
+      }
+      // Dropdown
+      if (await frame.locator('select').count() > 0) {
+        return 'dropdown';
+      }
+      // Fill in blank numeric
+      if (await frame.locator('input[type="number"]').count() > 0) {
+        return 'fillInBlankNumeric';
+      }
+      // Fill in blank alpha
+      if (await frame.locator('input[type="text"]').count() > 0) {
+        return 'fillInBlankAlpha';
+      }
+      // Free form / textarea
+      if (await frame.locator('textarea').count() > 0) {
+        return 'freeFormEasy';
+      }
+      // Multiple select (checkboxes)
+      if (await frame.locator('input[type="checkbox"]').count() > 0) {
+        return 'multipleSelect';
+      }
+      // Exhibit
+      if (await frame.locator('[class*="exhibit"], [data-testid*="exhibit"]').count() > 0) {
+        return 'exhibit';
+      }
+      // Default: multiple choice (radio buttons or clickable options)
+      return 'multipleChoice';
+    } catch (e: any) {
+      this.logger?.info(`QuestionTypeDetector: detection error — ${e.message}`);
+      return 'unknown';
+    }
+  }
+}
 
 /**
  * QnAUtil - Question and Answer Utility Class
@@ -1403,6 +1507,7 @@ export class QnAUtil {
       
       this.logger?.debug(`Checking Q${q + 1}: "${question.questionText.substring(0, 50)}..."`);
       
+      
       // Tier 1: Exact match
       if (jsonText === uiText) {
         this.logger?.success(`✓ Tier 1 MATCH (exact): "${question.questionText}"`);
@@ -2153,6 +2258,7 @@ export class QnAUtil {
     const totalQuestions: number = data.totalQuestions ?? questions.length;
 
     this.logger?.info(`Total questions to answer: ${totalQuestions}`);
+ 
 
     const detector = new QuestionTypeDetector(this.logger);
     const frame = this.locators.getAssessmentFrameLocator();

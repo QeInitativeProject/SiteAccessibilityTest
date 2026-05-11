@@ -655,9 +655,38 @@ export class StudentFacingPageLocators {
     return this.page.frameLocator('#assessmentFrame');
   }
 
-  
+  // ============================================
+  // IPP PAGE DETAIL LOCATORS
+  // Used in: IPP page validation test cases
+  // ============================================
 
-get overallPercentageScore() {
-  return this.page.locator('.reporting-header-score > span[data-atiid="individualScore"]');
+  /**
+   * Close button on IPP page
+   */
+  get ippCloseButton() {
+    return this.page.locator('div.close-button[aria-label="close"]').first();
+  }
+
+
+  /**
+   * Assessment name displayed on IPP page
+   */
+  get ippAssessmentName() {
+    return this.page.locator('.lesson-header-details ul li span').nth(1);
+  }
+
+  
+  /**
+   * Time spent displayed on IPP page
+   */
+  get ippTimeSpent() {
+    return this.page.locator('.reporting-header-timespent > span').first();
+  }
+
+  /**
+   * Overall percentage score on IPP page
+   */
+  get overallPercentageScore() {
+  return this.page.locator('.ipp-test-reporting-header-score > span').first();
 }
 }
