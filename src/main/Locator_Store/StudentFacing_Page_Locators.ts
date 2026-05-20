@@ -274,7 +274,7 @@ export class StudentFacingPageLocators {
    * Used in: TC6, TC10 - Question navigation
    */
   getContinueButton() {
-    return this.assessmentFrame.getByRole('button', { name: 'Continue To Next Question' });
+      return this.assessmentFrame.getByRole('button', { name: 'Continue To Next Question' });
   }
 
   /**

@@ -320,4 +320,16 @@ export class AssessmentPage {
     await this.takeScreenshot(scenarioName, batchId);
     this.logger?.success('✅ Screenshot captured for IPP page');
   };
+
+   /**
+   * Smart answer assessment - auto-detects question types  and answers accordingly
+   * Supports all item types: multipleChoice, multipleSelect, dropdown, clozeDropdown,
+   * dragAndDrop, bowtie, fillInBlank, highlightText, highlightTable, hotspot, matrix, orderedResponse, exhibit
+   */
+  smartAnswerAssessment = async (
+    jsonFileName: string,
+    assessmentType: string = 'Question Store_Stage'
+  ): Promise<void> => {
+    await this.qnaUtil.smartAnswerAssessment(jsonFileName, assessmentType);
+  };
 }

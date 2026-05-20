@@ -302,6 +302,50 @@ export class QnAUtil {
   };
 
   /**
+   * Wait for the question text in the DOM to change from the previous value.
+   * This ensures the next question has fully loaded after clicking Continue.
+   */
+  private waitForQuestionToChange = async (
+    frame: FrameLocator,
+    previousText: string
+  ): Promise<void> => {
+    const maxWait = 10000; // 10s max
+    const pollInterval = 300;
+    let elapsed = 0;
+
+    while (elapsed < maxWait) {
+      await this.page.waitForTimeout(pollInterval);
+      elapsed += pollInterval;
+
+      try {
+        const selectors = [
+          this.locators.getQuestionTextSelector1(),
+          this.locators.getQuestionTextSelector2(),
+          this.locators.getQuestionTextSelector3(),
+          this.locators.getQuestionTextSelector4(),
+        ];
+
+        for (const selector of selectors) {
+          const count = await selector.count();
+          if (count > 0) {
+            const currentText = (await selector.first().textContent())?.trim() || '';
+            if (currentText && currentText !== previousText) {
+              this.logger?.debug(`Question changed after ${elapsed}ms`);
+              return;
+            }
+            break;
+          }
+        }
+      } catch {
+        // DOM might be transitioning, keep waiting
+      }
+    }
+
+    // If we get here, question didn't change - might be last question or assessment ended
+    this.logger?.debug(`Question did not change after ${maxWait}ms (may be end of assessment)`);
+  };
+
+  /**
    * Get answer for a question from the map
    * @param questionText - The question text
    * @param map - Map containing question-answer pairs
@@ -1308,6 +1352,9 @@ export class QnAUtil {
   ): Promise<void> => {
     this.logger?.info(`🔲 Selecting ${answerOptions.length} checkbox options: ${answerOptions.join(', ')}`);
 
+    // Track already-clicked container indices to avoid toggling the same checkbox off
+    const clickedIndices = new Set<number>();
+
     for (const answer of answerOptions) {
       let found = false;
   
@@ -1317,16 +1364,21 @@ export class QnAUtil {
           const choiceCount = await answerChoices.count();
           
           for (let idx = 0; idx < choiceCount; idx++) {
+            // Skip containers already clicked (prevents toggling off on duplicate answers like ["K", "K"])
+            if (clickedIndices.has(idx)) continue;
+
             const choiceContainer = answerChoices.nth(idx);
-            const choiceText = await choiceContainer.textContent();
+            const choiceText = (await choiceContainer.textContent() || '').trim();
             
-            if (choiceText && choiceText.includes(answer)) {
+            // Use exact match: check if the trimmed text equals the answer exactly
+            if (choiceText === answer) {
               // Try Angular Material checkbox first (most common in this app)
-              const matCheckbox = choiceContainer.locator('mat-checkbox, .mat-checkbox-inner-container, .mat-checkbox-label');
+              const matCheckbox = choiceContainer.locator('mat-checkbox');
               if (await matCheckbox.count() > 0) {
                 await matCheckbox.first().click({ timeout: 3000 });
                 found = true;
-                this.logger?.success(`✅ Clicked mat-checkbox for: "${answer}"`);
+                clickedIndices.add(idx);
+                this.logger?.success(`✅ Clicked mat-checkbox for: "${answer}" (idx ${idx})`);
                 break;
               }
               
@@ -1335,7 +1387,8 @@ export class QnAUtil {
               if (await checkbox.count() > 0) {
                 await checkbox.first().click({ timeout: 3000 });
                 found = true;
-                this.logger?.success(`✅ Clicked checkbox via container: "${answer}"`);
+                clickedIndices.add(idx);
+                this.logger?.success(`✅ Clicked checkbox via container: "${answer}" (idx ${idx})`);
                 break;
               }
             }
@@ -1345,13 +1398,48 @@ export class QnAUtil {
         }
       }
 
+      // Strategy 2: Loose match with includes() for longer answer texts (skip for short answers)
+      if (!found && answer.length > 2) {
+        try {
+          const answerChoices = this.locators.getAnswerChoices();
+          const choiceCount = await answerChoices.count();
+          
+          for (let idx = 0; idx < choiceCount; idx++) {
+            if (clickedIndices.has(idx)) continue;
+            const choiceContainer = answerChoices.nth(idx);
+            const choiceText = (await choiceContainer.textContent() || '').trim();
+            
+            if (choiceText && choiceText.includes(answer)) {
+              const matCheckbox = choiceContainer.locator('mat-checkbox');
+              if (await matCheckbox.count() > 0) {
+                await matCheckbox.first().click({ timeout: 3000 });
+                found = true;
+                clickedIndices.add(idx);
+                this.logger?.success(`✅ Clicked mat-checkbox (loose match) for: "${answer}" (idx ${idx})`);
+                break;
+              }
+              const checkbox = choiceContainer.locator('input[type="checkbox"]');
+              if (await checkbox.count() > 0) {
+                await checkbox.first().click({ timeout: 3000 });
+                found = true;
+                clickedIndices.add(idx);
+                this.logger?.success(`✅ Clicked checkbox (loose match) for: "${answer}" (idx ${idx})`);
+                break;
+              }
+            }
+          }
+        } catch (e) {
+          this.logger?.debug(`Loose container strategy failed for "${answer}": ${e}`);
+        }
+      }
+
       // Strategy 3: Find by exact text match and click
       if (!found) {
         try {
-          const textElement = frame.getByText(answer, { exact: false });
+          const textElement = frame.getByText(answer, { exact: true });
           if (await textElement.count() > 0) {
             // Look for nearby checkbox
-            const parent = textElement.locator('xpath=ancestor::label | ancestor::mat-checkbox | ancestor::div[contains(@class, "checkbox")]').first();
+            const parent = textElement.first().locator('xpath=ancestor::label | ancestor::mat-checkbox | ancestor::div[contains(@class, "checkbox")]').first();
             if (await parent.count() > 0) {
               await parent.click({ timeout: 3000 });
               found = true;
@@ -1507,7 +1595,6 @@ export class QnAUtil {
       
       this.logger?.debug(`Checking Q${q + 1}: "${question.questionText.substring(0, 50)}..."`);
       
-      
       // Tier 1: Exact match
       if (jsonText === uiText) {
         this.logger?.success(`✓ Tier 1 MATCH (exact): "${question.questionText}"`);
@@ -1521,8 +1608,8 @@ export class QnAUtil {
       }
       
       // Tier 3: Key word matching - compare significant words
-      const jsonWords = jsonText.split(/\s+/).filter(w => w.length > 3);
-      const uiWords = uiText.split(/\s+/).filter(w => w.length > 3);
+      const jsonWords = jsonText.split(/\s+/).filter((w: string) => w.length > 3);
+      const uiWords = uiText.split(/\s+/).filter((w: string) => w.length > 3);
       
       let matchCount = 0;
       for (const jWord of jsonWords) {
@@ -2127,7 +2214,7 @@ export class QnAUtil {
         let kOptionFound = false;
         for (let j = 0; j < optionCount; j++) {
           const option = allOptionsInList.nth(j);
-          const optionContent = option.locator('.option-list-content p');
+          const optionContent = option.locator('.option-list-content p, .option-list-content');
           const optionText = await optionContent.textContent();
           
           this.logger?.debug(`Option ${j + 1} text: "${optionText?.trim()}"`);
@@ -2237,8 +2324,8 @@ export class QnAUtil {
    *     { "questionNumber": 11,"questionType": "highlightTable",       "answers": [{"row":0,"col":1}] },
    *     { "questionNumber": 12,"questionType": "hotspotHybrid",        "answers": [{"x":100,"y":150}] },
    *     { "questionNumber": 13,"questionType": "likert",               "answers": ["Agree"] },
-   *     { "questionNumber": 14,"questionType": "matrixMultipleChoice", "answers": [{"row":"Med A","col":"Appropriate"}] },
-   *     { "questionNumber": 15,"questionType": "matrixMultipleResponse","answers": [{"row":"F1","col":"Action A"}] },
+   *     { "questionNumber": 14,"questionType": "matrixMultipleChoice", "answers": [{"row":"A","col":"A"},{"row":"A","col":"B"}] },
+   *     { "questionNumber": 15,"questionType": "matrixMultipleResponse","answers": [{"row":"B","col":["Test B"]},{"row":"Both","col":["Test A","Test B"]},{"row":"None","col":[]},{"row":"A","col":["Test A"]}] },
    *     { "questionNumber": 16,"questionType": "orderedResponse",      "answers": ["Step 3","Step 1","Step 2"] },
    *     { "questionNumber": 17,"questionType": "exhibit",              "answers": ["Option B"], "exhibitUnderlyingType": "multipleChoice" }
    *   ]
@@ -2255,62 +2342,141 @@ export class QnAUtil {
 
     const data = this.loadUnifiedJson(jsonFileName, assessmentType);
     const questions: any[] = Array.isArray(data.questions) ? data.questions : [];
-    const totalQuestions: number = data.totalQuestions ?? questions.length;
-
-    this.logger?.info(`Total questions to answer: ${totalQuestions}`);
- 
 
     const detector = new QuestionTypeDetector(this.logger);
     const frame = this.locators.getAssessmentFrameLocator();
 
     // Wait for the iframe to be ready
+    await this.page.waitForLoadState('domcontentloaded');
     await this.page.waitForSelector(this.locators.assessmentFrameSelector, {
       state: 'attached',
-      timeout: 30000,
+      timeout: 60000,
     });
     this.logger?.success('Assessment iframe ready');
 
-    for (let i = 0; i < totalQuestions; i++) {
-      this.logger?.separator(`📝 Smart Question ${i + 1}/${totalQuestions}`);
+    // Read actual question count from assessment header "Question: X of Y" (inside iframe)
+    let assessmentTotal = questions.length; // fallback to JSON bank size
+    try {
+      await this.page.waitForTimeout(1500);
+      // Try reading from inside the iframe first
+      const headerLocator = frame.locator('text=/Question.*of/i').first();
+      let headerText = '';
+      try {
+        headerText = (await headerLocator.textContent({ timeout: 5000 })) || '';
+      } catch {
+        // Try from main page as fallback
+        headerText = (await this.page.locator('text=/Question.*of/i').first().textContent({ timeout: 3000 })) || '';
+      }
+      const match = headerText.match(/of\s+(\d+)/i);
+      if (match) {
+        assessmentTotal = parseInt(match[1], 10);
+        this.logger?.info(`📊 Assessment has ${assessmentTotal} questions (from header: "${headerText.trim()}")`);
+      }
+    } catch {
+      this.logger?.info(`Could not read question counter from header, using JSON bank size: ${questions.length}`);
+    }
 
-      // Small buffer for question to render
-      await this.page.waitForTimeout(800);
+    this.logger?.info(`Question bank size: ${questions.length}, assessment total: ${assessmentTotal}`);
 
-      const questionData = questions[i] ?? {};
-      const jsonHint: QuestionType | undefined = questionData.questionType as QuestionType;
-      const answers = questionData.answers;
+    // Track which JSON entries have been matched so we don't re-use them
+    const matchedIndices = new Set<number>();
+    let previousQuestionText = '';
 
-      // Detect from DOM (or trust JSON hint if provided)
-      let detectedType: QuestionType;
-      if (jsonHint && jsonHint !== 'unknown') {
-        detectedType = jsonHint;
-        this.logger?.info(`Using JSON-specified type: ${detectedType}`);
-      } else {
-        detectedType = await detector.detect(frame);
+    for (let i = 0; i < assessmentTotal; i++) {
+      this.logger?.separator(`📝 Question ${i + 1}/${assessmentTotal}`);
+
+      // 1. Find question text - if same as previous, wait and re-read until it changes
+      let domQuestionText = '';
+      try {
+        domQuestionText = await this.findQuestionText(frame, i);
+      } catch {
+        this.logger?.info(`Could not read question text from DOM for Q${i + 1}`);
       }
 
-      this.logger?.info(`Answering question ${i + 1} as type: ${detectedType}`);
+      // If we read the same text as previous question, the UI hasn't updated yet.
+      // Wait and re-read until the text changes (up to 10s).
+      if (i > 0 && domQuestionText && domQuestionText === previousQuestionText) {
+        this.logger?.debug(`Stale text detected, waiting for next question to load...`);
+        for (let retry = 0; retry < 10; retry++) {
+          await this.page.waitForTimeout(1000);
+          try {
+            domQuestionText = await this.findQuestionText(frame, i);
+            if (domQuestionText !== previousQuestionText) {
+              this.logger?.debug(`New question loaded after ${(retry + 1)}s`);
+              break;
+            }
+          } catch {
+            break;
+          }
+        }
+      }
+      previousQuestionText = domQuestionText;
 
-      // Check if question should be flagged
+      const domTextLower = domQuestionText.toLowerCase().trim();
+
+      // 2. Match DOM text against JSON entries by questionText
+      let questionData: any = null;
+      if (domTextLower) {
+        let bestMatchIndex = -1;
+        let bestMatchLength = 0;
+        for (let idx = 0; idx < questions.length; idx++) {
+          if (matchedIndices.has(idx)) continue;
+          const q = questions[idx];
+          if (!q.questionText) continue;
+          const qTextLower = q.questionText.toLowerCase();
+          if (domTextLower.includes(qTextLower) && qTextLower.length > bestMatchLength) {
+            bestMatchIndex = idx;
+            bestMatchLength = qTextLower.length;
+          }
+        }
+
+        if (bestMatchIndex >= 0) {
+          questionData = questions[bestMatchIndex];
+          matchedIndices.add(bestMatchIndex);
+          this.logger?.success(
+            `✅ Matched Q${i + 1} → JSON entry "${questionData.questionText}" (type: ${questionData.questionType})`
+          );
+        }
+      }
+
+      // 3. If no match found, click Continue and move on
+      if (!questionData) {
+        this.logger?.info(
+          `⚠️ No JSON match for Q${i + 1}. DOM text: "${domQuestionText.substring(0, 80)}". Skipping.`
+        );
+        await this.clickContinueButton(frame, i);
+        await this.page.waitForTimeout(700);
+        continue;
+      }
+
+      // 4. Answer the question
+      const questionType: QuestionType = questionData.questionType as QuestionType;
+      const answers = questionData.answers;
+
+      this.logger?.info(`Answering Q${i + 1} as type: ${questionType}`);
+
       if (questionData.flag === true) {
         await this.flagCurrentQuestion(frame);
       }
 
-      // Open exhibit if present
-      if (detectedType === 'exhibit') {
+      if (questionType === 'exhibit') {
         await this.openExhibitIfPresent(frame);
-        // After opening exhibit, detect underlying type or use hint
         const underlyingType: QuestionType =
           questionData.exhibitUnderlyingType ?? (await detector.detect(frame));
         await this.executeAnswerStrategy(frame, underlyingType, answers, i);
       } else {
-        await this.executeAnswerStrategy(frame, detectedType, answers, i);
+        await this.executeAnswerStrategy(frame, questionType, answers, i);
       }
 
-      await this.page.waitForTimeout(500);
+      // 5. Wait for rationale screen to appear, then click Continue again to advance
+      await this.page.waitForTimeout(1000);
+      await this.clickContinueButton(frame, i);
+
+      // 6. Wait for UI to update before next question
+      await this.page.waitForTimeout(700);
     }
 
-    this.logger?.separator(`🎉 Smart assessment answering complete for ${totalQuestions} questions`);
+    this.logger?.separator(`🎉 Smart assessment complete: answered ${matchedIndices.size} questions`);
   };
 
   /**
@@ -2339,7 +2505,7 @@ export class QnAUtil {
         await this.answerDragAndDropQuestion(frame, answers);
         break;
       case 'bowtie':
-        await this.answerBowtieQuestion(frame, answers);
+        await this.answerBowTieQuestions(frame, answers);
         break;
       case 'fillInBlankAlpha':
         await this.answerFillInBlankAlphaQuestion(frame, answers);
@@ -2404,7 +2570,9 @@ export class QnAUtil {
 
   /**
    * Answer a multi-select checkbox question.
-   * answers: string[]  e.g. ["Option A", "Option C"]
+   * For each answer value, selects ALL matching checkboxes (not just the first).
+   * e.g. answers: ["K"] will select every checkbox labeled "K".
+   * answers: string[]  e.g. ["K"] or ["0745", "0830"]
    */
   private answerMultipleSelectQuestion = async (
     frame: FrameLocator,
@@ -2415,7 +2583,117 @@ export class QnAUtil {
       this.logger?.info('⚠️ No answers provided for multi-select question');
       return;
     }
-    await this.selectMultipleCheckboxOptions(frame, answers);
+
+    this.logger?.info(`🔲 Multi-select answers to match: ${answers.join(', ')}`);
+
+    // Helper: normalize text by replacing non-breaking spaces and collapsing whitespace
+    const normalize = (text: string) =>
+      text.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+
+    let totalClicked = 0;
+
+    // ── Strategy 1: ie-choice-interaction containers ──
+    const choiceContainers = frame.locator('div.ie-choice-interaction');
+    const choiceCount = await choiceContainers.count();
+    this.logger?.info(`Strategy 1: Found ${choiceCount} ie-choice-interaction containers`);
+
+    for (let idx = 0; idx < choiceCount; idx++) {
+      const container = choiceContainers.nth(idx);
+      const rawText = await container.textContent() || '';
+      const choiceText = normalize(rawText);
+
+      this.logger?.debug(`  Container ${idx}: raw="${rawText.substring(0, 40)}" normalized="${choiceText}"`);
+
+      // Match: exact → word-boundary regex (avoids "NK" matching "K")
+      const matched = answers.find(ans => {
+        if (choiceText === ans) return true;
+        const escaped = ans.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(`(^|\\s)${escaped}(\\s|$)`).test(choiceText);
+      });
+
+      if (!matched) continue;
+
+      try {
+        const matCheckbox = container.locator('mat-checkbox');
+        if (await matCheckbox.count() > 0) {
+          await matCheckbox.first().click({ timeout: 3000 });
+          totalClicked++;
+          this.logger?.success(`✅ Clicked mat-checkbox idx ${idx}: "${choiceText}" → "${matched}"`);
+          await this.page.waitForTimeout(300);
+          continue;
+        }
+        const checkbox = container.locator('input[type="checkbox"]');
+        if (await checkbox.count() > 0) {
+          await checkbox.first().click({ timeout: 3000 });
+          totalClicked++;
+          this.logger?.success(`✅ Clicked checkbox idx ${idx}: "${choiceText}" → "${matched}"`);
+          await this.page.waitForTimeout(300);
+          continue;
+        }
+      } catch (e) {
+        this.logger?.error(`Strategy 1 click failed idx ${idx}: ${e}`);
+      }
+    }
+
+    // ── Strategy 2: Direct mat-checkbox scan (fallback if strategy 1 found nothing) ──
+    if (totalClicked === 0) {
+      this.logger?.info('Strategy 1 got 0 clicks – trying Strategy 2: direct mat-checkbox scan');
+      const allCheckboxes = frame.locator('mat-checkbox');
+      const cbCount = await allCheckboxes.count();
+      this.logger?.info(`Strategy 2: Found ${cbCount} mat-checkbox elements`);
+
+      for (let idx = 0; idx < cbCount; idx++) {
+        const cb = allCheckboxes.nth(idx);
+        const rawLabel = await cb.textContent() || '';
+        const label = normalize(rawLabel);
+
+        this.logger?.debug(`  mat-checkbox ${idx}: "${label}"`);
+
+        const matched = answers.find(ans => {
+          if (label === ans) return true;
+          const escaped = ans.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          return new RegExp(`(^|\\s)${escaped}(\\s|$)`).test(label);
+        });
+
+        if (!matched) continue;
+
+        try {
+          await cb.click({ timeout: 3000 });
+          totalClicked++;
+          this.logger?.success(`✅ Clicked mat-checkbox ${idx}: "${label}" → "${matched}"`);
+          await this.page.waitForTimeout(300);
+        } catch (e) {
+          this.logger?.error(`Strategy 2 click failed idx ${idx}: ${e}`);
+        }
+      }
+    }
+
+    // ── Strategy 3: getByText exact match (last resort) ──
+    if (totalClicked === 0) {
+      this.logger?.info('Strategy 2 got 0 clicks – trying Strategy 3: getByText');
+      for (const ans of answers) {
+        try {
+          const matches = frame.getByText(ans, { exact: true });
+          const matchCount = await matches.count();
+          this.logger?.info(`  getByText("${ans}", exact) found ${matchCount} elements`);
+
+          for (let m = 0; m < matchCount; m++) {
+            const el = matches.nth(m);
+            const parent = el.locator('xpath=ancestor::mat-checkbox[1]');
+            if (await parent.count() > 0) {
+              await parent.first().click({ timeout: 3000 });
+              totalClicked++;
+              this.logger?.success(`✅ Clicked ancestor mat-checkbox for "${ans}" (match ${m})`);
+              await this.page.waitForTimeout(300);
+            }
+          }
+        } catch (e) {
+          this.logger?.error(`Strategy 3 failed for "${ans}": ${e}`);
+        }
+      }
+    }
+
+    this.logger?.success(`✅ Multi-select complete: clicked ${totalClicked} checkboxes`);
   };
 
   /**
@@ -2483,32 +2761,141 @@ export class QnAUtil {
     await this.page.waitForTimeout(1500);
     const targetZones = frame.locator('ie-target-delivery span.cdk-drop-list.target');
     const targetCount = await targetZones.count();
-    this.logger?.info(`Found ${targetCount} target zones`);
+    this.logger?.info(`Found ${targetCount} target zones, answers: ${answers.join(', ')}`);
 
     for (let i = 0; i < targetCount && i < answers.length; i++) {
       const answerToPlace = answers[i];
       try {
         const targetZone = targetZones.nth(i);
-        const targetId = await targetZone.getAttribute('id');
-        if (!targetId) continue;
+        const targetId = await targetZone.getAttribute('id') || '';
+        this.logger?.info(`Target ${i + 1} ID: "${targetId}"`);
 
+        // Find source list: try UUID match first, then any option list
         const uuid = targetId.replace('target-list-', '');
-        const sourceList = frame.locator(
+        let sourceList = frame.locator(
           `[id="options-list-${uuid}"], ie-gap-match-interaction-delivery div.option-list[id="options-list-${uuid}"]`
         );
-        if ((await sourceList.count()) === 0) continue;
+        if ((await sourceList.count()) === 0) {
+          this.logger?.info(`No source list for UUID "${uuid}" – scanning all option lists`);
+          sourceList = frame.locator('ie-gap-match-interaction-delivery div.option-list');
+        }
 
-        const options = sourceList.locator('.option-list-item');
-        for (let j = 0; j < (await options.count()); j++) {
-          const optText = (await options.nth(j).locator('.option-list-content p').textContent())?.trim();
-          if (optText === answerToPlace) {
-            await options.nth(j).hover();
-            await this.page.mouse.down();
-            await targetZone.hover();
-            await this.page.mouse.up();
-            this.logger?.success(`✅ Dragged "${answerToPlace}" to target ${i + 1}`);
-            break;
+        const listCount = await sourceList.count();
+        let placed = false;
+
+        // Scan all source lists to find a matching item (re-query fresh each target)
+        for (let li = 0; li < listCount && !placed; li++) {
+          const list = sourceList.nth(li);
+          // Re-query options fresh (DOM changes after items are moved)
+          const options = list.locator('.option-list-item');
+          const optCount = await options.count();
+
+          for (let j = 0; j < optCount && !placed; j++) {
+            const optText = (
+              await options.nth(j).locator('.option-list-content p, .option-list-content').first().textContent()
+            )?.trim();
+            if (optText !== answerToPlace) continue;
+
+            this.logger?.info(`Found "${answerToPlace}" at list ${li}, item ${j}`);
+            const dragItem = options.nth(j);
+
+            // Strategy 1: Click the "Move option" context menu button
+            try {
+              const moveBtn = dragItem.locator('button.contextMenuButton');
+              if (await moveBtn.count() > 0) {
+                await moveBtn.click({ timeout: 3000 });
+                this.logger?.info('Clicked "Move option" button – looking for menu items');
+                await this.page.waitForTimeout(700);
+
+                let menuItems = frame.locator('.mat-menu-panel .mat-menu-item, .cdk-overlay-pane .mat-menu-item, .cdk-overlay-pane [role="menuitem"]');
+                let menuCount = await menuItems.count();
+                if (menuCount === 0) {
+                  menuItems = this.page.locator('.mat-menu-panel .mat-menu-item, .cdk-overlay-pane .mat-menu-item, .cdk-overlay-pane [role="menuitem"]');
+                  menuCount = await menuItems.count();
+                }
+                this.logger?.info(`Found ${menuCount} menu items`);
+
+                if (menuCount > 0) {
+                  // Try to find the correct target menu item
+                  let bestMenu = -1;
+                  let bestScore = 0;
+                  for (let m = 0; m < menuCount; m++) {
+                    const menuText = (await menuItems.nth(m).textContent())?.trim() || '';
+                    this.logger?.debug(`  Menu item ${m}: "${menuText}"`);
+                    const menuLower = menuText.toLowerCase();
+                    // Score: exact target number match is best
+                    if (menuLower.includes(`${i + 1}`)) {
+                      const score = 10;
+                      if (score > bestScore) { bestScore = score; bestMenu = m; }
+                    } else if (menuLower.includes('target')) {
+                      const score = 5;
+                      if (score > bestScore) { bestScore = score; bestMenu = m; }
+                    }
+                  }
+
+                  const clickIdx = bestMenu >= 0 ? bestMenu : 0;
+                  await menuItems.nth(clickIdx).click({ timeout: 2000 });
+                  await this.page.waitForTimeout(500);
+                  placed = true;
+                  this.logger?.success(`✅ Moved "${answerToPlace}" via menu to target ${i + 1}`);
+                } else {
+                  await this.page.keyboard.press('Escape').catch(() => {});
+                }
+              }
+            } catch (e) {
+              this.logger?.info(`Move-button strategy failed: ${e}`);
+              await this.page.keyboard.press('Escape').catch(() => {});
+            }
+
+            // Strategy 2: Playwright dragTo
+            if (!placed) {
+              try {
+                await dragItem.dragTo(targetZone, { timeout: 5000 });
+                await this.page.waitForTimeout(500);
+                placed = true;
+                this.logger?.success(`✅ dragTo: "${answerToPlace}" → target ${i + 1}`);
+              } catch (e) {
+                this.logger?.info(`dragTo failed: ${e}`);
+              }
+            }
+
+            // Strategy 3: Manual mouse drag for CDK
+            if (!placed) {
+              try {
+                const srcBox = await dragItem.boundingBox();
+                const tgtBox = await targetZone.boundingBox();
+                if (srcBox && tgtBox) {
+                  const sx = srcBox.x + srcBox.width / 2;
+                  const sy = srcBox.y + srcBox.height / 2;
+                  const tx = tgtBox.x + tgtBox.width / 2;
+                  const ty = tgtBox.y + tgtBox.height / 2;
+
+                  await this.page.mouse.move(sx, sy);
+                  await this.page.waitForTimeout(200);
+                  await this.page.mouse.down();
+                  await this.page.waitForTimeout(200);
+                  const steps = 25;
+                  for (let s = 1; s <= steps; s++) {
+                    await this.page.mouse.move(
+                      sx + (tx - sx) * (s / steps),
+                      sy + (ty - sy) * (s / steps),
+                      { steps: 2 }
+                    );
+                  }
+                  await this.page.waitForTimeout(200);
+                  await this.page.mouse.up();
+                  placed = true;
+                  this.logger?.success(`✅ Manual drag: "${answerToPlace}" → target ${i + 1}`);
+                }
+              } catch (e) {
+                this.logger?.error(`Manual drag failed: ${e}`);
+              }
+            }
           }
+        }
+
+        if (!placed) {
+          this.logger?.info(`⚠️ Could not place "${answerToPlace}" in target ${i + 1}`);
         }
       } catch (e) {
         this.logger?.error(`Drag-drop target ${i + 1} failed: ${e}`);
@@ -2608,7 +2995,7 @@ export class QnAUtil {
     if (!answers || answers.length === 0) return;
 
     const inputs = frame.locator(
-      'ie-text-entry-delivery input[type="text"], input.fill-blank, .text-entry input[type="text"]'
+      'ie-text-entry-interaction-delivery input[type="text"]'
     );
     const count = await inputs.count();
     this.logger?.info(`Found ${count} alpha input(s)`);
@@ -2620,10 +3007,13 @@ export class QnAUtil {
         await input.clear();
         await input.fill(answers[i]);
         this.logger?.success(`✅ Input ${i + 1}: typed "${answers[i]}"`);
+        await this.page.waitForTimeout(1000);
+        await input.clear();
+        this.logger?.info(`  Cleared input ${i + 1}`);
+        await this.page.waitForTimeout(2000);
       } catch (e) {
         this.logger?.error(`Fill-blank alpha input ${i + 1} failed: ${e}`);
       }
-      await this.page.waitForTimeout(200);
     }
   };
 
@@ -2631,7 +3021,7 @@ export class QnAUtil {
    * Answer a Fill-in-the-Blank Numeric question.
    * answers: string[]  e.g. ["120"]
    */
-  answerFillInBlankNumericQuestion = async (
+   answerFillInBlankNumericQuestion = async (
     frame: FrameLocator,
     answers: string[]
   ): Promise<void> => {
@@ -2640,7 +3030,7 @@ export class QnAUtil {
     if (!answers || answers.length === 0) return;
 
     const inputs = frame.locator(
-      'input[type="number"], ie-text-entry-delivery input[inputmode="numeric"], ie-text-entry-delivery input[inputmode="decimal"], .numeric-entry input'
+      'input#inputID, input[type="number"], ie-text-entry-delivery input, .numeric-entry input, .mat-form-field-infix input[type="text"]'
     );
     const count = await inputs.count();
     this.logger?.info(`Found ${count} numeric input(s)`);
@@ -2649,8 +3039,12 @@ export class QnAUtil {
       try {
         const input = inputs.nth(i);
         await input.waitFor({ state: 'visible', timeout: 5000 });
-        await input.clear();
-        await input.fill(answers[i]);
+        await input.click();
+        await input.fill('');
+        // Use pressSequentially to trigger Angular keydown/keyup events
+        await input.pressSequentially(answers[i], { delay: 50 });
+        // Tab out to trigger Angular blur/change detection and enable Continue
+        await input.press('Tab');
         this.logger?.success(`✅ Numeric input ${i + 1}: typed "${answers[i]}"`);
       } catch (e) {
         this.logger?.error(`Fill-blank numeric input ${i + 1} failed: ${e}`);
@@ -2697,29 +3091,87 @@ export class QnAUtil {
 
     if (!answers || answers.length === 0) return;
 
-    for (const target of answers) {
-      try {
-        // Strategy 1: find span that exactly matches the word/phrase
-        const span = frame.locator(
-          `#highlightWordsText span, .highlightable-word, [class*="highlight-word"], .highlight-words span`
-        ).filter({ hasText: new RegExp(`^${target}$`, 'i') });
+    const normalize = (s: string) => s.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
 
-        if ((await span.count()) > 0) {
-          await span.first().click();
-          this.logger?.success(`✅ Highlighted text: "${target}"`);
-        } else {
-          // Strategy 2: partial text match
+    // Preferred selectors for ATI hot-text questions (role=button with mark.highlighter inside).
+    const hotButtons = frame.locator(
+      'ie-hot-text-interaction-delivery span.hot-text-button, span.hot-text-button[role="button"], [role="button"].hot-text-button'
+    );
+    const hotCount = await hotButtons.count();
+
+    // Track consumed elements so duplicate answers (e.g., ["K", "K"]) do not re-click same token.
+    const usedIndices = new Set<number>();
+
+    if (hotCount > 0) {
+      this.logger?.info(`Found ${hotCount} hot-text button(s)`);
+
+      for (const rawTarget of answers) {
+        const target = normalize(rawTarget).toLowerCase();
+        let matched = false;
+
+        for (let i = 0; i < hotCount; i++) {
+          if (usedIndices.has(i)) continue;
+
+          const btn = hotButtons.nth(i);
+          const btnText = normalize((await btn.textContent()) || '').toLowerCase();
+          if (btnText !== target) continue;
+
+          const isPressed = ((await btn.getAttribute('aria-pressed')) || '').toLowerCase() === 'true';
+
+          if (!isPressed) {
+            await btn.click({ timeout: 3000 });
+            this.logger?.success(`✅ Highlighted text: "${rawTarget}" (token ${i + 1})`);
+          } else {
+            this.logger?.success(`✅ Already highlighted: "${rawTarget}" (token ${i + 1})`);
+          }
+
+          usedIndices.add(i);
+          matched = true;
+          await this.page.waitForTimeout(250);
+          break;
+        }
+
+        if (!matched) {
+          this.logger?.info(`⚠️ Hot-text token not found for: "${rawTarget}"`);
+        }
+      }
+
+      return;
+    }
+
+    // Fallback for legacy highlight-text structures.
+    this.logger?.info('Hot-text buttons not found, using legacy highlight fallback selectors');
+    for (const rawTarget of answers) {
+      const target = normalize(rawTarget);
+      try {
+        const span = frame
+          .locator('#highlightWordsText span, .highlightable-word, [class*="highlight-word"], .highlight-words span')
+          .filter({ hasText: new RegExp(`^${target}$`, 'i') });
+
+        const spanCount = await span.count();
+        let clicked = false;
+        for (let i = 0; i < spanCount; i++) {
+          if (usedIndices.has(i)) continue;
+          await span.nth(i).click({ timeout: 2000 });
+          usedIndices.add(i);
+          clicked = true;
+          this.logger?.success(`✅ Highlighted text: "${rawTarget}"`);
+          break;
+        }
+
+        if (!clicked) {
           const partial = frame.getByText(target, { exact: false }).first();
           if ((await partial.count()) > 0) {
-            await partial.click();
-            this.logger?.success(`✅ Clicked text (partial match): "${target}"`);
+            await partial.click({ timeout: 2000 });
+            this.logger?.success(`✅ Clicked text (partial match): "${rawTarget}"`);
           } else {
-            this.logger?.info(`⚠️ Highlight text target not found: "${target}"`);
+            this.logger?.info(`⚠️ Highlight text target not found: "${rawTarget}"`);
           }
         }
-        await this.page.waitForTimeout(300);
+
+        await this.page.waitForTimeout(250);
       } catch (e) {
-        this.logger?.error(`Highlight text "${target}" failed: ${e}`);
+        this.logger?.error(`Highlight text "${rawTarget}" failed: ${e}`);
       }
     }
   };
@@ -2857,15 +3309,16 @@ export class QnAUtil {
 
   /**
    * Answer a Matrix Multiple Choice question (one radio per row).
+   * Rows are matched by their first-column label text in the DOM (handles shuffled rows).
    * answers: Array<{row: string, col: string}>
-   *   e.g. [{"row": "Medication A", "col": "Appropriate"},
-   *          {"row": "Medication B", "col": "Contraindicated"}]
-   *
-   * Also supports index-based: Array<{rowIndex: number, colIndex: number}>
+   *   e.g. [{"row": "A", "col": "A"},
+   *          {"row": "A", "col": "B"},
+   *          {"row": "B", "col": "A"},
+   *          {"row": "B", "col": "B"}]
    */
   answerMatrixMultipleChoiceQuestion = async (
     frame: FrameLocator,
-    answers: Array<{ row?: string; col?: string; rowIndex?: number; colIndex?: number }>
+    answers: Array<{ row: string; col: string }>
   ): Promise<void> => {
     this.logger?.separator('📋 ANSWERING MATRIX MULTIPLE CHOICE');
 
@@ -2882,6 +3335,7 @@ export class QnAUtil {
       return;
     }
 
+    // Read column headers (index 0 is the row-label column, rest are selectable)
     const headerCells = table.locator('thead th, tr:first-child th');
     const headerTexts: string[] = [];
     for (let h = 0; h < (await headerCells.count()); h++) {
@@ -2889,61 +3343,71 @@ export class QnAUtil {
     }
     this.logger?.info(`Matrix column headers: ${headerTexts.join(' | ')}`);
 
-    const rows = table.locator('tbody tr, tr:not(:first-child)');
+    const rows = table.locator('tbody tr');
+    const rowCount = await rows.count();
+    this.logger?.info(`Found ${rowCount} body rows, ${answers.length} answers from JSON`);
 
-    for (const answer of answers) {
+    // Build a map of row label → DOM row index
+    const rowLabelToIndex = new Map<string, number[]>();
+    for (let r = 0; r < rowCount; r++) {
+      const label = ((await rows.nth(r).locator('th, td:first-child').textContent()) ?? '').trim();
+      if (!rowLabelToIndex.has(label)) rowLabelToIndex.set(label, []);
+      rowLabelToIndex.get(label)!.push(r);
+    }
+    this.logger?.info(`Row labels in DOM: ${[...rowLabelToIndex.keys()].join(', ')}`);
+
+    // Track consumed indices for duplicate row labels
+    const consumedIndices = new Set<number>();
+
+    for (const { row: rowLabel, col: colHeader } of answers) {
       try {
-        let rowIndex = answer.rowIndex ?? -1;
-        let colIndex = answer.colIndex ?? -1;
+        // Find the DOM row index for this row label
+        const candidates = rowLabelToIndex.get(rowLabel) ?? [];
+        const rowIndex = candidates.find(idx => !consumedIndices.has(idx));
+        if (rowIndex === undefined) {
+          this.logger?.info(`⚠️ Matrix MC: row "${rowLabel}" not found in DOM`);
+          continue;
+        }
+        consumedIndices.add(rowIndex);
 
-        if (answer.row && rowIndex === -1) {
-          // Find row by text
-          for (let r = 0; r < (await rows.count()); r++) {
-            const rowText = ((await rows.nth(r).locator('th, td:first-child').textContent()) ?? '').trim();
-            if (rowText.toLowerCase().includes(answer.row.toLowerCase())) {
-              rowIndex = r;
-              break;
-            }
+        // Find column index by matching header text (skip index 0 = row-label column)
+        let colIndex = -1;
+        for (let c = 1; c < headerTexts.length; c++) {
+          if (headerTexts[c].toLowerCase().trim() === colHeader.toLowerCase().trim()) {
+            colIndex = c - 1; // subtract row-header column to get td index
+            break;
           }
         }
 
-        if (answer.col && colIndex === -1) {
-          // Find column by header text (offset by 1 for the row-label column)
-          for (let c = 0; c < headerTexts.length; c++) {
-            if (headerTexts[c].toLowerCase().includes(answer.col.toLowerCase())) {
-              colIndex = c - 1; // subtract row-header column
-              break;
-            }
-          }
-        }
-
-        if (rowIndex === -1 || colIndex === -1) {
-          this.logger?.info(`⚠️ Matrix MC: could not resolve row/col for ${JSON.stringify(answer)}`);
+        if (colIndex === -1) {
+          this.logger?.info(`⚠️ Matrix MC row "${rowLabel}": column "${colHeader}" not found in headers`);
           continue;
         }
 
         const targetCell = rows.nth(rowIndex).locator('td').nth(colIndex);
         const radio = targetCell.locator('mat-radio-button, input[type="radio"]').first();
         await radio.click();
-        this.logger?.success(`✅ Matrix MC: row ${rowIndex}, col ${colIndex} selected`);
+        this.logger?.success(`✅ Matrix MC: row "${rowLabel}" (DOM index ${rowIndex}) → column "${colHeader}" selected`);
         await this.page.waitForTimeout(200);
       } catch (e) {
-        this.logger?.error(`Matrix MC selection failed: ${e}`);
+        this.logger?.error(`Matrix MC row "${rowLabel}" selection failed: ${e}`);
       }
     }
   };
 
   /**
    * Answer a Matrix Multiple Response question (checkboxes per row).
-   * answers: Array<{row: string, col: string}>
-   *   e.g. [{"row": "Finding 1", "col": "Action A"},
-   *          {"row": "Finding 1", "col": "Action C"}]
-   *
-   * Also supports index-based: Array<{rowIndex: number, colIndex: number}>
+   * Rows are matched by their first-column label text in the DOM (handles shuffled rows).
+   * answers: Array<{row: string, col: string[]}>
+   *   Use an empty col array [] to skip a row (no selection).
+   *   e.g. [{"row": "B",    "col": ["Test B"]},
+   *          {"row": "Both", "col": ["Test A", "Test B"]},
+   *          {"row": "None", "col": []},
+   *          {"row": "A",    "col": ["Test A"]}]
    */
   answerMatrixMultipleResponseQuestion = async (
     frame: FrameLocator,
-    answers: Array<{ row?: string; col?: string; rowIndex?: number; colIndex?: number }>
+    answers: Array<{ row: string; col: string[] }>
   ): Promise<void> => {
     this.logger?.separator('📋 ANSWERING MATRIX MULTIPLE RESPONSE');
 
@@ -2960,50 +3424,64 @@ export class QnAUtil {
       return;
     }
 
+    // Read column headers (index 0 is the row-label column, rest are selectable)
     const headerCells = table.locator('thead th, tr:first-child th');
     const headerTexts: string[] = [];
     for (let h = 0; h < (await headerCells.count()); h++) {
       headerTexts.push(((await headerCells.nth(h).textContent()) ?? '').trim());
     }
+    this.logger?.info(`Matrix column headers: ${headerTexts.join(' | ')}`);
 
-    const rows = table.locator('tbody tr, tr:not(:first-child)');
+    const rows = table.locator('tbody tr');
+    const rowCount = await rows.count();
+    this.logger?.info(`Found ${rowCount} body rows, ${answers.length} answers from JSON`);
 
-    for (const answer of answers) {
-      try {
-        let rowIndex = answer.rowIndex ?? -1;
-        let colIndex = answer.colIndex ?? -1;
+    // Build a map of row label → DOM row index
+    const rowLabelToIndex = new Map<string, number>();
+    for (let r = 0; r < rowCount; r++) {
+      const label = ((await rows.nth(r).locator('th, td:first-child').textContent()) ?? '').trim();
+      rowLabelToIndex.set(label, r);
+    }
+    this.logger?.info(`Row labels in DOM: ${[...rowLabelToIndex.keys()].join(', ')}`);
 
-        if (answer.row && rowIndex === -1) {
-          for (let r = 0; r < (await rows.count()); r++) {
-            const rowText = ((await rows.nth(r).locator('th, td:first-child').textContent()) ?? '').trim();
-            if (rowText.toLowerCase().includes(answer.row.toLowerCase())) {
-              rowIndex = r;
+    for (const { row: rowLabel, col: colHeaders } of answers) {
+      // Skip rows with no columns to select
+      if (!colHeaders || colHeaders.length === 0) {
+        this.logger?.info(`⏭️ Matrix MR: row "${rowLabel}" — no selection`);
+        continue;
+      }
+
+      // Find the DOM row index for this row label
+      const rowIndex = rowLabelToIndex.get(rowLabel);
+      if (rowIndex === undefined) {
+        this.logger?.info(`⚠️ Matrix MR: row "${rowLabel}" not found in DOM`);
+        continue;
+      }
+
+      for (const colHeader of colHeaders) {
+        try {
+          // Find column index by matching header text (skip index 0 = row-label column)
+          let colIndex = -1;
+          for (let c = 1; c < headerTexts.length; c++) {
+            if (headerTexts[c].toLowerCase().trim() === colHeader.toLowerCase().trim()) {
+              colIndex = c - 1; // subtract row-header column to get td index
               break;
             }
           }
-        }
 
-        if (answer.col && colIndex === -1) {
-          for (let c = 0; c < headerTexts.length; c++) {
-            if (headerTexts[c].toLowerCase().includes(answer.col.toLowerCase())) {
-              colIndex = c - 1;
-              break;
-            }
+          if (colIndex === -1) {
+            this.logger?.info(`⚠️ Matrix MR row "${rowLabel}": column "${colHeader}" not found in headers`);
+            continue;
           }
-        }
 
-        if (rowIndex === -1 || colIndex === -1) {
-          this.logger?.info(`⚠️ Matrix MR: could not resolve row/col for ${JSON.stringify(answer)}`);
-          continue;
+          const targetCell = rows.nth(rowIndex).locator('td').nth(colIndex);
+          const checkbox = targetCell.locator('mat-checkbox, input[type="checkbox"]').first();
+          await checkbox.click();
+          this.logger?.success(`✅ Matrix MR: row "${rowLabel}" (DOM index ${rowIndex}) → column "${colHeader}" checked`);
+          await this.page.waitForTimeout(200);
+        } catch (e) {
+          this.logger?.error(`Matrix MR row "${rowLabel}" column "${colHeader}" failed: ${e}`);
         }
-
-        const targetCell = rows.nth(rowIndex).locator('td').nth(colIndex);
-        const checkbox = targetCell.locator('mat-checkbox, input[type="checkbox"]').first();
-        await checkbox.click();
-        this.logger?.success(`✅ Matrix MR: row ${rowIndex}, col ${colIndex} checked`);
-        await this.page.waitForTimeout(200);
-      } catch (e) {
-        this.logger?.error(`Matrix MR selection failed: ${e}`);
       }
     }
   };
@@ -3024,47 +3502,430 @@ export class QnAUtil {
 
     await this.page.waitForTimeout(1500);
 
-    // Find source items (draggable pool)
-    const sourceItems = frame.locator(
-      'ie-order-interaction-delivery .source-item, .ordering-interaction .drag-item, .order-source [cdkDrag], .sortable-list .sort-item, .cdk-drag'
-    );
-    const sourceCount = await sourceItems.count();
-    this.logger?.info(`Found ${sourceCount} source items to order`);
+    // Space key moves items to the TOP of the answer list (stack/LIFO order).
+    // So we move items in REVERSE order: last answer first, first answer last.
+    // E.g. desired [A,B,C,D,E] → move E, D, C, B, A → answer list = [A,B,C,D,E]
 
-    // Find target drop list
-    const targetList = frame.locator(
-      'ie-order-interaction-delivery .target-list, .ordering-interaction .drop-list, .order-target .cdk-drop-list, .cdk-drop-list.target'
-    ).first();
+    const sourceList = frame.locator('.ordered-source-list');
+    const answerList = frame.locator('.ordered-answer-list');
 
-    const hasTarget = (await targetList.count()) > 0;
+    // Get the actual Frame object for direct keyboard dispatch inside iframe
+    const iframeObj = this.page.frame('assessmentFrame')
+      || this.page.frames().find(f => f.url().includes('item-editor'));
 
-    for (let i = 0; i < answers.length; i++) {
-      const labelToPlace = answers[i];
-      try {
-        // Find the source item with matching text
-        let sourceItem = sourceItems.filter({ hasText: labelToPlace }).first();
+    // Log initial source items
+    const sourceChoices = sourceList.locator('ie-ordered-simple-choice');
+    const initialCount = await sourceChoices.count();
+    this.logger?.info(`Found ${initialCount} items in source list`);
+    for (let s = 0; s < initialCount; s++) {
+      const txt = (await sourceChoices.nth(s).textContent())?.trim();
+      this.logger?.debug(`  Source item ${s}: "${txt}"`);
+    }
 
-        if ((await sourceItem.count()) === 0) {
-          this.logger?.info(`⚠️ Source item "${labelToPlace}" not found`);
+    // Move in REVERSE order so stack ordering gives the correct result
+    const reversed = [...answers].reverse();
+    this.logger?.info(`Moving in reverse order: [${reversed.join(', ')}]`);
+
+    for (let i = 0; i < reversed.length; i++) {
+      const labelToPlace = reversed[i];
+      this.logger?.info(`Moving "${labelToPlace}" (${i + 1}/${reversed.length})`);
+
+      await this.page.waitForTimeout(1000);
+
+      const beforeCount = await sourceList.locator('ie-ordered-simple-choice').count();
+      const ariaSelector = `.ordered-source-list ie-ordered-simple-choice[aria-label^="${labelToPlace} "]`;
+      let moved = false;
+
+      // Strategy 1: Use Frame.evaluate to focus + dispatch Space keydown directly in iframe
+      if (!moved && iframeObj) {
+        try {
+          this.logger?.debug(`  Strategy 1: evaluate focus+dispatchEvent in iframe`);
+          await iframeObj.evaluate((sel: string) => {
+            const el = document.querySelector(sel) as HTMLElement;
+            if (el) {
+              el.focus();
+              el.dispatchEvent(new KeyboardEvent('keydown', {
+                key: ' ', code: 'Space', keyCode: 32, which: 32,
+                bubbles: true, cancelable: true
+              }));
+              el.dispatchEvent(new KeyboardEvent('keyup', {
+                key: ' ', code: 'Space', keyCode: 32, which: 32,
+                bubbles: true, cancelable: true
+              }));
+            }
+          }, ariaSelector);
+          await this.page.waitForTimeout(1000);
+          moved = (await sourceList.locator('ie-ordered-simple-choice').count()) < beforeCount;
+          if (moved) this.logger?.success(`  ✅ Strategy 1 worked for "${labelToPlace}"`);
+        } catch (e) {
+          this.logger?.debug(`  Strategy 1 failed: ${e}`);
+        }
+      }
+
+      // Strategy 2: dispatch on parent .cdk-drag row (CDK listens on cdkDrag directive)
+      if (!moved && iframeObj) {
+        try {
+          this.logger?.debug(`  Strategy 2: dispatch on parent .cdk-drag row`);
+          await iframeObj.evaluate((sel: string) => {
+            const el = document.querySelector(sel) as HTMLElement;
+            if (el) {
+              const row = el.closest('.cdk-drag') as HTMLElement;
+              if (row) {
+                row.focus();
+                row.dispatchEvent(new KeyboardEvent('keydown', {
+                  key: ' ', code: 'Space', keyCode: 32, which: 32,
+                  bubbles: true, cancelable: true
+                }));
+                row.dispatchEvent(new KeyboardEvent('keyup', {
+                  key: ' ', code: 'Space', keyCode: 32, which: 32,
+                  bubbles: true, cancelable: true
+                }));
+              }
+            }
+          }, ariaSelector);
+          await this.page.waitForTimeout(1000);
+          moved = (await sourceList.locator('ie-ordered-simple-choice').count()) < beforeCount;
+          if (moved) this.logger?.success(`  ✅ Strategy 2 worked for "${labelToPlace}"`);
+        } catch (e) {
+          this.logger?.debug(`  Strategy 2 failed: ${e}`);
+        }
+      }
+
+      // Strategy 3: click via FrameLocator then page.keyboard.press (trusted events)
+      if (!moved) {
+        try {
+          this.logger?.debug(`  Strategy 3: click + page.keyboard.press`);
+          const choice = sourceList.locator(
+            `ie-ordered-simple-choice[aria-label^="${labelToPlace} "]`
+          ).first();
+          await choice.click({ timeout: 3000 });
+          await this.page.waitForTimeout(500);
+          await this.page.keyboard.press('Space');
+          await this.page.waitForTimeout(1000);
+          moved = (await sourceList.locator('ie-ordered-simple-choice').count()) < beforeCount;
+          if (moved) this.logger?.success(`  ✅ Strategy 3 worked for "${labelToPlace}"`);
+        } catch (e) {
+          this.logger?.debug(`  Strategy 3 failed: ${e}`);
+        }
+      }
+
+      // Strategy 4: Use Frame.press with CSS selector (sends trusted key in iframe context)
+      if (!moved && iframeObj) {
+        try {
+          this.logger?.debug(`  Strategy 4: frame.press`);
+          await iframeObj.focus(ariaSelector);
+          await this.page.waitForTimeout(300);
+          await iframeObj.press(ariaSelector, 'Space');
+          await this.page.waitForTimeout(1000);
+          moved = (await sourceList.locator('ie-ordered-simple-choice').count()) < beforeCount;
+          if (moved) this.logger?.success(`  ✅ Strategy 4 worked for "${labelToPlace}"`);
+        } catch (e) {
+          this.logger?.debug(`  Strategy 4 failed: ${e}`);
+        }
+      }
+
+      // Strategy 5: dragTo as ultimate fallback
+      if (!moved) {
+        try {
+          this.logger?.debug(`  Strategy 5: dragTo`);
+          const row = sourceList.locator(
+            `.cdk-drag:has(ie-ordered-simple-choice[aria-label^="${labelToPlace} "])`
+          ).first();
+          await row.dragTo(answerList, { timeout: 5000 });
+          await this.page.waitForTimeout(1000);
+          moved = (await sourceList.locator('ie-ordered-simple-choice').count()) < beforeCount;
+          if (moved) this.logger?.success(`  ✅ Strategy 5 worked for "${labelToPlace}"`);
+        } catch (e) {
+          this.logger?.debug(`  Strategy 5 failed: ${e}`);
+        }
+      }
+
+      if (!moved) {
+        this.logger?.info(`  ⚠️ All strategies failed for "${labelToPlace}"`);
+      }
+    }
+
+    // Log final state
+    const finalAnswerChoices = answerList.locator('ie-ordered-simple-choice');
+    const finalCount = await finalAnswerChoices.count();
+    const finalOrder: string[] = [];
+    for (let j = 0; j < finalCount; j++) {
+      finalOrder.push((await finalAnswerChoices.nth(j).textContent())?.trim() || '');
+    }
+    const srcLeft = await sourceList.locator('ie-ordered-simple-choice').count();
+    this.logger?.info(`Final: answer=[${finalOrder.join(', ')}], source remaining=${srcLeft}`);
+  };
+
+  /**
+   * Answer a Bowtie NGN question using CDK drag-and-drop mechanics.
+   *
+   * Actual DOM structure (from app-bowtie-html / ie-bowtie-html-delivery):
+   *   div.bowtie
+   *     div.bowtie-column[aria-label="Target 1"]  ← left panel
+   *       div.bowtie-target > ie-target-delivery > span.cdk-drop-list.target[id="target-list-{uuid}"]
+   *       div.bowtie-target > ie-target-delivery > span.cdk-drop-list.target[id="target-list-{uuid}"]
+   *     div.bowtie-column[aria-label="Target 2"]  ← center panel (1 slot)
+   *       div.bowtie-target > ie-target-delivery > span.cdk-drop-list.target
+   *     div.bowtie-column[aria-label="Target 3"]  ← right panel
+   *       …
+   *   div.ie-interaction-container
+   *     ie-gap-match-interaction-delivery
+   *       div.cdk-drop-list.option-list[aria-label="Target 1"]
+   *         div.cdk-drag.option-list-item > .option-list-content p  ← source items
+   *     ie-gap-match-interaction-delivery
+   *       div.cdk-drop-list.option-list[aria-label="Target 2"]
+   *     ie-gap-match-interaction-delivery
+   *       div.cdk-drop-list.option-list[aria-label="Target 3"]
+   *
+   * answers: { left?: string[], center?: string[], right?: string[] }
+   *   left   → Target 1 slots (top-to-bottom order)
+   *   center → Target 2 slot(s)
+   *   right  → Target 3 slots (top-to-bottom order)
+   *
+   * JSON example:
+   *   { "left": ["K", "K"], "center": ["K"], "right": ["K", "K"] }
+   */
+  answerBowTieQuestions = async (
+    frame: FrameLocator,
+    answers: { left?: string[]; center?: string[]; right?: string[] }
+  ): Promise<void> => {
+    this.logger?.separator('🎀 ANSWERING BOWTIE QUESTION (MOVE OPTION MENU)');
+
+    if (!answers) {
+      this.logger?.info('⚠️ No answers provided for bowtie question');
+      return;
+    }
+
+    await this.page.waitForTimeout(1500);
+
+    const columnMapping = [
+      { columnLabel: 'Target 1', answers: answers.left   ?? [] },
+      { columnLabel: 'Target 2', answers: answers.center ?? [] },
+      { columnLabel: 'Target 3', answers: answers.right  ?? [] },
+    ];
+
+    const targetHasValue = async (targetZone: any, expectedText: string): Promise<boolean> => {
+      const values = targetZone.locator('.target-content p');
+      const count = await values.count();
+      for (let i = 0; i < count; i++) {
+        const txt = (await values.nth(i).textContent())?.trim() || '';
+        if (txt === expectedText) return true;
+      }
+      return false;
+    };
+
+    for (const col of columnMapping) {
+      if (col.answers.length === 0) continue;
+
+      this.logger?.info(`\n📌 Processing "${col.columnLabel}" → ${col.answers.join(', ')}`);
+
+      // Target drop-zones inside the bowtie diagram for this column
+      const bowtieColumn = frame.locator(`div.bowtie-column[aria-label="${col.columnLabel}"]`);
+      const targetZones  = bowtieColumn.locator('ie-target-delivery span.cdk-drop-list.target');
+      const targetCount  = await targetZones.count();
+      this.logger?.info(`  Target zones found: ${targetCount}`);
+
+      // Source option list for this column (aria-label matches column label)
+      const sourceList = frame.locator(`div.cdk-drop-list.option-list[aria-label="${col.columnLabel}"]`);
+      if ((await sourceList.count()) === 0) {
+        this.logger?.info(`  ⚠️ Source list not found for "${col.columnLabel}", skipping`);
+        continue;
+      }
+
+      for (let slotIdx = 0; slotIdx < col.answers.length && slotIdx < targetCount; slotIdx++) {
+        const answerText = col.answers[slotIdx];
+        const targetZone = targetZones.nth(slotIdx);
+
+        this.logger?.info(`  Slot ${slotIdx + 1}: placing "${answerText}"`);
+
+        const targetTexts = targetZone.locator('.target-content p');
+        const targetTextCount = await targetTexts.count();
+        const currentTargetTexts: string[] = [];
+        for (let t = 0; t < targetTextCount; t++) {
+          const val = (await targetTexts.nth(t).textContent())?.trim() || '';
+          if (val) currentTargetTexts.push(val);
+        }
+        const slotHint = currentTargetTexts.find((t) => /^Target\s+/i.test(t)) || '';
+
+        // Some items can already be prefilled in the target zone.
+        if (await targetHasValue(targetZone, answerText)) {
+          this.logger?.success(
+            `  ✅ Slot ${slotIdx + 1} already contains "${answerText}", skipping`
+          );
           continue;
         }
 
-        if (hasTarget) {
-          // Drag from source to target drop list
-          await sourceItem.hover();
-          await this.page.mouse.down();
-          await this.page.waitForTimeout(300);
-          await targetList.hover();
-          await this.page.mouse.up();
-          this.logger?.success(`✅ Ordered Response: placed "${labelToPlace}" at position ${i + 1}`);
-        } else {
-          this.logger?.info(`⚠️ No target list found for ordered response drag`);
+        // Re-query source items fresh each slot (DOM changes after items are moved)
+        let placed = false;
+        const optionItems = sourceList.locator('div.cdk-drag.option-list-item');
+        const optionCount = await optionItems.count();
+
+        // Find the first source item matching our answer text
+        let matchIdx = -1;
+        for (let j = 0; j < optionCount; j++) {
+          const contentText = (await optionItems.nth(j).locator('.option-list-content p').textContent())?.trim();
+          if (contentText === answerText) {
+            matchIdx = j;
+            break;
+          }
         }
-        await this.page.waitForTimeout(400);
-      } catch (e) {
-        this.logger?.error(`Ordered response item "${labelToPlace}" failed: ${e}`);
+
+        if (matchIdx === -1) {
+          this.logger?.info(`  ⚠️ No source item "${answerText}" found in ${col.columnLabel}`);
+          continue;
+        }
+
+        this.logger?.info(`  Found "${answerText}" at source index ${matchIdx}`);
+
+        const getMenuItemScore = (menuText: string): number => {
+          const normalized = menuText.toLowerCase().replace(/\s+/g, ' ').trim();
+          const slotNum = slotIdx + 1;
+          const dotLabel = `${col.columnLabel.toLowerCase()}.${slotNum}`;
+          const spaceLabel = `${col.columnLabel.toLowerCase()} ${slotNum}`;
+          const slotHintNorm = slotHint.toLowerCase().replace(/\s+/g, ' ').trim();
+
+          if (slotHintNorm && normalized === slotHintNorm) return 100;
+          if (slotHintNorm && normalized.includes(slotHintNorm)) return 90;
+          if (normalized === dotLabel || normalized === spaceLabel) return 80;
+          if (normalized.includes(dotLabel) || normalized.includes(spaceLabel)) return 70;
+          if (normalized === col.columnLabel.toLowerCase()) return 60;
+          if (normalized.includes(col.columnLabel.toLowerCase())) return 50;
+          if (normalized.includes('target')) return 10;
+          return 0;
+        };
+
+        // Strategy 1: Click move icon and choose target from menu
+        try {
+          const moveBtn = optionItems.nth(matchIdx).locator('button.contextMenuButton, button[aria-label*="Move option"]');
+          if ((await moveBtn.count()) > 0) {
+            await moveBtn.first().click({ timeout: 3000 });
+            await this.page.waitForTimeout(700);
+
+            let menuItems = frame.locator(
+              '.cdk-overlay-pane .mat-menu-item, .cdk-overlay-pane [role="menuitem"], .mat-menu-panel .mat-menu-item'
+            );
+            let menuCount = await menuItems.count();
+            if (menuCount === 0) {
+              menuItems = this.page.locator(
+                '.cdk-overlay-pane .mat-menu-item, .cdk-overlay-pane [role="menuitem"], .mat-menu-panel .mat-menu-item'
+              );
+              menuCount = await menuItems.count();
+            }
+            this.logger?.info(`  Move menu opened – ${menuCount} item(s)`);
+
+            if (menuCount > 0) {
+              // Score and rank menu items
+              const ranked: Array<{ index: number; text: string; score: number }> = [];
+              for (let m = 0; m < menuCount; m++) {
+                const menuText = (await menuItems.nth(m).textContent())?.trim() || '';
+                const score = getMenuItemScore(menuText);
+                this.logger?.debug(`    Menu item ${m}: "${menuText}" score=${score}`);
+                ranked.push({ index: m, text: menuText, score });
+              }
+              ranked.sort((a, b) => b.score - a.score);
+
+              // Click best scoring item, or last item if only one option
+              const clickIdx = (ranked.length > 0 && ranked[0].score > 0)
+                ? ranked[0].index
+                : menuCount - 1; // last menu item = likely the last empty slot
+              await menuItems.nth(clickIdx).click({ timeout: 2000 });
+              await this.page.waitForTimeout(700);
+
+              // Verify placement actually landed in the correct target
+              if (await targetHasValue(targetZone, answerText)) {
+                placed = true;
+                this.logger?.success(
+                  `  ✅ Move option: "${answerText}" → ${col.columnLabel} slot ${slotIdx + 1}`
+                );
+              } else {
+                this.logger?.info(`  ⚠️ Menu click did not place item in correct slot, trying fallback`);
+              }
+            }
+
+            if (!placed) {
+              await this.page.keyboard.press('Escape').catch(() => {});
+            }
+          }
+        } catch (e) {
+          this.logger?.info(`  Move option menu flow failed: ${e}`);
+          await this.page.keyboard.press('Escape').catch(() => {});
+        }
+
+        // Strategy 2: dragTo fallback
+        if (!placed) {
+          try {
+            // Re-query since DOM may have changed
+            const freshItems = sourceList.locator('div.cdk-drag.option-list-item');
+            const freshCount = await freshItems.count();
+            for (let j = 0; j < freshCount; j++) {
+              const txt = (await freshItems.nth(j).locator('.option-list-content p').textContent())?.trim();
+              if (txt === answerText) {
+                await freshItems.nth(j).dragTo(targetZone, { timeout: 5000 });
+                await this.page.waitForTimeout(500);
+                if (await targetHasValue(targetZone, answerText)) {
+                  placed = true;
+                  this.logger?.success(`  ✅ dragTo fallback: "${answerText}" → ${col.columnLabel} slot ${slotIdx + 1}`);
+                }
+                break;
+              }
+            }
+          } catch (e) {
+            this.logger?.info(`  dragTo fallback failed: ${e}`);
+          }
+        }
+
+        // Strategy 3: Manual mouse drag for CDK
+        if (!placed) {
+          try {
+            const freshItems = sourceList.locator('div.cdk-drag.option-list-item');
+            const freshCount = await freshItems.count();
+            for (let j = 0; j < freshCount; j++) {
+              const txt = (await freshItems.nth(j).locator('.option-list-content p').textContent())?.trim();
+              if (txt === answerText) {
+                const srcBox = await freshItems.nth(j).boundingBox();
+                const tgtBox = await targetZone.boundingBox();
+                if (srcBox && tgtBox) {
+                  const sx = srcBox.x + srcBox.width / 2;
+                  const sy = srcBox.y + srcBox.height / 2;
+                  const tx = tgtBox.x + tgtBox.width / 2;
+                  const ty = tgtBox.y + tgtBox.height / 2;
+                  await this.page.mouse.move(sx, sy);
+                  await this.page.waitForTimeout(300);
+                  await this.page.mouse.down();
+                  await this.page.waitForTimeout(300);
+                  const steps = 20;
+                  for (let s = 1; s <= steps; s++) {
+                    await this.page.mouse.move(
+                      sx + (tx - sx) * (s / steps),
+                      sy + (ty - sy) * (s / steps),
+                      { steps: 2 }
+                    );
+                  }
+                  await this.page.waitForTimeout(300);
+                  await this.page.mouse.up();
+                  await this.page.waitForTimeout(500);
+                  if (await targetHasValue(targetZone, answerText)) {
+                    placed = true;
+                    this.logger?.success(`  ✅ Manual drag: "${answerText}" → ${col.columnLabel} slot ${slotIdx + 1}`);
+                  }
+                }
+                break;
+              }
+            }
+          } catch (e) {
+            this.logger?.info(`  Manual drag fallback failed: ${e}`);
+          }
+        }
+
+        if (!placed) {
+          this.logger?.info(`  ⚠️ Could not place "${answerText}" in "${col.columnLabel}" slot ${slotIdx + 1}`);
+        }
+
+        await this.page.waitForTimeout(500);
       }
     }
+
+    this.logger?.success('✅ Bowtie question processing complete');
   };
 
   /**
