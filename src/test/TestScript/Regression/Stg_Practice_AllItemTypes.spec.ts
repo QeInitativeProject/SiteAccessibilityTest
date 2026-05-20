@@ -147,7 +147,7 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
       await logger?.error('TC2 FAIL: ' + error.message, error);
       throw error;
     }
-  });
+  }); 
 
   test('TC3: Answer all the questions with all item types (shuffled)', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC3__Answer_All_Item_Types', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
