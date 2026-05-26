@@ -1,4 +1,4 @@
-import type { Page, TestInfo } from '@playwright/test';
+import type { Locator, Page, TestInfo } from '@playwright/test';
 import { Logger } from '../Utils/Logger';
 import { ATICommonMethod } from '../Utils/ATICommonMethod';
 import { StudentFacingPageLocators } from '../Locator_Store/StudentFacing_Page_Locators';
@@ -41,6 +41,16 @@ export class MyATIPage {
 
   clickOnAssessmentsTab = async () => {
     await this.atiCommonMethod.clickOnAssessmentsTab();
+  };
+
+  // Click on assessments tab specifically on My ATI page (not from home page)
+  clickOnAssessmentsTabOnMyAti = async (): Promise<void> => {
+    this.logger?.step('Clicking on Assessments tab on My ATI page');
+    const assessmentsTab = this.page.getByRole('link', { name: 'Assessments Tab: Select to' });
+    await assessmentsTab.waitFor({ state: 'visible', timeout: 15000 });
+    await assessmentsTab.click();
+    await this.page.waitForLoadState('domcontentloaded');
+    this.logger?.success('Clicked Assessments tab on My ATI');
   };
 
   clickOnPracticeAssessment = async () => {
@@ -227,6 +237,73 @@ export class MyATIPage {
     this.logger?.success('✅ Navigated to Assessment page');
   };
 
+  clickOnAssessmentsTabfromHome = async (): Promise<void> => {
+    await this.page.locator('div.rb-row-main div.status-in-progress-dial[aria-label="IN PROGRESS"]').first().click();
+    this.logger?.success('Clicked on IN PROGRESS assessment');
+  };
+
+  /**
+   * Click on a specific assessment button (Begin/Continue/Retake) by assessment name
+   * @param assessmentName - Exact name of the assessment (e.g., 'All item_Neeraj')
+   * @param buttonText - Button text to click: 'Begin', 'Continue', or 'Retake'
+   */
+  clickAssessmentButton = async (assessmentName: string): Promise<void> => {
+    const card = this.page.locator(`section.practice-assessment:has(div.description:text-is("${assessmentName}"))`);
+    const button = card.locator('a[data-atiid^="startAction_"], a[data-atiid^="continueAction_"], a[data-atiid^="retakeAction_"]').filter({ visible: true }).first();
+    await button.waitFor({ state: 'visible', timeout: 10000 });
+    await button.click();
+    this.logger?.success(`Clicked "${(await button.textContent())?.trim()}" for assessment "${assessmentName}"`);
+  };
+
+  clickOnFlagButton = async (): Promise<void> => {
+    const frame = this.page.frameLocator('#assessmentFrame');
+    await frame.locator('//button[@aria-label="Flag this question for Review"]').click();
+    this.logger?.success('Clicked on Flag Question button');
+  };
+
+  clickOnPauseButton = async (): Promise<void> => {
+    const frame = this.page.frameLocator('#assessmentFrame');
+    await frame.locator('//button[@aria-label="Pause this assessment"]').click();
+    this.logger?.success('Clicked on Pause button');
+  };
+
+  clickOnResumeButton = async (): Promise<void> => {
+    const frame = this.page.frameLocator('#assessmentFrame');
+    await frame.locator('button[aria-label="Resume assessment"]').click();
+    this.logger?.success('Clicked on Resume button');
+  };
+
+  verifyFlagButtonIsStillFlagged = async (): Promise<void> => {
+    const frame = this.page.frameLocator('#assessmentFrame');
+    const unflagButton = frame.locator('//button[@aria-label="Unflag this question"]');
+    await unflagButton.waitFor({ state: 'visible', timeout: 10000 });
+    this.logger?.success('✅ Flag button is still flagged after resume - Unflag button is visible');
+  };
+
+  clickOnCalculatorButton = async (): Promise<void> => {
+    const frame = this.page.frameLocator('#assessmentFrame');
+    await frame.locator('//button[@aria-label="Toggle Calculator"]').click();
+    this.logger?.success('Clicked on Calculator button');
+  };
+
+  async verifyElementIsDraggable(locator: Locator, elementName?: string): Promise<void> {
+    const name = elementName || 'Element';
+    this.logger?.step(`Verifying "${name}" is draggable`);
+    const draggable = await locator.getAttribute('draggable');
+    const dragHandle = await locator.getAttribute('draghandle');
+    const dragTarget = await locator.getAttribute('dragtarget');
+    if (draggable === 'true' || dragHandle || dragTarget) {
+      this.logger?.success(`✓ "${name}" is draggable`);
+      return;
+    }
+    // Check if element or its child has cursor:move style (drag handle indicator)
+    const hasCursorMove = await locator.locator('[style*="cursor:move"], [style*="cursor: move"]').count();
+    if (hasCursorMove > 0) {
+      this.logger?.success(`✓ "${name}" is draggable (cursor:move detected)`);
+      return;
+    }
+    throw new Error(`"${name}" is not draggable. No drag attributes or cursor:move style found.`);
+  }
   /**
    * Reload same assessment after student accidentally closed the tab
    * Steps:

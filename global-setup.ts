@@ -35,6 +35,9 @@ async function globalSetup(_config: FullConfig) {
     // Don't fail tests if cleanup fails
   }
 
+  // Write Allure environment properties for rich reporting
+  writeAllureEnvironment();
+
   console.log('✅ Global Setup Complete\n');
 }
 
@@ -100,6 +103,76 @@ function cleanPlaywrightReportFolder(): void {
       }
     }
   }
+}
+
+/**
+ * Write environment properties and categories for Allure reporting
+ * This enables environment info display, graphs, and failure categorization
+ */
+function writeAllureEnvironment(): void {
+  const allureResultsDir = path.join(process.cwd(), 'allure-results');
+
+  if (!fs.existsSync(allureResultsDir)) {
+    fs.mkdirSync(allureResultsDir, { recursive: true });
+  }
+
+  // Environment properties - shown in Allure report overview
+  const env = process.env.ENV || 'stage';
+  const playwrightVersion = require('@playwright/test/package.json').version;
+  const envProperties = [
+    `Environment=${env.toUpperCase()}`,
+    `Base.URL=${process.env.baseUrl || 'N/A'}`,
+    `Browser=Chromium`,
+    `Node.Version=${process.version}`,
+    `OS=${process.platform}`,
+    `Playwright.Version=${playwrightVersion}`,
+  ].join('\n');
+
+  fs.writeFileSync(path.join(allureResultsDir, 'environment.properties'), envProperties);
+  console.log('  📊 Allure environment.properties written');
+
+  // Executor info - shown in Allure report executor widget
+  const executor = {
+    name: process.env.CI ? 'CI Pipeline' : 'Local Machine',
+    type: process.env.CI ? 'ci' : 'local',
+    buildName: `${env.toUpperCase()} - Playwright ${playwrightVersion}`,
+    buildOrder: Date.now(),
+    reportName: `ATI UI Automation Report - ${env.toUpperCase()}`,
+  };
+
+  fs.writeFileSync(path.join(allureResultsDir, 'executor.json'), JSON.stringify(executor, null, 2));
+  console.log('  📊 Allure executor.json written');
+
+  // Categories - enables failure categorization in Allure graphs
+  const categories = [
+    {
+      name: 'Product Defects',
+      matchedStatuses: ['failed'],
+      messageRegex: '.*AssertionError.*|.*expect\\(.*',
+    },
+    {
+      name: 'Timeout Issues',
+      matchedStatuses: ['broken'],
+      messageRegex: '.*Timeout.*|.*timeout.*|.*exceeded.*',
+    },
+    {
+      name: 'Element Not Found',
+      matchedStatuses: ['broken'],
+      messageRegex: '.*not visible.*|.*not found.*|.*No element.*',
+    },
+    {
+      name: 'Environment Issues',
+      matchedStatuses: ['broken'],
+      messageRegex: '.*ECONNREFUSED.*|.*net::ERR.*|.*Navigation.*',
+    },
+    {
+      name: 'Skipped / Known Issues',
+      matchedStatuses: ['skipped'],
+    },
+  ];
+
+  fs.writeFileSync(path.join(allureResultsDir, 'categories.json'), JSON.stringify(categories, null, 2));
+  console.log('  📊 Allure categories.json written');
 }
 
 export default globalSetup;
