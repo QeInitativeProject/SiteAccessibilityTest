@@ -10,7 +10,9 @@ const artifactDirs = [
   'test-results',
   'playwright-report',
   'test-results/Failed_screenshots',
-  'test-results/logs'
+  'test-results/logs',
+  'allure-report',
+  'allure-results'
 ];
 
 function deleteDirectory(dirPath) {
