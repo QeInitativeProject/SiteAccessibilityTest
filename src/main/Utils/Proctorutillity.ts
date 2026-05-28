@@ -65,6 +65,27 @@ export class ProctorUtility {
   };
 
   /**
+   * Search and select multiple batch IDs, then click CONTINUE
+   * @param batchIds - Array of batch IDs to search and select
+   */
+  fillMultipleAssessmentIDs = async (batchIds: string[]): Promise<void> => {
+    this.logger?.step(`Filling multiple assessment IDs: ${batchIds.join(', ')}`);
+    const searchField = this.page.getByRole('textbox', { name: 'Search for assessment' });
+
+    for (const batchId of batchIds) {
+      await searchField.clear();
+      await searchField.fill(batchId);
+      await this.page.keyboard.press('Enter');
+      await this.page.waitForTimeout(3000);
+      await this.page.getByRole('checkbox').first().click();
+      this.logger?.success(`Batch ID (${batchId}) selected`);
+    }
+
+    await this.page.locator('//button[@color="primary"]//span[text()="CONTINUE"]').click();
+    this.logger?.success('CONTINUE button clicked after selecting all batch IDs');
+  };
+
+  /**
    * Complete proctor agreement page by clicking continue
    */
   completeProctorAgreementPage = async (): Promise<void> => {

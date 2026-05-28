@@ -388,6 +388,7 @@ export class QnAUtil {
 
     let found = false;
     for (let idx = 0; idx < optionCount; idx++) {
+       await this.page.waitForTimeout(1000);
       const optionText = (await options.nth(idx).textContent())?.trim();
       this.logger?.debug(`   ${idx + 1}. "${optionText}"`);
 
@@ -397,7 +398,7 @@ export class QnAUtil {
         await radioButton.click();
         this.logger?.success(`Selected answer: "${optionText}"`);
 
-        await this.page.waitForTimeout(500); // Wait for selection to register
+        await this.page.waitForTimeout(1000); // Wait for selection to register
 
         // Verify selection
         const isChecked = await radioButton.getAttribute('class');
@@ -500,7 +501,7 @@ export class QnAUtil {
             `   ${b + 1}. Text: "${btnText?.trim()}" | Enabled: ${btnEnabled} | Visible: ${btnVisible}`
           );
         }
-        await new Promise((res) => setTimeout(res, 2000)); // Wait before retry
+         await new Promise((res) => setTimeout(res, 2000)); // Wait before retry
       }
     }
     if (!found) {
@@ -1510,6 +1511,7 @@ export class QnAUtil {
       throw new Error(`Continue button issue for multi-select Q${questionIndex + 1}`);
     }
   };
+
 
   /**
    * Answer Angular Material mat-select dropdown questions from JSON file
