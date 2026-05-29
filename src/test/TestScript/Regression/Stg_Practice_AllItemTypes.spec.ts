@@ -12,6 +12,9 @@ const EXPECTED_PERCENTAGE = '100.0%';
 const BATCH_ID = process.env.AllItemsBatchId!;
 const EXPECTED_ASSESSMENT_NAME = process.env.AllItemsAssessment!;
 const SCENARIO_NAME = 'Stg_Practice_AllItemTypes';
+const  IppPageHeading= 'heading';
+const IndividualProfermanceProfile = 'Individual Performance Profile';
+const IppHeading = 'IPP Page Heading';
 
 /**
  * Regression Test - Practice Assessment with All Item Types
@@ -161,7 +164,7 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
 
     try {
       await assessmentPage.smartAnswerAssessment(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE);
-      await assessmentPage.finalizeAssessmentAndViewResults();
+       await assessmentPage.finalizeAssessmentAndViewResults();
       logger.success('TC3 PASS: All questions answered and assessment finalized');
     } catch (error: any) {
       await logger?.error('TC3 FAIL: ' + error.message, error);
@@ -195,17 +198,13 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
 
   test('TC5: Validate scoring is visible on IPP Page', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC5__IPP_Scoring', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
+    assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
 
     logger.separator('TC5: IPP SCORING VALIDATION');
 
     try {
-      await assertions.waitAndAssertVisible(locators.percentageScore);
-      const percentageValue = await locators.percentageScore.textContent();
-      const extractedPercentage = (percentageValue ?? '').trim();
-      assertions.assertPercentage(extractedPercentage, EXPECTED_PERCENTAGE);
-      logger.success(`✅ IPP score: ${extractedPercentage}`);
-
+      await assessmentPage.validateIPPScoring(EXPECTED_PERCENTAGE);
       logger.success('TC5 PASS: Scoring matches expected percentage');
     } catch (error: any) {
       await logger?.error('TC5 FAIL: ' + error.message, error);
@@ -241,12 +240,8 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
     logger.separator('TC7: IPP HEADING AND SCREENSHOT');
 
     try {
-      await assessmentPage.verifyElementByRole(
-        'heading',
-        'Individual Performance Profile',
-        'IPP Page Heading'
-      );
-      await assessmentPage.takeScreenshot(SCENARIO_NAME, BATCH_ID);
+      await assessmentPage.verifyElementByRole(IppPageHeading,IndividualProfermanceProfile, IppHeading);
+       await assessmentPage.takeScreenshot(SCENARIO_NAME, BATCH_ID);
       logger.success('TC7 PASS: IPP heading verified and screenshot taken');
     } catch (error: any) {
       await logger?.error('TC7 FAIL: ' + error.message, error);

@@ -10,11 +10,15 @@ export class AssessmentPage {
   private logger?: Logger;
   private qnaUtil: QnAUtil;
   private textToSpeechUtil: TextToSpeechUtility;
+  private assertions: Assertions;
+  private locators: StudentFacingPageLocators;
 
   constructor(page: Page, testInfo?: TestInfo) {
     this.page = page;
     this.qnaUtil = new QnAUtil(page, testInfo);
     this.textToSpeechUtil = new TextToSpeechUtility(page, testInfo);
+    this.assertions = new Assertions(page);
+    this.locators = new StudentFacingPageLocators(page);
     if (testInfo) {
       this.logger = new Logger(page, 'AssessmentPage', testInfo);
     }
@@ -309,7 +313,7 @@ export class AssessmentPage {
   ): Promise<void> => {
     await assertions.waitAndAssertVisible(locators.overallPercentageScore);
     const percentageValue = await locators.overallPercentageScore.textContent();
-    const extractedPercentage = (percentageValue?.trim() || '') + '%';
+    const extractedPercentage = percentageValue?.trim() || '';
     assertions.assertPercentage(extractedPercentage, expectedPercentage);
     this.logger?.success(`✅ IPP page shows ${expectedPercentage} score on UI`);
 
@@ -319,6 +323,21 @@ export class AssessmentPage {
     // Take screenshot
     await this.takeScreenshot(scenarioName, batchId);
     this.logger?.success('✅ Screenshot captured for IPP page');
+  };
+
+  /**
+   * Validate IPP scoring - verifies percentage score is visible and matches expected value.
+   * Reusable across any test that needs to validate the IPP percentage score.
+   * @param expectedPercentage - Expected score string (e.g., '100.0%')
+   * @returns The extracted percentage string
+   */
+  validateIPPScoring = async (expectedPercentage: string): Promise<string> => {
+    await this.assertions.waitAndAssertVisible(this.locators.percentageScore);
+    const percentageValue = await this.locators.percentageScore.textContent();
+    const extractedPercentage = (percentageValue ?? '').trim();
+    this.assertions.assertPercentage(extractedPercentage, expectedPercentage);
+    this.logger?.success(`✅ IPP score validated: ${extractedPercentage}`);
+    return extractedPercentage;
   };
 
    /**

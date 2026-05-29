@@ -19,6 +19,9 @@ import * as path from 'path';
 const QUESTION_ANSWER_FILE = 'MultiSelect_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store_Stage';
 const SCENARIO_NAME = 'Stg_Multi_Select';
+const  IppPageHeading= 'heading';
+const IndividualProfermanceProfile = 'Individual Performance Profile';
+const IppHeading = 'IPP Page Heading';
 
 // Load expected percentage from JSON file using SCENARIO_NAME as key
 const jsonFilePath = path.join(process.cwd(), `src/test/TestData/${ASSESSMENT_TYPE}/${QUESTION_ANSWER_FILE}`);
@@ -195,8 +198,7 @@ test.describe.serial('@regression Stg_Multi_Select', { tag: '@regression' }, () 
       logger?.step('1. Load answers from JSON file');
       logger?.step('2. Select multiple checkbox options');
       logger?.step('3. Click Continue to submit');
-
-      await qnaUtil.answerMultiSelectAssessmentQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE, SCENARIO_NAME);
+      await assessmentPage.smartAnswerAssessment(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE);
       
       logger?.success('TC7 PASS: Multi-select question answered from JSON');
     } catch (error: any) {
@@ -230,15 +232,8 @@ test.describe.serial('@regression Stg_Multi_Select', { tag: '@regression' }, () 
     
     try {
       logger?.success('\n=== TC9: IPP Score Validation ===');
-
-      await assessmentPage.verifyIPPScoreWithLocator(
-        locators,
-        EXPECTED_PERCENTAGE,
-        SCENARIO_NAME,
-        BATCH_ID,
-        assertions
-      );
-      
+       await assessmentPage.validateIPPScoring(EXPECTED_PERCENTAGE); 
+      await assessmentPage.verifyElementByRole(IppPageHeading,IndividualProfermanceProfile, IppHeading);    
       logger?.success('TC9 PASS: IPP Score validation completed successfully');
     } catch (error: any) {
       await logger?.error('TC9 FAIL: ' + error.message, error);
