@@ -40,6 +40,7 @@ export class ProctorUtility {
    */
   navigateToProctorTab = async (): Promise<void> => {
     this.logger?.step('Navigating to Proctor tab');
+    await this.page.locator('//span[@class="mat-mdc-button-touch-target"]/parent::button').first().click();
     await this.page.locator('//a[@href="/faculty/proctor"]').click();
     this.logger?.success('Navigated to Proctor Tab');
   };
@@ -62,6 +63,27 @@ export class ProctorUtility {
     
     this.assessmentID = assessmentId;
     this.logger?.success(`Assessment ID filled: ${assessmentId}`);
+  };
+
+  /**
+   * Search and select multiple batch IDs, then click CONTINUE
+   * @param batchIds - Array of batch IDs to search and select
+   */
+  fillMultipleAssessmentIDs = async (batchIds: string[]): Promise<void> => {
+    this.logger?.step(`Filling multiple assessment IDs: ${batchIds.join(', ')}`);
+    const searchField = this.page.getByRole('textbox', { name: 'Search for assessment' });
+
+    for (const batchId of batchIds) {
+      await searchField.clear();
+      await searchField.fill(batchId);
+      await this.page.keyboard.press('Enter');
+      await this.page.waitForTimeout(3000);
+      await this.page.getByRole('checkbox').first().click();
+      this.logger?.success(`Batch ID (${batchId}) selected`);
+    }
+
+    await this.page.locator('//button[@color="primary"]//span[text()="CONTINUE"]').click();
+    this.logger?.success('CONTINUE button clicked after selecting all batch IDs');
   };
 
   /**
@@ -203,6 +225,29 @@ export class ProctorUtility {
     this.logger?.success('Student approved by proctor');
   };
 
+  /**
+   * Validates that proctor monitoring shows "Waiting For Proctor" status
+   * and both RESUME and DENY action buttons are visible.
+   */
+  validateResumeAndDenyVisible = async (): Promise<void> => {
+    const statusCell = this.page.locator('mat-cell.mat-column-status');
+    await statusCell.first().waitFor({ state: 'visible', timeout: 15000 });
+    const statusText = await statusCell.first().textContent();
+    const trimmedStatus = (statusText ?? '').trim();
+    if (!trimmedStatus.includes('Waiting For Proctor')) {
+      throw new Error(`Expected "Waiting For Proctor" status but got: "${trimmedStatus}"`);
+    }
+    this.logger?.success(`✅ Proctor side status: "${trimmedStatus}"`);
+
+    const resumeButton = this.page.locator('mat-cell.mat-column-action button.mat-button', { hasText: 'RESUME' });
+    await resumeButton.first().waitFor({ state: 'visible', timeout: 15000 });
+    this.logger?.success('✅ RESUME button is visible on proctor side');
+
+    const denyButton = this.page.locator('mat-cell.mat-column-action button.mat-button', { hasText: 'DENY' });
+    await denyButton.first().waitFor({ state: 'visible', timeout: 15000 });
+    this.logger?.success('✅ DENY button is visible on proctor side');
+  };
+
 /**
    * Resume student by proctor
    */
@@ -261,5 +306,156 @@ export class ProctorUtility {
    */
   setAssessmentID = (assessmentId: string): void => {
     this.assessmentID = assessmentId;
+  };
+
+  /**
+   * Validates that a batch ID is visible in the proctor monitoring page.
+   * @param batchId - The batch ID to check
+   * @param timeout - Timeout in ms (default: 15000)
+   */
+  validateBatchVisibleInMonitoring = async (batchId: string, timeout: number = 15000): Promise<void> => {
+    const batchElement = this.page.getByText(batchId).first();
+    await batchElement.waitFor({ state: 'visible', timeout });
+    this.logger?.success(`✅ Batch ID (${batchId}) is visible in monitoring page`);
+  };
+
+  /**
+   * Expands a batch section in the proctor monitoring page.
+   * @param batchId - The batch ID section to expand
+   */
+  expandBatchSection = async (batchId: string): Promise<void> => {
+    await this.page.getByText(batchId).first().click();
+    await this.page.waitForTimeout(3000);
+    this.logger?.success(`✅ Expanded batch section for Batch ID (${batchId})`);
+  };
+
+  /**
+   * Handles a misbehaviour incident - creates cheat incident if none exists, then ignores it.
+   * Switches between student and faculty tabs as needed.
+   * @param studentTab - The student page/tab
+   */
+  handleMisbehaviourAndIgnore = async (studentTab: Page): Promise<void> => {
+    await this.page.bringToFront();
+    await this.page.reload({ waitUntil: 'networkidle' });
+    await this.page.waitForTimeout(5000);
+    this.logger?.success('Refreshed faculty portal');
+
+    const ignoreButton = this.page.getByRole('button', { name: 'IGNORE', exact: true }).first();
+    const stopButton = this.page.getByRole('button', { name: 'STOP', exact: true }).first();
+
+    const ignoreVisible = await ignoreButton.isVisible().catch(() => false);
+    const stopVisible = await stopButton.isVisible().catch(() => false);
+
+    if (ignoreVisible) {
+      await ignoreButton.click();
+      await this.page.waitForTimeout(3000);
+      this.logger?.success('Faculty clicked IGNORE for misbehaviour incident');
+    } else if (stopVisible) {
+      await stopButton.click();
+      await this.page.waitForTimeout(3000);
+      this.logger?.success('Faculty clicked STOP for misbehaviour incident');
+    } else {
+      // Simulate a cheat incident
+      await studentTab.bringToFront();
+      const iframeElement = studentTab.locator('iframe').first();
+      await iframeElement.click().catch(() => {});
+      await studentTab.keyboard.press('Control+c');
+      await studentTab.waitForTimeout(3000);
+      this.logger?.success('Pressed Ctrl+C to trigger invalid key detection');
+
+      // Switch back to faculty tab and check for incident
+      await this.page.bringToFront();
+      await this.page.reload({ waitUntil: 'networkidle' });
+      await this.page.waitForTimeout(5000);
+
+      const ignoreAfterIncident = this.page.getByRole('button', { name: 'IGNORE' }).first();
+      await ignoreAfterIncident.waitFor({ state: 'visible', timeout: 15000 }).catch(() =>
+        this.logger?.info('No IGNORE button found after incident')
+      );
+
+      const incidentVisible = await ignoreAfterIncident.isVisible().catch(() => false);
+      if (incidentVisible) {
+        await ignoreAfterIncident.click();
+        await this.page.waitForTimeout(3000);
+        this.logger?.success('Faculty clicked IGNORE after simulated misbehaviour');
+      } else {
+        this.logger?.info('No active incident detected');
+      }
+    }
+
+    // Student resumes after proctor ignores
+    await studentTab.bringToFront();
+    await studentTab.waitForTimeout(2000);
+
+    const assessmentFrame = studentTab.frameLocator('iframe').first();
+    const resumeTestBtn = assessmentFrame.getByRole('button', { name: 'Resume Test' });
+    await resumeTestBtn.waitFor({ state: 'visible', timeout: 10000 }).catch(() =>
+      this.logger?.info('Resume Test button not visible - popup may have auto-dismissed')
+    );
+    const resumeVisible = await resumeTestBtn.isVisible().catch(() => false);
+    if (resumeVisible) {
+      await resumeTestBtn.click();
+      await studentTab.waitForLoadState('load');
+      await studentTab.waitForTimeout(3000);
+      this.logger?.success('Student clicked Resume Test');
+    } else {
+      this.logger?.info('Resume Test popup not present - student already back in assessment');
+    }
+  };
+
+  /**
+   * Validates that the proctor side shows the expected status.
+   * @param expectedStatus - Expected status string (e.g., 'Completed', 'In Progress')
+   */
+  validateProctorStatus = async (expectedStatus: string): Promise<string> => {
+    const statusCell = this.page.locator('mat-cell.mat-column-status');
+    await statusCell.first().waitFor({ state: 'visible', timeout: 15000 });
+    const statusText = await statusCell.first().textContent();
+    const trimmedStatus = (statusText ?? '').trim();
+    if (!trimmedStatus.toLowerCase().includes(expectedStatus.toLowerCase())) {
+      throw new Error(`Expected status "${expectedStatus}" but got "${trimmedStatus}"`);
+    }
+    this.logger?.success(`✅ Proctor side status: "${trimmedStatus}"`);
+    return trimmedStatus;
+  };
+  /**
+   * Ignores a cheat incident from the proctor/faculty portal.
+   * Reloads the page and clicks the IGNORE button.
+   */
+  ignoreIncident = async (): Promise<void> => {
+    await this.page.bringToFront();
+    await this.page.reload({ waitUntil: 'networkidle' });
+    await this.page.waitForTimeout(5000);
+    this.logger?.success('\u2705 Refreshed faculty portal');
+
+    const ignoreButton = this.page.locator('mat-cell.mat-column-action button.mat-button', { hasText: 'IGNORE' });
+    await ignoreButton.click();
+    await this.page.waitForTimeout(3000);
+    this.logger?.success('\u2705 Clicked IGNORE button');
+  };
+  /**
+   * Validates that the proctor side shows the expected score.
+   * @param expectedPercentage - Expected score string (e.g., '100.0%')
+   */
+  validateProctorScore = async (expectedPercentage: string): Promise<string> => {
+    const scoreCell = this.page.locator('mat-cell.mat-column-completed');
+    await scoreCell.first().waitFor({ state: 'visible', timeout: 15000 });
+    const scoreText = await scoreCell.first().textContent();
+    const trimmedScore = (scoreText ?? '').trim();
+    if (!trimmedScore.includes(expectedPercentage)) {
+      throw new Error(`Expected score "${expectedPercentage}" but got "${trimmedScore}"`);
+    }
+    this.logger?.success(`✅ Proctor side score: "${trimmedScore}"`);
+    return trimmedScore;
+  };
+
+  /**
+   * Validates that the proctor side shows the expected score and status.
+   * @param expectedPercentage - Expected score string (e.g., '100.0%')
+   * @param expectedStatus - Expected status string (default: 'Completed')
+   */
+  validateProctorScoreAndStatus = async (expectedPercentage: string, expectedStatus: string = 'Completed'): Promise<void> => {
+    await this.validateProctorStatus(expectedStatus);
+    await this.validateProctorScore(expectedPercentage);
   };
 }

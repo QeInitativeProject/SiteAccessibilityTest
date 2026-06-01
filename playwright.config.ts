@@ -63,14 +63,14 @@ export default defineConfig({
     screenshot: 'only-on-failure', // Playwright captures failure screenshots
     video: 'retain-on-failure', // Keep videos only for failed tests (moved to playwright-report/data by Logger)
 
-    viewport: { width: 1280, height: 672 },
+    viewport: null,
     launchOptions: {
       args: [
+        '--start-maximized',
         '--disable-dev-shm-usage',
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-gpu',
-        '--window-size=1280,672',
       ],
     },
   },

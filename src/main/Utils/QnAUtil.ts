@@ -151,7 +151,8 @@ export class QnAUtil {
    * @param assessmentType - Type folder name (e.g., 'Scoring_QA_STAGE', 'Practice_QA_STAGE', etc.)
    * @returns Promise<void>
    */
-  answerAssessmentQuestions = async (
+  answerAssessmentQuestions = 
+  async (
     jsonFileName: string,
     assessmentType: string = 'Scoring_QA_STAGE'
   ): Promise<void> => {
@@ -388,6 +389,7 @@ export class QnAUtil {
 
     let found = false;
     for (let idx = 0; idx < optionCount; idx++) {
+       await this.page.waitForTimeout(1000);
       const optionText = (await options.nth(idx).textContent())?.trim();
       this.logger?.debug(`   ${idx + 1}. "${optionText}"`);
 
@@ -397,7 +399,7 @@ export class QnAUtil {
         await radioButton.click();
         this.logger?.success(`Selected answer: "${optionText}"`);
 
-        await this.page.waitForTimeout(500); // Wait for selection to register
+        await this.page.waitForTimeout(1000); // Wait for selection to register
 
         // Verify selection
         const isChecked = await radioButton.getAttribute('class');
@@ -500,7 +502,7 @@ export class QnAUtil {
             `   ${b + 1}. Text: "${btnText?.trim()}" | Enabled: ${btnEnabled} | Visible: ${btnVisible}`
           );
         }
-        await new Promise((res) => setTimeout(res, 2000)); // Wait before retry
+         await new Promise((res) => setTimeout(res, 2000)); // Wait before retry
       }
     }
     if (!found) {
@@ -527,6 +529,7 @@ export class QnAUtil {
     // Wait for IPP page heading to ensure page is fully rendered
     // Using a more flexible approach with multiple possible selectors
     try {
+      await this.page.waitForTimeout(3000);
       await this.locators.ippHeading.waitFor({ state: 'visible', timeout: 30000 });
       this.logger?.success('IPP page loaded with all elements visible');
     } catch (error) {
@@ -1116,6 +1119,7 @@ export class QnAUtil {
     await calculatorButton2.click();
     this.logger?.info('Clicked button: 2');
 
+
     const plusButton = this.locators.getCalculatorPlusButton();
     await expect(plusButton).toBeVisible();
     await plusButton.click();
@@ -1203,6 +1207,7 @@ export class QnAUtil {
     // Click on pause button
     await pauseButton.click();
     this.logger?.success('Clicked on "Pause this assessment" button');
+    await this.page.waitForTimeout(3000);
 
     // Verify pause window opened and Resume assessment button is showing
     const resumeButton = this.locators.getResumeButton();
@@ -1216,7 +1221,7 @@ export class QnAUtil {
     // Click on Resume assessment button
     await resumeButton.click();
     this.logger?.success('Clicked on "Resume assessment" button');
-
+ await this.page.waitForTimeout(1000);
     // Verify that pause window is closed (Resume button should not be visible)
     await expect(resumeButton).toBeHidden();
     this.logger?.success('Pause window is closed');
@@ -1226,120 +1231,6 @@ export class QnAUtil {
     this.logger?.success('Assessment resumed - Pause button is visible again');
   }
 
-  
-  // Ashok Added
-  // ============================================
-  // MULTI-SELECT ASSESSMENT METHODS
-  // ============================================
-
-  /**
-   * Generic method to answer MULTI-SELECT assessment questions using Q&A from JSON file
-   * This method handles checkboxes for multi-select questions
-   * @param jsonFileName - Name of the JSON file (e.g., 'MultiSelect_QnA.json')
-   * @param assessmentType - Type folder name (e.g., 'Question Store_Stage')
-   * @returns Promise<void>
-   */
-  answerMultiSelectAssessmentQuestions = async (
-    jsonFileName: string,
-    assessmentType: string = 'Question Store_Stage',
-    scenarioName?: string
-  ): Promise<void> => {
-    this.logger?.separator('📚 STARTING MULTI-SELECT ASSESSMENT ANSWERING METHOD');
-
-    // === LOAD QUESTION & ANSWER DATA FROM JSON FILE ===
-    this.logger?.step('Loading multi-select questions and answers from JSON file');
-
-    // Support both filename and full path
-    let jsonFilePath: string;
-    if (jsonFileName.includes('/') || jsonFileName.includes('\\')) {
-      jsonFilePath = path.resolve(jsonFileName);
-    } else {
-      const projectRoot = path.resolve(__dirname, '../../../');
-      
-      let folderName: string;
-      if (assessmentType.includes('STAGE') || assessmentType.includes('Stage')) {
-        folderName = 'Question Store_Stage';
-      } else if (assessmentType.includes('PROD') || assessmentType.includes('Prod')) {
-        folderName = 'Question Store Prod';
-      } else {
-        folderName = assessmentType;
-      }
-      
-      jsonFilePath = path.join(
-        projectRoot,
-        `src/test/TestData/${folderName}/${jsonFileName}`
-      );
-    }
-
-    let questionAnswerData: any;
-    try {
-      const fileContent = fs.readFileSync(jsonFilePath, 'utf-8');
-      const jsonData = JSON.parse(fileContent);
-      
-      // Check if data is nested by assessments (new structure)
-      if (jsonData.assessments && scenarioName) {
-        questionAnswerData = jsonData.assessments[scenarioName];
-        if (!questionAnswerData) {
-          throw new Error(`Assessment '${scenarioName}' not found in JSON`);
-        }
-        this.logger?.success(`Loaded assessment scenario: ${scenarioName}`);
-      } else {
-        questionAnswerData = jsonData;
-      }
-      
-      this.logger?.success(`Loaded multi-select assessment type: ${assessmentType}`);
-      
-      // Calculate totalQuestions from array length if not provided
-      const totalQuestions = questionAnswerData.totalQuestions ?? 
-        (Array.isArray(questionAnswerData.questions) 
-          ? questionAnswerData.questions.length 
-          : 1);
-      questionAnswerData.totalQuestions = totalQuestions;
-      
-      this.logger?.info(`Total questions: ${totalQuestions}`);
-    } catch (err) {
-      const error = err as Error;
-      await this.logger?.error(`Failed to load Q&A file: ${jsonFilePath}`, err);
-      throw new Error(`❌ Failed to load Q&A file: ${jsonFilePath}\nError: ${error.message}`);
-    }
-
-    const questionsArray: any[] = Array.isArray(questionAnswerData.questions) 
-      ? questionAnswerData.questions 
-      : [];
-    
-    if (questionsArray.length === 0) {
-      throw new Error('❌ No questions found in JSON file. Expected array format with answerOptions.');
-    }
-    
-    this.logger?.debug(`Loaded ${questionsArray.length} multi-select questions`);
-
-    const TOTAL_QUESTIONS = questionAnswerData.totalQuestions;
-
-    const frame = this.locators.getAssessmentFrameLocator();
-
-    await this.page.waitForSelector(this.locators.assessmentFrameSelector, {
-      state: 'attached',
-      timeout: 30000,
-    });
-    this.logger?.success('Assessment iframe attached');
-
-    for (let i = 0; i < TOTAL_QUESTIONS; i++) {
-      this.logger?.separator(`📝 Multi-Select Question ${i + 1}/${TOTAL_QUESTIONS}`);
-
-      const questionData = questionsArray[i];
-      const answerOptions: string[] = questionData.answerOptions || [];
-      
-      this.logger?.info(`Answers to select: ${answerOptions.join(', ')}`);
-
-      await this.selectMultipleCheckboxOptions(frame, answerOptions);
-
-      await this.clickMultiSelectContinueButton(frame, i);
-
-      await this.page.waitForTimeout(700); // Wait for UI to update
-    }
-
-    this.logger?.separator(`🎉 All ${TOTAL_QUESTIONS} multi-select questions answered successfully!`);
-  };
 
   /**
    * Select multiple checkbox options for multi-select questions
@@ -1511,6 +1402,7 @@ export class QnAUtil {
     }
   };
 
+
   /**
    * Answer Angular Material mat-select dropdown questions from JSON file
    * @param jsonFileName - Name of the JSON file containing dropdownQuestions
@@ -1522,15 +1414,15 @@ export class QnAUtil {
    * Supports multiple selector strategies
    */
   private extractQuestionTextFromUI = async (questionFrame: FrameLocator): Promise<string> => {
-    this.logger?.step('🔍 Extracting question text from UI...');
+    this.logger?.step('🔍 Extracting qu estion text from UI...');
     
     // Wait for frame content to stabilize - increased wait time
-    await this.page.waitForTimeout(3000);
+     await this.page.waitForTimeout(3000);
     
     // Wait for any question content to be visible
     const questionSelectors = [
       '.stem-text p',
-      '.stem-text',
+      '.stem-text', 
       '.question-stem',
       '#highlightWordsText',
       '.ie-richtext',
@@ -1542,7 +1434,7 @@ export class QnAUtil {
     ];
     
     // Try each selector
-    for (const selector of questionSelectors) {
+     for (const selector of questionSelectors) {
       try {
         const elements = questionFrame.locator(selector);
         const count = await elements.count();
@@ -1716,7 +1608,7 @@ export class QnAUtil {
 
     const dropdownAnswers: string[] = matchedQuestion.dropdownAnswers;
     
-    this.logger?.info(`Loaded ${dropdownAnswers.length} dropdown answers: ${dropdownAnswers.join(', ')}`);
+   // this.logger?.info(`Loaded ${dropdownAnswers.length} dropdown answers: ${dropdownAnswers.join(', ')}`);
 
     // Find all Angular Material mat-select dropdowns
     const matSelectDropdowns = questionFrame.locator('mat-select[role="combobox"]');

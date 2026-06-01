@@ -10,11 +10,15 @@ export class AssessmentPage {
   private logger?: Logger;
   private qnaUtil: QnAUtil;
   private textToSpeechUtil: TextToSpeechUtility;
+  private assertions: Assertions;
+  private locators: StudentFacingPageLocators;
 
   constructor(page: Page, testInfo?: TestInfo) {
     this.page = page;
     this.qnaUtil = new QnAUtil(page, testInfo);
     this.textToSpeechUtil = new TextToSpeechUtility(page, testInfo);
+    this.assertions = new Assertions(page);
+    this.locators = new StudentFacingPageLocators(page);
     if (testInfo) {
       this.logger = new Logger(page, 'AssessmentPage', testInfo);
     }
@@ -296,29 +300,23 @@ export class AssessmentPage {
     this.logger?.success('✅ Screenshot captured for IPP page');
   };
 
-  /**
-   * Verify IPP page score using locator from StudentFacingPageLocators
-   * Used in: TC10 (Multi-Select) - IPP score validation  
-   */
-  verifyIPPScoreWithLocator = async (
-    locators: StudentFacingPageLocators,
-    expectedPercentage: string,
-    scenarioName: string,
-    batchId: string,
-    assertions: Assertions
-  ): Promise<void> => {
-    await assertions.waitAndAssertVisible(locators.overallPercentageScore);
-    const percentageValue = await locators.overallPercentageScore.textContent();
-    const extractedPercentage = (percentageValue?.trim() || '') + '%';
-    assertions.assertPercentage(extractedPercentage, expectedPercentage);
-    this.logger?.success(`✅ IPP page shows ${expectedPercentage} score on UI`);
 
-    // Verify IPP heading
-    await this.verifyElementByRole('heading', 'Individual Performance Profile', 'IPP Page Heading');
-    
-    // Take screenshot
-    await this.takeScreenshot(scenarioName, batchId);
-    this.logger?.success('✅ Screenshot captured for IPP page');
+  /**
+   * Validate IPP scoring - verifies percentage score is visible and matches expected value.
+   * Reusable across any test that needs to validate the IPP percentage score.
+   * @param expectedPercentage - Expected score string (e.g., '100.0%')
+   * @returns The extracted percentage string
+   */
+  validateIPPScoring = async (expectedPercentage: string): Promise<string> => {
+    await this.page.waitForURL(/ViewResult|IPPTestResult/i, { timeout: 100000 });
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.assertions.waitAndAssertVisible(this.locators.percentageScore);
+    const percentageValue = await this.locators.percentageScore.textContent();
+    const trimmed = percentageValue?.trim() || '';
+    const extractedPercentage = trimmed.endsWith('%') ? trimmed : trimmed + '%';
+    this.assertions.assertPercentage(extractedPercentage, expectedPercentage);
+    this.logger?.success(`✅ IPP score validated: ${extractedPercentage}`);
+    return extractedPercentage;
   };
 
    /**
@@ -326,10 +324,138 @@ export class AssessmentPage {
    * Supports all item types: multipleChoice, multipleSelect, dropdown, clozeDropdown,
    * dragAndDrop, bowtie, fillInBlank, highlightText, highlightTable, hotspot, matrix, orderedResponse, exhibit
    */
+  validateAssessmentName = async (expectedAssessmentName: string): Promise<string> => {
+    await this.assertions.waitAndAssertVisible(this.locators.ippAssessmentName);
+    const assessmentNameText = await this.locators.ippAssessmentName.textContent();
+    const trimmedName = (assessmentNameText ?? '').trim();
+    this.assertions.assertStringContains(trimmedName, expectedAssessmentName);
+    this.logger?.success(`✅ Assessment name validated: "${trimmedName}"`);
+    return trimmedName;
+  };
+
   smartAnswerAssessment = async (
     jsonFileName: string,
     assessmentType: string = 'Question Store_Stage'
   ): Promise<void> => {
     await this.qnaUtil.smartAnswerAssessment(jsonFileName, assessmentType);
+  };
+
+  /**
+   * Validates that the current date is reflecting correctly on IPP page.
+   * Matches the app's M/D/YYYY format.
+   * @returns The extracted date string from the DOM
+   */
+  validateIPPDate = async (): Promise<string> => {
+    const today = new Date();
+    const expectedDate = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
+
+    const dateElement = this.page.locator('span').filter({ hasText: /^\d{1,2}\/\d{1,2}\/\d{4}$/ }).first();
+    await dateElement.waitFor({ state: 'visible', timeout: 10000 });
+    const dateText = await dateElement.textContent();
+    const trimmedDate = (dateText ?? '').trim();
+
+    this.assertions.assertStringContains(trimmedDate, expectedDate);
+    this.logger?.success(`\u2705 IPP date validated: "${trimmedDate}"`);
+    return trimmedDate;
+  };
+
+  /**
+   * Simulates a cheat incident by pressing Ctrl+C inside the assessment iframe.
+   * Waits for the "Invalid key pressed" modal to appear.
+   */
+  createCheatIncident = async (): Promise<void> => {
+    const assessmentIframe = this.page.frameLocator('iframe').first();
+    await assessmentIframe.locator('body').waitFor({ state: 'visible', timeout: 30000 });
+    await this.page.waitForTimeout(5000);
+    this.logger?.success('\u2705 Assessment iframe loaded');
+
+    const iframeElement = this.page.locator('iframe').first();
+    await iframeElement.click();
+    await this.page.waitForTimeout(1000);
+
+    await this.page.keyboard.press('Control+c');
+    await this.page.waitForTimeout(3000);
+    this.logger?.success('\u2705 Pressed Ctrl+C to trigger invalid key detection');
+
+    const invalidKeyModal = assessmentIframe.locator('#end-assessment-confirm-title');
+    await invalidKeyModal.waitFor({ state: 'visible', timeout: 15000 });
+    this.logger?.success('\u2705 Invalid key pressed modal is visible');
+  };
+
+  /**
+   * Resumes assessment after a cheat incident by clicking the Resume Test button in the iframe modal.
+   */
+  resumeAfterIncident = async (): Promise<void> => {
+    await this.page.bringToFront();
+    await this.page.waitForTimeout(2000);
+
+    const assessmentFrame = this.page.frameLocator('iframe').first();
+    const resumeTestButton = assessmentFrame.locator('button.primary-button', { hasText: 'Resume Test' });
+    await resumeTestButton.waitFor({ state: 'visible', timeout: 10000 });
+    await resumeTestButton.click();
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(3000);
+    this.logger?.success('\u2705 Clicked Resume Test button');
+  };
+
+  /**
+   * Validates the time spent on IPP page against actual elapsed time.
+   * @param assessmentStartTime - Start time in ms (Date.now())
+   * @param assessmentEndTime - End time in ms (Date.now())
+   * @param toleranceSeconds - Allowed tolerance in seconds (default: 30)
+   * @returns The extracted time string from IPP page
+   */
+  validateIPPTimeSpent = async (
+    assessmentStartTime: number,
+    assessmentEndTime: number,
+    toleranceSeconds: number = 30
+  ): Promise<string> => {
+    await this.assertions.waitAndAssertVisible(this.locators.ippTimeSpent, 10000);
+    const timeSpentText = await this.locators.ippTimeSpent.textContent();
+    const trimmedTime = (timeSpentText ?? '').trim();
+
+    if (!trimmedTime || trimmedTime.length === 0) {
+      throw new Error('Time spent value is empty on IPP Page');
+    }
+
+    const timeParts = trimmedTime.split(':').map(Number);
+    let ippTimeInSeconds: number;
+    if (timeParts.length === 3) {
+      ippTimeInSeconds = timeParts[0] * 3600 + timeParts[1] * 60 + timeParts[2];
+    } else if (timeParts.length === 2) {
+      ippTimeInSeconds = timeParts[0] * 60 + timeParts[1];
+    } else {
+      throw new Error(`Unexpected time format on IPP Page: "${trimmedTime}"`);
+    }
+
+    const actualElapsedSeconds = Math.floor((assessmentEndTime - assessmentStartTime) / 1000);
+    this.logger?.info(`Actual elapsed: ${actualElapsedSeconds}s | IPP reported: ${ippTimeInSeconds}s`);
+
+    const difference = Math.abs(ippTimeInSeconds - actualElapsedSeconds);
+    if (difference > toleranceSeconds) {
+      throw new Error(
+        `Time mismatch beyond ${toleranceSeconds}s tolerance. IPP: ${ippTimeInSeconds}s, Actual: ${actualElapsedSeconds}s, Diff: ${difference}s`
+      );
+    }
+    this.logger?.success(`✅ IPP time validated: "${trimmedTime}" (diff: ${difference}s)`);
+    return trimmedTime;
+  };
+
+  /**
+   * Validates the Close button on IPP page is visible, clicks it, and verifies navigation away.
+   */
+  validateIPPCloseButton = async (): Promise<void> => {
+    await this.assertions.waitAndAssertVisible(this.locators.ippCloseButton, 10000);
+    this.logger?.success('Close button is visible on IPP Page');
+
+    await this.locators.ippCloseButton.click();
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(3000);
+
+    const postCloseUrl = this.page.url();
+    if (postCloseUrl.includes('IPPTestResult') || postCloseUrl.includes('ViewResult')) {
+      throw new Error('Close button did not navigate away from IPP Page');
+    }
+    this.logger?.success(`✅ Close button navigated away from IPP: ${postCloseUrl}`);
   };
 }
