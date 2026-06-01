@@ -40,6 +40,7 @@ export class ProctorUtility {
    */
   navigateToProctorTab = async (): Promise<void> => {
     this.logger?.step('Navigating to Proctor tab');
+    await this.page.locator('//span[@class="mat-mdc-button-touch-target"]/parent::button').first().click();
     await this.page.locator('//a[@href="/faculty/proctor"]').click();
     this.logger?.success('Navigated to Proctor Tab');
   };
@@ -282,5 +283,61 @@ export class ProctorUtility {
    */
   setAssessmentID = (assessmentId: string): void => {
     this.assessmentID = assessmentId;
+  };
+
+  /**
+   * Validates that the proctor side shows the expected status.
+   * @param expectedStatus - Expected status string (e.g., 'Completed', 'In Progress')
+   */
+  validateProctorStatus = async (expectedStatus: string): Promise<string> => {
+    const statusCell = this.page.locator('mat-cell.mat-column-status');
+    await statusCell.first().waitFor({ state: 'visible', timeout: 15000 });
+    const statusText = await statusCell.first().textContent();
+    const trimmedStatus = (statusText ?? '').trim();
+    if (!trimmedStatus.toLowerCase().includes(expectedStatus.toLowerCase())) {
+      throw new Error(`Expected status "${expectedStatus}" but got "${trimmedStatus}"`);
+    }
+    this.logger?.success(`✅ Proctor side status: "${trimmedStatus}"`);
+    return trimmedStatus;
+  };
+  /**
+   * Ignores a cheat incident from the proctor/faculty portal.
+   * Reloads the page and clicks the IGNORE button.
+   */
+  ignoreIncident = async (): Promise<void> => {
+    await this.page.bringToFront();
+    await this.page.reload({ waitUntil: 'networkidle' });
+    await this.page.waitForTimeout(5000);
+    this.logger?.success('\u2705 Refreshed faculty portal');
+
+    const ignoreButton = this.page.locator('mat-cell.mat-column-action button.mat-button', { hasText: 'IGNORE' });
+    await ignoreButton.click();
+    await this.page.waitForTimeout(3000);
+    this.logger?.success('\u2705 Clicked IGNORE button');
+  };
+  /**
+   * Validates that the proctor side shows the expected score.
+   * @param expectedPercentage - Expected score string (e.g., '100.0%')
+   */
+  validateProctorScore = async (expectedPercentage: string): Promise<string> => {
+    const scoreCell = this.page.locator('mat-cell.mat-column-completed');
+    await scoreCell.first().waitFor({ state: 'visible', timeout: 15000 });
+    const scoreText = await scoreCell.first().textContent();
+    const trimmedScore = (scoreText ?? '').trim();
+    if (!trimmedScore.includes(expectedPercentage)) {
+      throw new Error(`Expected score "${expectedPercentage}" but got "${trimmedScore}"`);
+    }
+    this.logger?.success(`✅ Proctor side score: "${trimmedScore}"`);
+    return trimmedScore;
+  };
+
+  /**
+   * Validates that the proctor side shows the expected score and status.
+   * @param expectedPercentage - Expected score string (e.g., '100.0%')
+   * @param expectedStatus - Expected status string (default: 'Completed')
+   */
+  validateProctorScoreAndStatus = async (expectedPercentage: string, expectedStatus: string = 'Completed'): Promise<void> => {
+    await this.validateProctorStatus(expectedStatus);
+    await this.validateProctorScore(expectedPercentage);
   };
 }
