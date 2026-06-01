@@ -40,7 +40,7 @@ export class ProctorUtility {
    */
   navigateToProctorTab = async (): Promise<void> => {
     this.logger?.step('Navigating to Proctor tab');
-    await this.page.locator('//span[@class="mat-mdc-button-touch-target"]/parent::button').first().click();
+   // await this.page.locator('//span[@class="mat-mdc-button-touch-target"]/parent::button').first().click();
     await this.page.locator('//a[@href="/faculty/proctor"]').click();
     this.logger?.success('Navigated to Proctor Tab');
   };
