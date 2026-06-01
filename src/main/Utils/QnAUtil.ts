@@ -151,7 +151,8 @@ export class QnAUtil {
    * @param assessmentType - Type folder name (e.g., 'Scoring_QA_STAGE', 'Practice_QA_STAGE', etc.)
    * @returns Promise<void>
    */
-  answerAssessmentQuestions = async (
+  answerAssessmentQuestions = 
+  async (
     jsonFileName: string,
     assessmentType: string = 'Scoring_QA_STAGE'
   ): Promise<void> => {
@@ -528,6 +529,7 @@ export class QnAUtil {
     // Wait for IPP page heading to ensure page is fully rendered
     // Using a more flexible approach with multiple possible selectors
     try {
+      await this.page.waitForTimeout(3000);
       await this.locators.ippHeading.waitFor({ state: 'visible', timeout: 30000 });
       this.logger?.success('IPP page loaded with all elements visible');
     } catch (error) {
@@ -1412,15 +1414,15 @@ export class QnAUtil {
    * Supports multiple selector strategies
    */
   private extractQuestionTextFromUI = async (questionFrame: FrameLocator): Promise<string> => {
-    this.logger?.step('🔍 Extracting question text from UI...');
+    this.logger?.step('🔍 Extracting qu estion text from UI...');
     
     // Wait for frame content to stabilize - increased wait time
-    await this.page.waitForTimeout(3000);
+     await this.page.waitForTimeout(3000);
     
     // Wait for any question content to be visible
     const questionSelectors = [
       '.stem-text p',
-      '.stem-text',
+      '.stem-text', 
       '.question-stem',
       '#highlightWordsText',
       '.ie-richtext',
@@ -1606,7 +1608,7 @@ export class QnAUtil {
 
     const dropdownAnswers: string[] = matchedQuestion.dropdownAnswers;
     
-    this.logger?.info(`Loaded ${dropdownAnswers.length} dropdown answers: ${dropdownAnswers.join(', ')}`);
+   // this.logger?.info(`Loaded ${dropdownAnswers.length} dropdown answers: ${dropdownAnswers.join(', ')}`);
 
     // Find all Angular Material mat-select dropdowns
     const matSelectDropdowns = questionFrame.locator('mat-select[role="combobox"]');

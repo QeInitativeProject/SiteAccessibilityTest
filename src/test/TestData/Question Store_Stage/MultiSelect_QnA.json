@@ -6,12 +6,6 @@
       "questionText": "1B3b Form A 2",
       "questionType": "multipleSelect",
       "answers": ["K", "K", "K"]
-    },
-    {
-      "questionNumber": 7,
-      "questionText": "Select value 10 and 20",
-      "questionType": "multipleSelect",
-      "answers": ["10", "20"]
     }
   ]
 }

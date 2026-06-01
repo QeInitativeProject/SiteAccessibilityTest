@@ -1,3 +1,12 @@
+/**
+ * Regression Test - Practice Assessment with All Item Types
+ * Description: Validate that student should be able to launch and attempt practice assessment
+ * with all item types (Multiple Choice, Multi-Select, Drag & Drop / Ordered Response,
+ * Fill in the Blank, Drop-Down / Cloze, Bow-Tie, Matrix / Grid, Highlight / Text Select).
+ * Note: Questions in this assessment are shuffled - uses smartAnswerAssessment for auto-detection.
+ * @author [Ashok Singh]
+ */
+
 import { test, Browser, BrowserContext, Page } from '@playwright/test';
 import { LoginPage } from '@delegates/LoginPage';
 import { MyATIPage } from '@delegates/MyATIPage';
@@ -12,18 +21,9 @@ const EXPECTED_PERCENTAGE = '100.0%';
 const BATCH_ID = process.env.AllItemsBatchId!;
 const EXPECTED_ASSESSMENT_NAME = process.env.AllItemsAssessment!;
 const SCENARIO_NAME = 'Stg_Practice_AllItemTypes';
-const  IppPageHeading= 'heading';
-const IndividualProfermanceProfile = 'Individual Performance Profile';
+const IppPageHeading = 'heading';
+const IndividualPerformanceProfile = 'Individual Performance Profile';
 const IppHeading = 'IPP Page Heading';
-
-/**
- * Regression Test - Practice Assessment with All Item Types
- * Description: Validate that student should be able to launch and attempt practice assessment
- * with all item types (Multiple Choice, Multi-Select, Drag & Drop / Ordered Response,
- * Fill in the Blank, Drop-Down / Cloze, Bow-Tie, Matrix / Grid, Highlight / Text Select).
- * Note: Questions in this assessment are shuffled - uses smartAnswerAssessment for auto-detection.
- * @author [Ashok Singh]
- */
 
 test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regression' }, () => {
   let browser: Browser;
@@ -85,8 +85,6 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
   test('TC1: Student login to ATI', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC1__Student_Login', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
 
     logger.separator('TC1: STUDENT LOGIN');
@@ -107,64 +105,36 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
 
   test('TC2: Add Product - Enter Batch ID and Password', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC2__Add_Product', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });
-    atiLoginPage.setLogger(logger);
     myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
 
     logger.separator('TC2: ADD PRODUCT WITH BATCH ID');
 
     try {
-        await myATIPage.verifyMyATIPageFunctionality(locators, assertions);
-      // Click on Assessments tab (opens Add Product dialog)
-      await myATIPage.clickOnAssessmentsTab();
-      await page.waitForTimeout(2000);
-
-      // Verify and enter Batch ID
-      await assertions.waitAndAssertVisible(locators.idTextbox, 15000);
-      await locators.idTextbox.fill(BATCH_ID);
-      logger.success(`✅ Batch ID entered: ${BATCH_ID}`);
-
-      // Click Continue
-      await assertions.waitAndAssertVisible(locators.continueButton, 10000);
-      await locators.continueButton.click();
-      await page.waitForTimeout(2000);
-
-      // Enter Password
-      await assertions.waitAndAssertVisible(locators.passwordTextboxDialog, 10000);
-      await locators.passwordTextboxDialog.fill(process.env.muassessmentpassword || 'Test@123');
-      logger.success('✅ Password entered');
-
-      // Click Continue after password
-      await assertions.waitAndAssertVisible(locators.continueButton, 10000);
-      await locators.continueButton.click();
-
-      // Verify navigation to Assessment page
-      await myATIPage.waitForPageLoadAndVerifyNavigation('/Assessment');
-      const finalUrl = page.url();
-      assertions.assertStringContains(finalUrl, '/Assessment');
-      logger.success(`✅ Navigated to Assessment page: ${finalUrl}`);
-
+      await page.waitForLoadState('domcontentloaded');
+      await myATIPage.verifyMyATIPageFunctionality(locators, assertions);
+      await myATIPage.addProductAndNavigateToAssessment(
+        BATCH_ID,
+        process.env.muassessmentpassword || 'Test@123',
+        locators,
+        assertions
+      );
       logger.success('TC2 PASS: Product added with Batch ID and password');
     } catch (error: any) {
       await logger?.error('TC2 FAIL: ' + error.message, error);
       throw error;
     }
-  }); 
+  });
 
-  test('TC3: Answer all the questions with all item types (shuffled)', { tag: '@regression' }, async ({}, testInfo) => {
+  test('TC3: Answer all questions with all item types (shuffled)', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC3__Answer_All_Item_Types', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
-    atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
     assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
 
     logger.separator('TC3: ANSWER ALL ITEM TYPES (SMART AUTO-DETECT)');
-    logger.step('Item types: Multiple Choice, Multi-Select, Drag & Drop, Fill in Blank, Dropdown/Cloze, Bow-Tie, Matrix/Grid, Highlight');
 
     try {
       await assessmentPage.smartAnswerAssessment(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE);
-       await assessmentPage.finalizeAssessmentAndViewResults();
+      await assessmentPage.finalizeAssessmentAndViewResults();
       logger.success('TC3 PASS: All questions answered and assessment finalized');
     } catch (error: any) {
       await logger?.error('TC3 FAIL: ' + error.message, error);
@@ -184,11 +154,8 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
       await page.waitForTimeout(3000);
       const currentUrl = page.url();
       assertions.assertStringContains(currentUrl, 'ViewResult');
-      logger.success(`✅ IPP page URL confirmed: ${currentUrl}`);
 
       await assertions.waitAndAssertVisible(locators.ippHeading, 15000);
-      logger.success('✅ IPP heading "Individual Performance Profile" is visible');
-
       logger.success('TC4 PASS: IPP page is visible and not broken');
     } catch (error: any) {
       await logger?.error('TC4 FAIL: ' + error.message, error);
@@ -196,10 +163,9 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
     }
   });
 
-  test('TC5: Validate scoring is visible on IPP Page', { tag: '@regression' }, async ({}, testInfo) => {
+  test('TC5: Validate scoring on IPP Page', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC5__IPP_Scoring', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
     assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
 
     logger.separator('TC5: IPP SCORING VALIDATION');
 
@@ -214,17 +180,12 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
 
   test('TC6: Validate assessment name on IPP Page', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC6__IPP_Assessment_Name', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
-    assertions.setLogger(logger);
+    assessmentPage.setLogger(logger);
 
     logger.separator('TC6: IPP ASSESSMENT NAME VALIDATION');
 
     try {
-      await assertions.waitAndAssertVisible(locators.ippAssessmentName, 10000);
-      const assessmentNameText = await locators.ippAssessmentName.textContent();
-      const trimmedName = (assessmentNameText ?? '').trim();
-      assertions.assertStringContains(trimmedName, EXPECTED_ASSESSMENT_NAME);
-      logger.success(`✅ Assessment name: "${trimmedName}"`);
-
+      await assessmentPage.validateAssessmentName(EXPECTED_ASSESSMENT_NAME);
       logger.success('TC6 PASS: Assessment name correctly reflects on IPP Page');
     } catch (error: any) {
       await logger?.error('TC6 FAIL: ' + error.message, error);
@@ -235,13 +196,12 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
   test('TC7: Validate IPP heading and take screenshot', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC7__IPP_Screenshot', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
     assessmentPage.setLogger(logger);
-    assertions.setLogger(logger);
 
     logger.separator('TC7: IPP HEADING AND SCREENSHOT');
 
     try {
-      await assessmentPage.verifyElementByRole(IppPageHeading,IndividualProfermanceProfile, IppHeading);
-       await assessmentPage.takeScreenshot(SCENARIO_NAME, BATCH_ID);
+      await assessmentPage.verifyElementByRole(IppPageHeading, IndividualPerformanceProfile, IppHeading);
+      await assessmentPage.takeScreenshot(SCENARIO_NAME, BATCH_ID);
       logger.success('TC7 PASS: IPP heading verified and screenshot taken');
     } catch (error: any) {
       await logger?.error('TC7 FAIL: ' + error.message, error);

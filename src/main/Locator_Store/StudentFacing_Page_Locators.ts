@@ -598,12 +598,11 @@ export class StudentFacingPageLocators {
     return this.page.locator('text=Individual Performance Profile').first();
   }
 
-  /**
-   * Percentage score locator (regex pattern for digits with %)
-   * Used in: TC12/TC15 - Score percentage validation
-   */
+
   get percentageScore() {
-    return this.page.locator('text=/\\d+%/').first();
+    return this.page.locator('span[data-atiid="individualScore"]').or(
+      this.page.locator('.ipp-test-reporting-header-score span')
+    ).first();
   }
 
   // ============================================
@@ -670,9 +669,10 @@ export class StudentFacingPageLocators {
 
   /**
    * Assessment name displayed on IPP page
+   * Works for both Angular and Knockout IPP pages
    */
   get ippAssessmentName() {
-    return this.page.locator('.lesson-header-details ul li span').nth(1);
+    return this.page.locator('.lesson-header-details ul li:visible span[tabindex="0"]').last();
   }
 
   

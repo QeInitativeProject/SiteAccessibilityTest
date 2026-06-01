@@ -102,7 +102,7 @@ test.describe.serial('@regression Stg_Practice_TTS_On', () => {
   
       logger.step('Enter student credentials');
       await atiLoginPage.fillStuUserName(process.env.stuUserNamezzcab2 || '');
-      await atiLoginPage.fillStuPassword(process.env.stuPasswordzzcab || '');
+      await atiLoginPage.fillStuPassword(process.env.stuPasswordzzcab1 || '');
   
       logger.step('Click login button');
       await atiLoginPage.clickLogin();
