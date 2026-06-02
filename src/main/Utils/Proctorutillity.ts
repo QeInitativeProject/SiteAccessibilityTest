@@ -31,7 +31,9 @@ export class ProctorUtility {
    */
   clickOnMenuBar = async (): Promise<void> => {
     this.logger?.step('Clicking menu bar');
-    await this.page.locator('//div[@class="flex items-center"]/button').click();
+    const menuBtn = this.page.locator('//div[@class="flex items-center"]/button');
+    await menuBtn.waitFor({ state: 'visible', timeout: 1000 });
+    await menuBtn.click();
     this.logger?.success('Menu bar clicked');
   };
 
@@ -40,8 +42,9 @@ export class ProctorUtility {
    */
   navigateToProctorTab = async (): Promise<void> => {
     this.logger?.step('Navigating to Proctor tab');
-   // await this.page.locator('//span[@class="mat-mdc-button-touch-target"]/parent::button').first().click();
-    await this.page.locator('//a[@href="/faculty/proctor"]').click();
+    const proctorLink = this.page.locator('//a[@href="/faculty/proctor"]');
+    await proctorLink.waitFor({ state: 'visible', timeout: 1000 });
+    await proctorLink.click();
     this.logger?.success('Navigated to Proctor Tab');
   };
 
