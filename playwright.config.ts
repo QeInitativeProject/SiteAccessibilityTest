@@ -63,7 +63,8 @@ export default defineConfig({
     screenshot: 'only-on-failure', // Playwright captures failure screenshots
     video: 'retain-on-failure', // Keep videos only for failed tests (moved to playwright-report/data by Logger)
 
-    viewport: null,
+    // In CI headless mode, --start-maximized has no effect, so set explicit viewport
+    viewport: process.env.CI ? { width: 1920, height: 1080 } : null,
     launchOptions: {
       args: [
         '--start-maximized',
@@ -80,7 +81,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        viewport: null,
+        viewport: process.env.CI ? { width: 1920, height: 1080 } : null,
         deviceScaleFactor: undefined,
       },
     },
