@@ -91,8 +91,8 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
 
     try {
       await page.goto(process.env.baseUrl!, { waitUntil: 'load' });
-      await atiLoginPage.fillStuUserName(process.env.stuUsernamezzcabMultiSelect!);
-      await atiLoginPage.fillStuPassword(process.env.stuPasswordzzcabMultiSelect!);
+      await atiLoginPage.fillStuUserName(process.env.stuUsernamezzcabAllItems!);
+      await atiLoginPage.fillStuPassword(process.env.stuPasswordzzcabAllItems!);
       await atiLoginPage.clickLogin();
       await page.waitForLoadState('load');
       await assertions.assertURLNotContains('/login');

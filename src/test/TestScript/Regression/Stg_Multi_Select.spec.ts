@@ -83,8 +83,8 @@ test.describe.serial('@Regression - Stg_Multi_Select', { tag: '@regression' }, (
 
     try {
       await page.goto(process.env.baseUrl);
-      await atiLoginPage.fillStuUserName(process.env.stuUsernamezzcabMultiSelect || '');
-      await atiLoginPage.fillStuPassword(process.env.stuPasswordzzcabMultiSelect || '');
+      await atiLoginPage.fillStuUserName(process.env.stuUsernamezzcabMultiSelect!);
+      await atiLoginPage.fillStuPassword(process.env.stuPasswordzzcabMultiSelect!);
       await atiLoginPage.clickLogin();
       logger.success('TC1 PASS: Login successful and Home page loaded');
     } catch (error: any) {

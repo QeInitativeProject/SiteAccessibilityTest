@@ -63,10 +63,9 @@ export default defineConfig({
     screenshot: 'only-on-failure', // Playwright captures failure screenshots
     video: 'retain-on-failure', // Keep videos only for failed tests (moved to playwright-report/data by Logger)
 
-    viewport: null,
+    viewport: { width: 1440, height: 900 },
     launchOptions: {
       args: [
-        '--start-maximized',
         '--disable-dev-shm-usage',
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -80,8 +79,9 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        viewport: null,
+        viewport: { width: 1440, height: 900 },
         deviceScaleFactor: undefined,
+      
       },
     },
   ],

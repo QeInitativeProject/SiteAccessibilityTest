@@ -92,8 +92,8 @@ test.describe.serial('@Regression - Stg_Multi_SelectDropdown', { tag: '@regressi
 
     try {
       await page.goto(process.env.baseUrl!, { waitUntil: 'load' });
-      await atiLoginPage.fillStuUserName(process.env.stuUsernamezzcabMultiSelect!);
-      await atiLoginPage.fillStuPassword(process.env.stuPasswordzzcabMultiSelect!);
+      await atiLoginPage.fillStuUserName(process.env.stuUsernamezzcabMultiSelectDD!);
+      await atiLoginPage.fillStuPassword(process.env.stuPasswordzzcabMultiSelectDD!);
       await atiLoginPage.clickLogin();
       await page.waitForLoadState('load');
       await assertions.assertURLNotContains('/login');
