@@ -43,9 +43,24 @@ export class ProctorUtility {
   navigateToProctorTab = async (): Promise<void> => {
     this.logger?.step('Navigating to Proctor tab');
     const proctorLink = this.page.locator('//a[@href="/faculty/proctor"]');
-    await proctorLink.waitFor({ state: 'visible', timeout: 1000 });
+    await proctorLink.waitFor({ state: 'visible', timeout: 5000 });
     await proctorLink.click();
     this.logger?.success('Navigated to Proctor Tab');
+  };
+
+  /**
+   * Dismiss the "Stop! Test Security Update" popup if it appears on the Proctor page
+   */
+  dismissSecurityPopup = async (): Promise<void> => {
+    this.logger?.step('Checking for security update popup');
+    const closeBtn = this.page.locator('button.close, button[aria-label="Close"], .modal-header button, mat-dialog-container button.close');
+    try {
+      await closeBtn.first().waitFor({ state: 'visible', timeout: 5000 });
+      await closeBtn.first().click();
+      this.logger?.success('Dismissed security update popup');
+    } catch {
+      this.logger?.info('No security popup appeared');
+    }
   };
 
   /**
