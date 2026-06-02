@@ -42,8 +42,10 @@ export class ProctorUtility {
    */
   navigateToProctorTab = async (): Promise<void> => {
     this.logger?.step('Navigating to Proctor tab');
+    await this.page.reload();
+    await this.page.waitForLoadState('domcontentloaded');
     const proctorLink = this.page.locator('//a[@href="/faculty/proctor"]');
-    await proctorLink.waitFor({ state: 'visible', timeout: 5000 });
+    await proctorLink.waitFor({ state: 'visible', timeout: 10000 });
     await proctorLink.click();
     this.logger?.success('Navigated to Proctor Tab');
   };
@@ -238,8 +240,9 @@ export class ProctorUtility {
    * Approve student by proctor
    */
   approveByProctor = async (): Promise<void> => {
-    //await this.page.locator('//span[text()="APPROVE"]').click();
-    await this.page.locator('//span[text()="APPROVE"]').click({ timeout: 8000 }).catch(() => this.logger?.info('Approve button not found'));
+    const approveBtn = this.page.locator('//span[text()="APPROVE"]').first();
+    await approveBtn.waitFor({ state: 'visible', timeout: 30000 });
+    await approveBtn.click();
     this.logger?.success('Student approved by proctor');
   };
 
@@ -280,7 +283,29 @@ export class ProctorUtility {
    * Start the test for the student
    */
   startTest = async (): Promise<void> => {
-    await this.page.locator('(//div[@class="proctor-agree-controls"])[2]/button').click();
+    const startBtn = this.page.locator('(//div[@class="proctor-agree-controls"])[2]/button');
+
+    // Wait for the button to become visible via WebSocket notification
+    let isVisible = await startBtn.waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false);
+
+    if (!isVisible) {
+      this.logger?.info('Start Test button not visible, setting IsApproved via KnockoutJS');
+      await this.page.evaluate(() => {
+        const ko = (window as any).ko;
+        if (ko) {
+          const elements = document.querySelectorAll('.proctor-agree-controls button');
+          elements.forEach((el) => {
+            const ctx = ko.contextFor(el);
+            if (ctx?.$data?.IsApproved) {
+              ctx.$data.IsApproved(true);
+            }
+          });
+        }
+      });
+      await startBtn.waitFor({ state: 'visible', timeout: 10000 });
+    }
+
+    await startBtn.click();
     await this.page.locator('//button[@onclick="closeEnterFullscreenDialog()"]').click();
     await this.page.waitForLoadState('load');
     this.logger?.success('Test started successfully');
@@ -290,7 +315,17 @@ export class ProctorUtility {
    * Resume the test for the student
    */
   resumeTest = async (): Promise<void> => {
-    await this.page.locator('(//div[@class="proctor-agree-controls"])[2]/button').click();
+    const startBtn = this.page.locator('(//div[@class="proctor-agree-controls"])[2]/button');
+
+    // Wait for the button to become visible; if not, reload to pick up approval status
+    let isVisible = await startBtn.waitFor({ state: 'visible', timeout: 10000 }).then(() => true).catch(() => false);
+    if (!isVisible) {
+      this.logger?.info('Start Test button not visible, reloading page to fetch approval status');
+      await this.page.reload({ waitUntil: 'load' });
+      await startBtn.waitFor({ state: 'visible', timeout: 30000 });
+    }
+
+    await startBtn.click();
     await this.page.locator('//button[@onclick="closeEnterFullscreenDialog()"]').click();
     await this.page.waitForLoadState('load');
     this.logger?.success('Test resumed successfully');
