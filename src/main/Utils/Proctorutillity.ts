@@ -42,7 +42,7 @@ export class ProctorUtility {
    */
   navigateToProctorTab = async (): Promise<void> => {
     this.logger?.step('Navigating to Proctor tab');
-    await this.page.reload();
+    await this.page.waitForLoadState('networkidle');
     await this.page.waitForLoadState('domcontentloaded');
     const proctorLink = this.page.locator('//a[@href="/faculty/proctor"]');
     await proctorLink.waitFor({ state: 'visible', timeout: 10000 });
