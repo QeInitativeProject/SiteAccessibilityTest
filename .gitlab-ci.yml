@@ -23,13 +23,6 @@ cache:
   image: mcr.microsoft.com/playwright:v1.57.0-jammy
   interruptible: true
   before_script:
-    - |
-      # Validate ENV variable
-      if [ "$ENV" != "stage" ] && [ "$ENV" != "qa" ] && [ "$ENV" != "prod" ]; then
-        echo "❌ ERROR: Invalid ENV value '$ENV'. Allowed values: stage, qa, prod"
-        exit 1
-      fi
-      echo "✅ Environment validated: $ENV"
     - echo "📦 Installing dependencies..."
     - npm ci --prefer-offline --no-audit || npm install --no-audit
     - echo "🎭 Installing Playwright..."
@@ -65,14 +58,12 @@ cache:
   # Removed job-level retry; Playwright will retry only failed tests
   allow_failure: false
 
-# ==================== SMOKE TEST JOBS ====================
+# ==================== SUITE-LEVEL JOBS (Run All Tests by Environment) ====================
 smoke:qa:
   extends: .smoke_test
   variables:
     ENV: "qa"
 
-
-# ==================== SMOKE-STAGE (Manual, Stage Only, Folder Restricted) ====================
 smoke:stage:
   extends: .smoke_test
   variables:
@@ -82,20 +73,15 @@ smoke:stage:
     - npx playwright test --grep @smoke src/test/TestScript/Smoke-Stage --workers=4
   when: manual
 
-
-# ==================== REGRESSION TEST JOBS ====================
-
-# ==================== REGRESSION (Manual, Stage Only, Folder Restricted) ====================
-regression:stage:
-  extends: .regression_test
+smoke:prod:
+  extends: .smoke_test
   variables:
-    ENV: "stage"
+    ENV: "prod"
   script:
-    - echo "🔬 Running Regression Tests on ${ENV} environment (Regression folder only)..."
-    - npx playwright test --grep @regression  src/test/TestScript/Regression --workers=100%
+    - echo "🧪 Running Smoke Tests on ${ENV} environment (Sanity-Prod folder only)..."
+    - npx playwright test --grep @smoke src/test/TestScript/Sanity-Prod --workers=4
   when: manual
 
-# ==================== SANITY-PROD (Manual, Prod Only, Folder Restricted) ====================
 sanity:prod:
   extends: .test_base
   stage: test
@@ -111,6 +97,15 @@ sanity:prod:
       - runner_system_failure
       - stuck_or_timeout_failure
   allow_failure: false
+
+regression:stage:
+  extends: .regression_test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Regression Tests on ${ENV} environment (Regression folder only)..."
+    - npx playwright test --grep @regression  src/test/TestScript/Regression --workers=100%
+  when: manual
 
 # ==================== INDIVIDUAL SPEC FILE JOBS - SMOKE STAGE ====================
 smoke:stage:PracticeTest_ReaderOn:
