@@ -1,11 +1,11 @@
-
 /**
- * @author Ashok Singh
- * @description Multi-Select Dropdown Assessment Test Suite
+ * Regression Test - Multi-Select Dropdown Assessment
+ * Description: Validate that student should be able to launch and attempt assessment
+ * with multi-select dropdown questions (mat-select, cloze dropdown, flagging).
+ * @author [Ashok Singh]
  */
 
-import { test } from '@playwright/test';
-import { Browser, BrowserContext, Page } from '@playwright/test';
+import { test, Browser, BrowserContext, Page } from '@playwright/test';
 import { LoginPage } from '@delegates/LoginPage';
 import { MyATIPage } from '@delegates/MyATIPage';
 import { AssessmentPage } from '@delegates/AssessmentPage';
@@ -13,265 +13,223 @@ import { Assertions } from '@utils/Assertion';
 import { Logger } from '@utils/Logger';
 import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators';
 import { QnAUtil } from '@utils/QnAUtil';
-import * as fs from 'fs';
-import * as path from 'path';
 
-const QUESTION_ANSWER_FILE = 'MultiSelect_QnA.json';
+const QUESTION_ANSWER_FILE = 'MultiSelectDropdown_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store_Stage';
 const SCENARIO_NAME = 'Stg_Multi_SelectDropdown';
-
-// Load expected percentage from JSON file
-const jsonFilePath = path.join(process.cwd(), `src/test/TestData/${ASSESSMENT_TYPE}/${QUESTION_ANSWER_FILE}`);
-const jsonData = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8'));
-const EXPECTED_PERCENTAGE = jsonData.assessments?.Stg_Multi_SelectDropdown?.expectedPercentage;
-
-// Batch ID from environment variable
+const EXPECTED_PERCENTAGE = '62.5%';
 const BATCH_ID = process.env.MultiSelectDropdownBatchId || '';
+const IppPageHeading = 'heading';
+const IndividualPerformanceProfile = 'Individual Performance Profile';
+const IppHeading = 'IPP Page Heading';
+const EXPECTED_ASSESSMENT_NAME = process.env.MultiSelectDragAndDropAssessment!;
 
-test.describe.serial('@regression Stg_Multi_SelectDropdown', { tag: '@regression' }, () => {
+test.describe.serial('@Regression - Stg_Multi_SelectDropdown', { tag: '@regression' }, () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;
-  let assertions: Assertions;
   let atiLoginPage: LoginPage;
   let myATIPage: MyATIPage;
   let assessmentPage: AssessmentPage;
+  let assertions: Assertions;
   let logger: Logger;
   let locators: StudentFacingPageLocators;
   let qnaUtil: QnAUtil;
 
   test.beforeAll(async () => {
-
     const { chromium } = await import('@playwright/test');
-    browser = await chromium.launch();
+    browser = await chromium.launch({
+      headless: process.env.CI ? true : false,
+    });
     context = await browser.newContext();
     page = await context.newPage();
-    assertions = new Assertions(page);
     atiLoginPage = new LoginPage(page);
     myATIPage = new MyATIPage(page);
     assessmentPage = new AssessmentPage(page);
+    assertions = new Assertions(page);
     locators = new StudentFacingPageLocators(page);
     qnaUtil = new QnAUtil(page);
+
+    // Automatically dismiss all dialogs
+    page.on('dialog', async (dialog) => {
+      logger?.info(`Dialog ${dialog.type()} dismissed: ${dialog.message()}`);
+      await dialog.dismiss();
+    });
+
+    // Handle console errors
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        logger?.info(`Console error: ${msg.text()}`);
+      }
+    });
   });
 
   test.afterEach(async ({}, testInfo) => {
     if (testInfo.status !== testInfo.expectedStatus) {
       await logger?.captureScreenshot('test_failure');
     }
-
   });
 
-  test.afterAll(async ({}, _testInfo) => {
-    await browser.close();
+  test.afterAll(async () => {
+    try {
+      if (context) {
+        await context.close();
+      }
+      if (browser) {
+        await browser.close();
+      }
+    } catch (error) {
+      console.error('Error in cleanup:', error);
+    }
   });
 
-  test('TC1: ATI login and verify Home page elements', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC1: ATI login and verify Home page elements', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
+  test('TC1: Student login to ATI', { tag: '@regression' }, async ({}, testInfo) => {
+    logger = new Logger(page, 'TC1__Student_Login', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
 
+    logger.separator('TC1: STUDENT LOGIN');
+
     try {
-      logger?.success('\n=== TC1: ATI Login Validation ===');;
-      logger?.step('1. Navigate to base URL');
-      logger?.step('2. Enter student credentials');
-      logger?.step('3. Verify Home page URL loaded');
-
-      await page.goto(process.env.baseUrl);
-      await atiLoginPage.fillStuUserName(process.env.stuUsernamezzcabMultiSelect || '');
-      await atiLoginPage.fillStuPassword(process.env.stuPasswordzzcabMultiSelect || '');
+      await page.goto(process.env.baseUrl!, { waitUntil: 'load' });
+      await atiLoginPage.fillStuUserName(process.env.stuUsernamezzcabMultiSelectDD!);
+      await atiLoginPage.fillStuPassword(process.env.stuPasswordzzcabMultiSelectDD!);
       await atiLoginPage.clickLogin();
-      logger?.success('Logged into ATI with multi-select credentials');
-
-      logger?.success('TC1 PASS: Login successful and Home page loaded');
+      await page.waitForLoadState('load');
+      await assertions.assertURLNotContains('/login');
+      logger.success('TC1 PASS: Student logged in successfully');
     } catch (error: any) {
       await logger?.error('TC1 FAIL: ' + error.message, error);
       throw error;
     }
   });
- 
-  
-  test('TC2: Verify Home page navigation elements', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC2: Verify Home page navigation elements', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });
+
+  test('TC2: Add Product - Enter Batch ID and Password', { tag: '@regression' }, async ({}, testInfo) => {
+    logger = new Logger(page, 'TC2__Add_Product', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });
     myATIPage.setLogger(logger);
-    
-    try {
-      logger?.success('\n=== TC2: Home Page Navigation Elements Validation ===');
+    assertions.setLogger(logger);
 
-      await myATIPage.verifyHomePageNavigationElements(locators, assertions);
-
-      logger?.success('TC2 PASS: All Home page navigation elements verified successfully');
-    } catch (error: any) {
-      await logger?.error('TC2 FAIL: ' + error.message, error);
-      throw error;
-    }
-  });    
-
-  test('TC3: Verify My ATI page functionality', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC3: Verify My ATI page functionality', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
-    myATIPage.setLogger(logger);
+    logger.separator('TC2: ADD PRODUCT WITH BATCH ID');
 
     try {
-      logger?.success('\n=== TC3: My ATI Page Functionality Validation ===');
-
       await myATIPage.verifyMyATIPageFunctionality(locators, assertions);
-
-      logger?.success('TC3 PASS: My ATI page functionality verified - all elements visible');
-    } catch (error: any) {
-      await logger?.error('TC3 FAIL: ' + error.message, error);
-      throw error;
-    } 
-  }); 
-
-  test('TC4: Click on Assessments tab, verify Add Product dialog, enter credentials and continue', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC4: Add Product Dialog and Credentials', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
-    myATIPage.setLogger(logger);
-    
-    try {
-      logger?.success('\n=== TC4: Add Product Dialog and Credentials Validation ===');
-
       await myATIPage.addProductAndNavigateToAssessment(
         BATCH_ID,
         process.env.muassessmentpassword,
         locators,
         assertions
       );
+      logger.success('TC2 PASS: Product added and navigated to Assessment page');
+    } catch (error: any) {
+      await logger?.error('TC2 FAIL: ' + error.message, error);
+      throw error;
+    }
+  });
 
-      logger?.success(
-        '\nTC4 PASS: Add Product dialog verified, credentials entered, and navigated to Assessment page.'
-      );
+  test('TC3: Answer first Dropdown question', { tag: '@regression' }, async ({}, testInfo) => {
+    logger = new Logger(page, 'TC3__First_Dropdown', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
+    qnaUtil.setLogger(logger);
+
+    logger.separator('TC3: FIRST DROPDOWN QUESTION');
+
+    try {
+      await myATIPage.waitForPageLoadAndVerifyNavigation('/Assessment');
+      await qnaUtil.answerMultiSelectDropdownQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE, SCENARIO_NAME);
+      logger.success('TC3 PASS: First Dropdown question processed');
+    } catch (error: any) {
+      await logger?.error('TC3 FAIL: ' + error.message, error);
+      throw error;
+    }
+  });
+
+  test('TC4: Navigate to previous question and return', { tag: '@regression' }, async ({}, testInfo) => {
+    logger = new Logger(page, 'TC4__Previous_Navigation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
+    assessmentPage.setLogger(logger);
+
+    logger.separator('TC4: PREVIOUS BUTTON NAVIGATION');
+
+    try {
+      await assessmentPage.navigateToPreviousQuestionAndReturn();
+      logger.success('TC4 PASS: Previous button navigation validated');
     } catch (error: any) {
       await logger?.error('TC4 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC5: Verify assessment page and question interface', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC5: Verify assessment page and question interface', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
-    
+  test('TC5: Answer second Dropdown question', { tag: '@regression' }, async ({}, testInfo) => {
+    logger = new Logger(page, 'TC5__Second_Dropdown', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
+    qnaUtil.setLogger(logger);
+
+    logger.separator('TC5: SECOND DROPDOWN QUESTION');
+
     try {
-      logger?.success('\n=== TC5: Assessment Interface Validation ===');;
-      logger?.step('1. Verify assessment page is loaded');
-      logger?.step('2. Check question frame is visible');
-      logger?.step('3. Verify assessment interface elements');
-
-      await myATIPage.waitForPageLoadAndVerifyNavigation('/Assessment');
-      logger?.success('Assessment page loaded successfully');
-
-      logger?.success('TC5 PASS: Assessment interface verified and ready');
+      await qnaUtil.answerMultiSelectDropdownQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE, SCENARIO_NAME);
+      logger.success('TC5 PASS: Second Dropdown question processed');
     } catch (error: any) {
       await logger?.error('TC5 FAIL: ' + error.message, error);
       throw error;
     }
-  }); 
+  });
 
-  test('TC6: Answer first Dropdown question (flag and skip if shouldFlag, otherwise answer)', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC6: Answer first Dropdown question', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
+  test('TC6: Answer third Dropdown question', { tag: '@regression' }, async ({}, testInfo) => {
+    logger = new Logger(page, 'TC6__Third_Dropdown', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
     qnaUtil.setLogger(logger);
-    
-    try {
-      logger?.success('\n=== TC6: First Dropdown Question - Check Flag and Answer ===');;
-      logger?.step('1. Extract question text from UI');
-      logger?.step('2. Match with JSON to check shouldFlag property');
-      logger?.step('3. If shouldFlag=true, flag and skip; otherwise answer and proceed');
 
+    logger.separator('TC6: THIRD DROPDOWN QUESTION');
+
+    try {
       await qnaUtil.answerMultiSelectDropdownQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE, SCENARIO_NAME);
-      
-      logger?.success('TC6 PASS: First Dropdown question processed (flagged+skipped or answered)');
+      logger.success('TC6 PASS: Third Dropdown question processed');
     } catch (error: any) {
       await logger?.error('TC6 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC7: Navigate to previous question, verify, and return to current question', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC7: Navigate to previous question', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
+  test('TC7: Check flagged notification and finalize assessment', { tag: '@regression' }, async ({}, testInfo) => {
+    logger = new Logger(page, 'TC7__Finalize_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
     assessmentPage.setLogger(logger);
-    
-    try {
-      logger?.success('\n=== TC7: Previous Button Navigation Validation ===');
 
-      await assessmentPage.navigateToPreviousQuestionAndReturn();
-      
-      logger?.success('TC7 PASS: Previous button navigation validated successfully');
+    logger.separator('TC7: FLAGGED NOTIFICATION AND FINALIZE');
+
+    try {
+      await assessmentPage.checkFlaggedNotificationAndFinalize();
+      logger.success('TC7 PASS: Flagged notification verified and assessment finalized');
     } catch (error: any) {
       await logger?.error('TC7 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC8: Answer second Dropdown question (flag and skip if shouldFlag, otherwise answer)', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC8: Answer second Dropdown question', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
-    qnaUtil.setLogger(logger);
-    
-    try {
-      logger?.success('\n=== TC8: Second Dropdown Question - Check Flag and Answer ===');;
-      logger?.step('1. Extract question text from UI');
-      logger?.step('2. Match with JSON to check shouldFlag property');
-      logger?.step('3. If shouldFlag=true, flag and skip; otherwise answer and proceed');
+  test('TC8: Validate scoring on IPP Page', { tag: '@regression' }, async ({}, testInfo) => {
+    logger = new Logger(page, 'TC8__IPP_Scoring', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
+    assessmentPage.setLogger(logger);
 
-      await qnaUtil.answerMultiSelectDropdownQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE, SCENARIO_NAME);
-      
-      logger?.success('TC8 PASS: Second Dropdown question processed (flagged+skipped or answered)');
+    logger.separator('TC8: IPP SCORING VALIDATION');
+
+    try {
+      await assessmentPage.validateIPPScoring(EXPECTED_PERCENTAGE);
+      logger.success('TC8 PASS: IPP score validated');
     } catch (error: any) {
       await logger?.error('TC8 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC9: Answer third Dropdown question (flag and skip if shouldFlag, otherwise answer)', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC9: Answer third Dropdown question', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
-    qnaUtil.setLogger(logger);
-    
-    try {
-      logger?.success('\n=== TC9: Third Dropdown Question - Check Flag and Answer ===');;
-      logger?.step('1. Extract question text from UI');
-      logger?.step('2. Match with JSON to check shouldFlag property');
-      logger?.step('3. If shouldFlag=true, flag and skip; otherwise answer and proceed to finish');
+  test('TC9: Validate IPP heading and take screenshot', { tag: '@regression' }, async ({}, testInfo) => {
+    logger = new Logger(page, 'TC9__IPP_Screenshot', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
+    assessmentPage.setLogger(logger);
 
-      await qnaUtil.answerMultiSelectDropdownQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE, SCENARIO_NAME);
-      
-      logger?.success('TC9 PASS: Third Dropdown question processed (flagged+skipped or answered)');
+    logger.separator('TC9: IPP HEADING AND SCREENSHOT');
+
+    try {
+      await assessmentPage.validateAssessmentName(EXPECTED_ASSESSMENT_NAME);
+      await assessmentPage.verifyElementByRole(IppPageHeading, IndividualPerformanceProfile, IppHeading);
+      await assessmentPage.takeScreenshot(SCENARIO_NAME, BATCH_ID);
+      logger.success('TC9 PASS: IPP heading verified and screenshot taken');
     } catch (error: any) {
       await logger?.error('TC9 FAIL: ' + error.message, error);
-      throw error;
-    }
-  });
-
-  test('TC10: Check for flagged Dropdown question notification and complete assessment', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC10: Check for flagged Dropdown question notification and complete assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC10' });
-    assessmentPage.setLogger(logger);
-    
-    try {
-      logger?.success('\n=== TC10: Flagged Dropdown Question Notification and Finalize Assessment ===');
-
-      await assessmentPage.checkFlaggedNotificationAndFinalize();
-
-      logger?.success('TC10 PASS: Flagged Dropdown question notification verified and assessment finished');
-    } catch (error: any) {
-      await logger?.error('TC10 FAIL: ' + error.message, error);
-      throw error;
-    }
-  });
-
-  test('TC11: Verify percentage score on IPP page', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC11: Verify percentage score on IPP page', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC11' });
-    assessmentPage.setLogger(logger);
-    
-    try {
-      logger?.success('\n=== TC11: IPP Score Validation ===');
-
-      await assessmentPage.verifyIPPScoreAndScreenshot(
-        EXPECTED_PERCENTAGE,
-        SCENARIO_NAME,
-        BATCH_ID,
-        assertions
-      );
-
-      logger?.success('TC11 PASS: IPP page shows score on UI');
-    } catch (error: any) {
-      await logger?.error('TC11 FAIL: ' + error.message, error);
       throw error;
     }
   });

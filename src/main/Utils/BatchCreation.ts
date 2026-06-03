@@ -63,20 +63,29 @@ export class BatchCreation {
     const assessmentValue = assessmentName || process.env.Assessment || '';
 
     this.logger?.step(`Selecting institution: ${institutionValue}`);
-    await muLoginPage.selectDropdownByTypingWithHighlight(
-      muLocators.institutionDropdown,
-      institutionValue,
-      institutionValue,
-      'Institution'
-    );
+    await muLocators.institutionDropdown.selectOption({ label: institutionValue });
+    this.logger?.info(`Institution option selected: "${institutionValue}"`);
+
+    // Wait for ASP.NET auto-postback after institution selection (populates assessment dropdown)
+    try {
+      await this.muPage.waitForLoadState('load', { timeout: 15000 });
+      this.logger?.info('Page auto-refresh after institution selection completed');
+    } catch {
+      this.logger?.info('No auto-refresh detected, continuing...');
+    }
+    await this.muPage.waitForTimeout(2000);
 
     this.logger?.step(`Selecting assessment: ${assessmentValue}`);
-    await muLoginPage.selectDropdownByTypingWithHighlight(
-      muLocators.assessmentDropdown,
-      assessmentValue,
-      assessmentValue,
-      'Assessment'
-    );
+    await muLocators.assessmentDropdown.selectOption({ label: assessmentValue });
+    this.logger?.info(`Assessment option selected: "${assessmentValue}"`);
+
+    // Wait for any postback after assessment selection
+    try {
+      await this.muPage.waitForLoadState('load', { timeout: 15000 });
+    } catch {
+      // No postback expected for assessment, continue
+    }
+    await this.muPage.waitForTimeout(1000);
 
     this.logger?.step('Entering password and paid booklets');
     await muLoginPage.enterTextInTextbox(

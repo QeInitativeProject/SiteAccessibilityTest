@@ -1,5 +1,8 @@
 /**
- * @author Shyan Wasi
+ * Regression Test - 75% Score Assessment
+ * Description: Validate student takes a practice assessment answering 3/4 questions correctly,
+ * verifies IPP page shows 75.0% score.
+ * @author [Shyan Wasi]
  */
 
 import { test } from '@playwright/test';
@@ -12,12 +15,13 @@ import { Assertions } from '@utils/Assertion';
 import { Logger } from '@utils/Logger';
 import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators';
 
-const _EXPECTED_URL_PATTERN = '/ViewResult/IPPTestResult/';
 const EXPECTED_PERCENTAGE = '75.0%';
-const _EXPECTED_ASSESSMENT_NAME = 'scoringstg_shyan';
 const QUESTION_ANSWER_FILE = '3_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store_Stage';
 const SCENARIO_NAME = 'Stg_75_Percent';
+const IppPageHeading = 'heading';
+const IndividualPerformanceProfile = 'Individual Performance Profile';
+const IppHeading = 'IPP Page Heading';
 
 test.describe.serial('@regression Stg_75_Percent', () => {
   let browser: Browser;
@@ -33,7 +37,6 @@ test.describe.serial('@regression Stg_75_Percent', () => {
   let locators: StudentFacingPageLocators;
 
   test.beforeAll(async () => {
-    // Use import for Playwright
     const { chromium } = await import('@playwright/test');
     browser = await chromium.launch();
     context = await browser.newContext();
@@ -46,16 +49,19 @@ test.describe.serial('@regression Stg_75_Percent', () => {
     locators = new StudentFacingPageLocators(page);
   });
 
-    test.afterEach(async ({}, testInfo) => {
+  test.afterEach(async ({}, testInfo) => {
     if (testInfo.status !== testInfo.expectedStatus) {
       await logger?.captureScreenshot('test_failure');
     }
-    // Success screenshots removed - only capturing final IPP screenshot
   });
 
-  test.afterAll(async ({}, testInfo) => {
+  test.afterAll(async () => {
     await browser.close();
   });
+
+  // ============================================================
+  // BATCH CREATION & LOGIN
+  // ============================================================
 
   test('TC1: MU batch creation', async ({}, testInfo) => {
     logger = new Logger(page, 'TC1__MU_Batch_Creation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
@@ -64,82 +70,53 @@ test.describe.serial('@regression Stg_75_Percent', () => {
     assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
 
-    try {
-      logger.step('TC1: MU Batch Creation Validation');
-      logger.step('1. Creating MU batch');
-      logger.step('2. Validating batch ID is numeric with min 5 digits');
+    logger.separator('TC1: MU BATCH CREATION');
 
+    try {
+      const stopTimer = logger.startTimer('Batch creation');
       extractedBatchId = await batchCreation.createBatch();
+      stopTimer();
+
       assertions.assertValidNumericId(extractedBatchId, 5);
-      logger?.success(`TC1 PASS: Batch created with ID: ${extractedBatchId}`);
+      logger.success(`Batch created with ID: ${extractedBatchId}`);
     } catch (error: any) {
       await logger?.error('TC1 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC2: ATI login and verify Home page elements', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC2: ATI login and verify Home page elements', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });
+  test('TC2: ATI login', async ({}, testInfo) => {
+    logger = new Logger(page, 'TC2__ATI_Login', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });
     atiLoginPage.setLogger(logger);
-    myATIPage.setLogger(logger);
-    assessmentPage.setLogger(logger);
     assertions.setLogger(logger);
 
-    try {
-      logger.step('TC2: ATI Login Validation');
-      logger.step('1. Navigate to base URL');
-      logger.step('2. Enter student credentials');
-      logger.step('3. Verify Home page URL loaded');
+    logger.separator('TC2: ATI LOGIN');
 
+    try {
       await page.goto(process.env.baseUrl);
       await atiLoginPage.fillStuUserName(process.env.stuUsernamezzdev2);
       await atiLoginPage.fillStuPassword(process.env.stuPasswordzzdev);
       await atiLoginPage.clickLogin();
-      logger?.success('Logged into ATI with zzdev credentials');
-
-      // Wait for Home page URL to load properly
-      // Removed /Home URL assertion as requested
-      logger?.success('Home page URL loaded successfully');
-
-      logger?.success('TC2 PASS: Login successful and Home page loaded');
+      logger.success('TC2 PASS: Logged into ATI successfully');
     } catch (error: any) {
       await logger?.error('TC2 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
+  // ============================================================
+  // HOME PAGE & MY ATI VALIDATION
+  // ============================================================
+
   test('TC3: Verify Home page navigation elements', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC3: Verify Home page navigation elements', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
-    
+    logger = new Logger(page, 'TC3__Home_Page_Navigation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
+    myATIPage.setLogger(logger);
+
+    logger.separator('TC3: HOME PAGE NAVIGATION ELEMENTS');
+
     try {
-      logger?.step('TC3: Home Page Navigation Elements Validation');
-      logger?.step('1. Home navigation link');
-      logger?.step('2. My ATI navigation link');
-      logger?.step('3. Results navigation link');
-      logger?.step('4. Help navigation link');
-      logger?.step('5. Profile navigation link');
-      logger?.step('6. Add a Product text');
-
-      // Assert all navigation links are visible using Assertions class
-      await assertions.assertVisible(locators.homeNavigationLink);
-      logger?.success('✓ Home navigation link is visible');
-
-      await assertions.assertVisible(locators.myATINavigationLink);
-      logger?.success('✓ My ATI navigation link is visible');
-
-      await assertions.assertVisible(locators.resultsNavigationLink);
-      logger?.success('✓ Results navigation link is visible');
-
-      await assertions.assertVisible(locators.helpNavigationLink);
-      logger?.success('✓ Help navigation link is visible');
-
-      await assertions.assertVisible(locators.profileNavigationLink);
-      logger?.success('✓ Profile navigation link is visible');
-
-      await assertions.assertVisible(locators.addProductText);
-      logger?.success('✓ Add a Product text is visible');
-
-      logger?.success('TC3 PASS: All Home page navigation elements verified successfully');
+      await myATIPage.verifyHomePageNavigationElements(locators, assertions);
+      logger.success('TC3 PASS: All Home page navigation elements verified');
     } catch (error: any) {
       await logger?.error('TC3 FAIL: ' + error.message, error);
       throw error;
@@ -147,117 +124,38 @@ test.describe.serial('@regression Stg_75_Percent', () => {
   });
 
   test('TC4: Verify My ATI page functionality', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC4: Verify My ATI page functionality', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
-    logger?.step('TC4: My ATI Page Functionality Validation');
-    logger?.step('1. Click on My ATI tab');
-    logger?.step('2. Verify Products page URL');
-    logger?.step('3. Assessments Tab link visibility');
-    logger?.step('4. Study Materials heading visibility');
-    logger?.step('5. Learn Tab link visibility');
-    logger?.step('6. NCLEX Prep Tab link visibility');
+    logger = new Logger(page, 'TC4__My_ATI_Page', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
+    myATIPage.setLogger(logger);
+
+    logger.separator('TC4: MY ATI PAGE FUNCTIONALITY');
 
     try {
-      // Click on My ATI tab
-      await myATIPage.clickOnMyATITab();
-      logger?.success('Clicked on My ATI tab');
-
-      // Wait for Products page URL to load properly
-      await assertions.assertPageHasURL(/\/Products/);
-      logger?.success('Products page URL loaded successfully');
-
-      // Assert Assessments Tab link is visible
-      await assertions.assertVisible(locators.assessmentsTabLink);
-      logger?.success('✓ Assessments Tab link is visible');
-
-      // Assert Study Materials heading is visible
-      await assertions.assertVisible(locators.studyMaterialsHeading);
-      logger?.success('✓ Study Materials heading is visible');
-
-      // Assert Learn Tab link is visible
-      await assertions.assertVisible(locators.learnTabLink);
-      logger?.success('✓ Learn Tab link is visible');
-
-      // Assert NCLEX Prep Tab link is visible
-      await assertions.assertVisible(locators.nclexPrepTabLink);
-      logger?.success('✓ NCLEX Prep Tab link is visible');
-
-      logger?.success('TC4 PASS: My ATI page functionality verified - all elements visible');
+      await myATIPage.verifyMyATIPageFunctionality(locators, assertions);
+      logger.success('TC4 PASS: My ATI page functionality verified');
     } catch (error: any) {
-      logger?.error('TC4 FAIL: ' + error.message);
+      await logger?.error('TC4 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC5: Click on Assessments tab, verify Add Product dialog, enter credentials and continue', async ({}, testInfo) => {
-    
+  // ============================================================
+  // ADD PRODUCT & ASSESSMENT FLOW
+  // ============================================================
+
+  test('TC5: Add Product and navigate to Assessment', async ({}, testInfo) => {
+    logger = new Logger(page, 'TC5__Add_Product', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
+    myATIPage.setLogger(logger);
+
+    logger.separator('TC5: ADD PRODUCT AND NAVIGATE TO ASSESSMENT');
+
     try {
-      logger?.success('\n=== TC5: Add Product Dialog and Credentials Validation ===');
-      logger?.step('1. Click on Assessments tab');
-      logger?.step('2. Verify Add Product dialog appears');
-      logger?.step('3. Enter Batch ID from TC1');
-      logger?.step('4. Enter Password');
-      logger?.step('5. Click Continue');
-      logger?.step('6. Navigate to Assessment page');
-
-      // Click on Assessments tab
-      await myATIPage.clickOnAssessmentsTab();
-      logger?.success('Clicked on Assessments tab');
-
-      // Verify Add Product dialog appears
-      await assertions.assertRoleVisible('heading', 'Add a product to your account');
-      logger?.success('✅ Add Product dialog is visible');
-
-      // Verify Cancel and Continue buttons are visible when dialog appears
-      await assertions.assertVisible(locators.cancelButton);
-      logger?.success('✅ Cancel button is visible in Add Product dialog');
-
-      await assertions.assertVisible(locators.continueButton);
-      logger?.success('✅ Continue button is visible in Add Product dialog');
-
-      // Verify ID textbox is visible
-      await assertions.assertVisible(locators.idTextbox);
-      logger?.success('✅ ID textbox is visible');
-
-      // Enter Batch ID
-      await locators.idTextbox.fill(extractedBatchId.trim());
-      logger?.success(`✅ Batch ID entered: ${extractedBatchId.trim()}`);
-
-      // Verify Cancel and Continue buttons are still visible after entering Batch ID
-      await assertions.assertVisible(locators.cancelButton);
-      logger?.success('✅ Cancel button is visible after entering Batch ID');
-
-      await assertions.assertVisible(locators.continueButton);
-      logger?.success('✅ Continue button is visible after entering Batch ID');
-
-      // Click Continue button after entering Batch ID
-      await locators.continueButton.click();
-      logger?.success('✅ Continue clicked after ID entry');
-
-      // Verify Password textbox is visible
-      await assertions.assertVisible(locators.passwordTextboxDialog);
-      logger?.success('✅ Password textbox is visible');
-
-      // Enter Password
-      await locators.passwordTextboxDialog.fill(process.env.muassessmentpassword || '');
-      logger?.success(`✅ Password entered`);
-
-      // Verify Cancel and Continue buttons are visible after entering Password
-      await assertions.assertVisible(locators.cancelButton);
-      logger?.success('✅ Cancel button is visible after entering Password');
-
-      // Verify Continue button is visible after entering both Batch ID and Password
-      await assertions.assertVisible(locators.continueButton);
-      logger?.success('✅ Continue button is visible after entering Batch ID and Password');
-      await locators.continueButton.click();
-      logger?.success('✅ Continue clicked after password entry');
-
-      // Verify navigation to Assessment page
-      await myATIPage.waitForPageLoadAndVerifyNavigation('/Assessment');
-      logger?.success('✅ Navigated to Assessment page');
-
-      logger?.success(
-        '\nTC5 PASS: Add Product dialog verified, credentials entered, and navigated to Assessment page.'
+      await myATIPage.addProductAndNavigateToAssessment(
+        extractedBatchId,
+        process.env.muassessmentpassword || '',
+        locators,
+        assertions
       );
+      logger.success('TC5 PASS: Product added and navigated to Assessment page');
     } catch (error: any) {
       await logger?.error('TC5 FAIL: ' + error.message, error);
       throw error;
@@ -265,32 +163,28 @@ test.describe.serial('@regression Stg_75_Percent', () => {
   });
 
   test('TC6: Flag, Continue, Previous, Unflag robust flow', async ({}, testInfo) => {
-    logger?.success('\n=== TC6: Flag/Unflag Flow Validation ===');
-    logger?.step('1. Flag a question');
-    logger?.step('2. Continue to next question');
-    logger?.step('3. Go back to previous question');
-    logger?.step('4. Unflag the question');
+    logger = new Logger(page, 'TC6__Flag_Unflag_Flow', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
+
+    logger.separator('TC6: FLAG/UNFLAG FLOW');
 
     try {
       await myATIPage.waitForPageLoadAndVerifyNavigation('/Assessment');
       await assessmentPage.flagContinuePreviousUnflagFlow(assertions);
-      logger?.success('TC6 PASS: Full Flag-Continue-Previous-Unflag flow succeeded.');
+      logger.success('TC6 PASS: Full Flag-Continue-Previous-Unflag flow succeeded.');
     } catch (error: any) {
-      logger?.error('TC6 FAIL: Full Flag-Continue-Previous-Unflag flow failed: ' + error);
+      await logger?.error('TC6 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
   test('TC7: Verify blue banner is visible with correct background color', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC7__Blue_Banner_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
-    
-    try {
-      logger?.success('\n=== TC7: Blue Banner Validation ===');
-      logger?.step('1. Verify blue banner visibility');
-      logger?.step('2. Validate background color (#d7eef4)');
+    logger = new Logger(page, 'TC7__Blue_Banner', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
 
+    logger.separator('TC7: BLUE BANNER VALIDATION');
+
+    try {
       await assessmentPage.verifyBlueBannerVisibility('#d7eef4');
-      logger?.success('TC7 PASS: Blue banner is visible');
+      logger.success('TC7 PASS: Blue banner is visible with correct color');
     } catch (error: any) {
       await logger?.error('TC7 FAIL: ' + error.message, error);
       throw error;
@@ -298,16 +192,13 @@ test.describe.serial('@regression Stg_75_Percent', () => {
   });
 
   test('TC8: Calculator functionality', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC8__Calculator_Functionality_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
-    
-    try {
-      logger?.success('\n=== TC8: Calculator Functionality Validation ===');
-      logger?.step('1. Open calculator');
-      logger?.step('2. Verify calculator input and operations');
-      logger?.step('3. Close calculator');
+    logger = new Logger(page, 'TC8__Calculator', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
 
+    logger.separator('TC8: CALCULATOR FUNCTIONALITY');
+
+    try {
       await assessmentPage.verifyCalculatorFunctionality();
-      logger?.success('TC8 PASS: Calculator functionality verified');
+      logger.success('TC8 PASS: Calculator functionality verified');
     } catch (error: any) {
       await logger?.error('TC8 FAIL: ' + error.message, error);
       throw error;
@@ -315,50 +206,46 @@ test.describe.serial('@regression Stg_75_Percent', () => {
   });
 
   test('TC9: Pause and Resume assessment', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC9__Pause_and_Resume_Functionality_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
-    
-    try {
-      logger?.success('\n=== TC9: Pause and Resume Functionality Validation ===');
-      logger?.step('1. Pause the assessment');
-      logger?.step('2. Verify pause state');
-      logger?.step('3. Resume the assessment');
+    logger = new Logger(page, 'TC9__Pause_Resume', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
 
-      // Ensure assessment frame is loaded and visible
+    logger.separator('TC9: PAUSE AND RESUME');
+
+    try {
       await assessmentPage.verifyPauseAndResumeFunctionality();
-      logger?.success('TC9 PASS: Pause and resume functionality verified');
+      logger.success('TC9 PASS: Pause and resume functionality verified');
     } catch (error: any) {
       await logger?.error('TC9 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC10: answer assessment', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC10__Answer_Assessment_Questions_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
-    
-    try {
-      logger?.success('\n=== TC10: Answer Assessment Questions Validation ===');
-      logger?.step('1. Load questions from JSON file (3_Correct_QnA.json)');
-      logger?.step('2. Answer all assessment questions');
-      logger?.step('3. Verify answers submitted');
+  // ============================================================
+  // ANSWER & FINALIZE
+  // ============================================================
 
+  test('TC10: Answer assessment', async ({}, testInfo) => {
+    logger = new Logger(page, 'TC10__Answer_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC10' });
+    assessmentPage.setLogger(logger);
+
+    logger.separator('TC10: ANSWER ASSESSMENT');
+
+    try {
       await assessmentPage.answerAssessmentQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE);
-      logger?.success('TC10 PASS: Assessment finished and IPP page loaded');
+      logger.success('TC10 PASS: Assessment questions answered');
     } catch (error: any) {
       await logger?.error('TC10 FAIL: ' + error.message, error);
       throw error;
     }
   });
-  test('TC11: Finish assessment and IPP page loaded', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC11__Finalize_Assessment_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
-    
-    try {
-      logger?.success('\n=== TC11: Finalize Assessment Validation ===');
-      logger?.step('1. Click Finish button');
-      logger?.step('2. Navigate to IPP page');
-      logger?.step('3. Verify IPP page URL');
 
+  test('TC11: Finish assessment and IPP page loaded', async ({}, testInfo) => {
+    logger = new Logger(page, 'TC11__Finalize_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC11' });
+
+    logger.separator('TC11: FINALIZE ASSESSMENT');
+
+    try {
       await assessmentPage.finalizeAssessmentAndViewResults();
-      logger?.success('TC11 PASS: Assessment finished and IPP page loaded');
+      logger.success('TC11 PASS: Assessment finished and IPP page loaded');
     } catch (error: any) {
       await logger?.error('TC11 FAIL: ' + error.message, error);
       throw error;
@@ -366,31 +253,20 @@ test.describe.serial('@regression Stg_75_Percent', () => {
   });
 
   test('TC12: IPP page shows 75% score', async ({}, testInfo) => {
-    logger = new Logger(page, 'TC12__IPP_Score_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
-    
+    logger = new Logger(page, 'TC12__IPP_Score', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC12' });
+    assessmentPage.setLogger(logger);
+
+    logger.separator('TC12: IPP SCORE VALIDATION');
+
     try {
-      logger?.success('\n=== TC12: IPP Score Validation ===');
-      logger?.step('1. Verify percentage score on IPP page');
-      logger?.step('2. Assert score equals 75.0%');
-      logger?.step('3. Verify IPP heading');
-      logger?.step('4. Take screenshot for validation');
-
-      await assertions.waitAndAssertVisible(locators.percentageScore);
-      const percentageValue = await locators.percentageScore.textContent();
-      const extractedPercentage = percentageValue?.trim() || '';
-      assertions.assertPercentage(extractedPercentage, EXPECTED_PERCENTAGE);
-      logger?.success('TC12 PASS: IPP page shows 75.0% score on UI');
-
-      // Optionally, verify IPP heading and take screenshot
-      await assessmentPage.verifyElementByRole(
-        'heading',
-        'Individual Performance Profile',
-        'IPP Page Heading'
-      );
-      await assessmentPage.takeScreenshot('Stg_75_Percent', extractedBatchId);
+      await assessmentPage.validateIPPScoring(EXPECTED_PERCENTAGE);
+      await assessmentPage.verifyElementByRole(IppPageHeading, IndividualPerformanceProfile, IppHeading);
+      await assessmentPage.takeScreenshot(SCENARIO_NAME, extractedBatchId);
+      logger.success(`TC12 PASS: IPP page shows ${EXPECTED_PERCENTAGE} score`);
     } catch (error: any) {
       await logger?.error('TC12 FAIL: ' + error.message, error);
       throw error;
     }
   });
 });
+

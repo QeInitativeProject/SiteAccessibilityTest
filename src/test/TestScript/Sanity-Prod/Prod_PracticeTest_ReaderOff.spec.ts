@@ -19,6 +19,9 @@ const EXPECTED_INSTITUTION = process.env.Institution_zzcab;
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store Prod';
 const SCENARIO_NAME = 'Prod_PracticeTest_ReaderOff';
+const IppPageHeading = 'heading';
+const IndividualPerformanceProfile = 'Individual Performance Profile';
+const IppHeading = 'IPP Page Heading';
 
 test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
   let browser: Browser;
@@ -433,11 +436,7 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', () => {
       logger?.success('TC IPP page shows 100% score on UI');
 
       // Optionally, verify IPP heading and take screenshot
-      await assessmentPage.verifyElementByRole(
-        'heading',
-        'Individual Performance Profile',
-        'IPP Page Heading'
-      );
+      await assessmentPage.verifyElementByRole(IppPageHeading, IndividualPerformanceProfile, IppHeading);
       await assessmentPage.takeScreenshot('Prod_PracticeTest_ReaderOff', extractedBatchId);
     } catch (error: any) {
       await logger?.error('TC12 FAIL: ' + error.message, error);

@@ -6,6 +6,7 @@
     "lib": ["ESNext", "DOM"],
     "types": ["node"],
     "moduleResolution": "Node",
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@delegates/*": ["src/main/Delegates/*"],

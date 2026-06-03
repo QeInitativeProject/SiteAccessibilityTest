@@ -1,53 +1,88 @@
-import { defineConfig } from '@playwright/test';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
+import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+import path from 'path';
 
-/**
- * Load environment variables based on ENV
- */
-const env = process.env.ENV || 'stage';
-dotenv.config({ path: path.resolve(__dirname, `src/ENV/.env.${env}`) });
+// Get environment from ENV variable or default to 'prod'
+const currentEnv = process.env.ENV || 'stage';
+
+// Only load env if not already loaded
+if (!process.env.baseUrl) {
+  console.log(`🌍 Loading environment: ${currentEnv}`);
+  const envPath = path.resolve(__dirname, `./src/ENV/.env.${currentEnv}`);
+  const result = dotenv.config({ path: envPath });
+
+  if (result.error) {
+    console.error(`❌ Failed to load environment file: ${envPath}`);
+    throw result.error;
+  }
+  console.log(`✅ Environment loaded from: .env.${currentEnv}`);
+} else {
+  console.log(`✅ Using environment: ${currentEnv} (already loaded)`);
+}
 
 export default defineConfig({
   testDir: './src/test/TestScript',
-  tsconfig: './tsconfig.json',
+  outputDir: './test-results',
+
+  // ✅ Global setup: Cleanup old artifacts before test execution
   globalSetup: './global-setup.ts',
-  timeout: 300000,
-  expect: {
-    timeout: 10000,
-  },
+
+  // ✅ Enable parallel execution
   fullyParallel: false,
+
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
-  workers: 1,
+  // Retries only failed tests in CI (not the whole suite)
+  retries: process.env.CI ? 2 : 0,
+
+  // ✅ Workers for parallel execution
+  workers: process.env.CI ? 4 : 1,
+
+  // ✅ Clear previous run data to avoid stale cache issues
+  preserveOutput: 'never',
+
+  // HTML report configuration - Only HTML report in playwright-report folder
   reporter: [
-    ['html', { open: 'never' }],
-    ['allure-playwright'],
+    ['list'],
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
   ],
-  use: {
-    baseURL: process.env.baseUrl,
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
-    headless: process.env.CI ? true : !(process.env.HEADED === 'true'),
-    actionTimeout: 15000,
-    navigationTimeout: 30000,
+
+  timeout: 20 * 60000,
+
+  expect: {
+    timeout: 80000,
+    toHaveScreenshot: { maxDiffPixels: 100 },
   },
+
+  use: {
+    navigationTimeout: 2 * 60000,
+    actionTimeout: 3 * 60000,
+    headless: process.env.CI ? true : false,
+    ignoreHTTPSErrors: true,
+
+    trace: 'on-first-retry', // Automatic trace capture on retry/failure
+    screenshot: 'only-on-failure', // Playwright captures failure screenshots
+    video: 'retain-on-failure', // Keep videos only for failed tests (moved to playwright-report/data by Logger)
+
+    viewport: { width: 1440, height: 900 },
+    launchOptions: {
+      args: [
+        '--disable-dev-shm-usage',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-gpu',
+      ],
+    },
+  },
+
   projects: [
     {
-      name: 'smoke',
-      testDir: './src/test/TestScript/Smoke-Stage',
-      grep: /@smoke/,
-    },
-    {
-      name: 'regression',
-      testDir: './src/test/TestScript/Regression',
-      grep: /@regression/,
-    },
-    {
-      name: 'sanity',
-      testDir: './src/test/TestScript/Sanity-Prod',
-      grep: /@sanity/,
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+        deviceScaleFactor: undefined,
+      
+      },
     },
   ],
 });

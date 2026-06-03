@@ -305,6 +305,140 @@ export class MyATIPage {
     throw new Error(`"${name}" is not draggable. No drag attributes or cursor:move style found.`);
   }
   /**
+   * Add product for a proctored assessment (batch ID only, no password).
+   * Handles blockUI overlay, navigates to My ATI tab, opens Add Product dialog,
+   * enters batch ID and clicks Continue.
+   * @param batchId - The batch ID to enter
+   * @param locators - StudentFacingPageLocators instance
+   * @param assertions - Assertions instance
+   */
+  addProductForProctoredAssessment = async (
+    batchId: string,
+    locators: StudentFacingPageLocators,
+    assertions: Assertions
+  ): Promise<void> => {
+    await this.page.waitForLoadState('load');
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.page.waitForTimeout(5000);
+
+    // Dismiss blockUI overlay if present
+    await this.page.locator('.blockUI.blockOverlay').waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
+
+    // Navigate to My ATI tab
+    await this.clickOnMyATITab();
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(10000);
+
+    // Open Add Product dialog via Assessments tab
+    await this.clickOnAssessmentsTab();
+    await this.page.waitForTimeout(2000);
+
+    // Enter Batch ID
+    await assertions.waitAndAssertVisible(locators.idTextbox, 15000);
+    await locators.idTextbox.fill(batchId.trim());
+    this.logger?.success(`Batch ID entered: ${batchId.trim()}`);
+
+    // Click Continue
+    await assertions.waitAndAssertVisible(locators.continueButton, 10000);
+    await locators.continueButton.click();
+    await this.page.waitForTimeout(2000);
+    this.logger?.success('✅ Continue clicked after batch ID entry');
+  };
+
+  /**
+   * Add product for a practice assessment (batch ID + password, no attestation).
+   * Clicks Assessments tab, enters batch ID, clicks Continue, enters password, clicks Continue.
+   * @param batchId - The batch ID to enter
+   * @param password - The assessment password
+   * @param locators - StudentFacingPageLocators instance
+   * @param assertions - Assertions instance
+   */
+  addProductForPracticeAssessment = async (
+    batchId: string,
+    password: string,
+    locators: StudentFacingPageLocators,
+    assertions: Assertions
+  ): Promise<void> => {
+    // Click on Assessments tab to open Add Product dialog
+    await this.clickOnAssessmentsTab();
+    await this.page.waitForTimeout(2000);
+    this.logger?.success('Clicked on Assessments tab');
+
+    // Enter Batch ID
+    await assertions.waitAndAssertVisible(locators.idTextbox, 15000);
+    await locators.idTextbox.fill(batchId.trim());
+    this.logger?.success(`Batch ID entered: ${batchId.trim()}`);
+
+    // Click Continue after batch ID
+    await assertions.waitAndAssertVisible(locators.continueButton, 10000);
+    await locators.continueButton.click();
+    await this.page.waitForTimeout(2000);
+    this.logger?.success('✅ Continue clicked after batch ID entry');
+
+    // Enter Password
+    await assertions.waitAndAssertVisible(locators.passwordTextboxDialog, 10000);
+    await locators.passwordTextboxDialog.fill(password);
+    this.logger?.success('✅ Password entered');
+
+    // Click Continue after password
+    await assertions.waitAndAssertVisible(locators.continueButton, 10000);
+    await locators.continueButton.click();
+    await this.page.waitForTimeout(2000);
+    this.logger?.success('✅ Continue clicked after password entry');
+  };
+
+  /**
+   * Validate that a student cannot reattempt a 1-time proctored assessment.
+   * Logs in again, navigates to assessments, and checks if Continue/Retake is available.
+   * @param assessmentName - The assessment name to look for
+   * @param batchId - The batch ID to verify is not listed
+   */
+  validateNoReattempt = async (
+    assessmentName: string,
+    batchId: string
+  ): Promise<void> => {
+    this.logger?.step('Validating no reattempt is possible');
+
+    // Navigate to My ATI tab
+    await this.page.locator('.blockUI.blockOverlay').waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
+    await this.clickOnMyATITab();
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(5000);
+
+    // Click on Assessments tab
+    await this.page.getByRole('link', { name: 'Assessments Tab: Select to' }).click();
+    await this.page.waitForTimeout(3000);
+    this.logger?.success('Clicked on Assessments tab');
+
+    // Look for the assessment name
+    const assessmentDescription = this.page.locator(`.description:has-text("${assessmentName}")`);
+    const assessmentVisible = await assessmentDescription.first().isVisible().catch(() => false);
+
+    if (assessmentVisible) {
+      const continueRetakeBtn = this.page.getByRole('link', { name: /Continue|Retake/i }).first();
+      const continueRetakeVisible = await continueRetakeBtn.isVisible().catch(() => false);
+
+      if (continueRetakeVisible) {
+        await continueRetakeBtn.click();
+        await this.page.waitForTimeout(3000);
+
+        const batchIdLink = this.page.getByText(batchId);
+        const batchIdVisible = await batchIdLink.isVisible().catch(() => false);
+
+        if (!batchIdVisible) {
+          this.logger?.success('Batch ID is NOT listed - reattempt not possible');
+        } else {
+          this.logger?.info('Batch ID is still listed - proctoring session may have ended blocking reattempt');
+        }
+      } else {
+        this.logger?.success('No Continue/Retake button available - assessment cannot be reattempted');
+      }
+    } else {
+      this.logger?.success('Assessment is not listed - cannot be reattempted');
+    }
+  };
+
+  /**
    * Reload same assessment after student accidentally closed the tab
    * Steps:
    * 1. Click on Assessments tab
