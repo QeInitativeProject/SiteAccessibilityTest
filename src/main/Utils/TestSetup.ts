@@ -66,15 +66,10 @@ export async function setupTestEnvironment(options: SetupOptions): Promise<TestC
 
   await atiLoginPage.clickLogin();
   await page.waitForLoadState('load');
+  await page.waitForLoadState('domcontentloaded');
+  // Wait for the SPA navigation tabs to render after login
+  await page.locator('text=My ATI').first().waitFor({ state: 'attached', timeout: 30000 });
   console.log(`[Setup] ${options.loginAs} login complete`);
-
-  // --- Batch Creation (runs in a separate browser context) ---
-//   if (options.createBatch !== false) {
-//     console.log('[Setup] Creating MU batch...');
-//     extractedBatchId = await batchCreation.createBatch(options.assessmentName, options.institution);
-//     assertions.assertValidNumericId(extractedBatchId, 5);
-//     console.log(`[Setup] Batch created with ID: ${extractedBatchId}`);
-//   }
 
   return {
     browser,

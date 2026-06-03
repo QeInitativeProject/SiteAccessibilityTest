@@ -41,18 +41,11 @@ export class ATICommonMethod {
   async clickOnMyATITab() {
     this.logger?.step('Clicking on My ATI tab');
 
-    // Handle Account Management redirect - student has no active products
-    if (this.page.url().includes('IsAccountManagement=true')) {
-      this.logger?.debug('Page redirected to Account Management - navigating to Home');
-      await this.page.goto(this.page.url().replace('?IsAccountManagement=true', '').replace('&IsAccountManagement=true', ''));
-      await this.page.waitForLoadState('load');
-    }
-
     // Wait for any blockUI overlay to disappear first
     const blockOverlay = this.locators.blockUIOverlay;
     if ((await blockOverlay.count()) > 0) {
       this.logger?.debug('BlockUI overlay detected, waiting for it to disappear');
-      await blockOverlay.waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {
+      await blockOverlay.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {
         this.logger?.debug('BlockUI overlay did not disappear in time, proceeding anyway');
       });
     }
@@ -73,7 +66,7 @@ export class ATICommonMethod {
 
     // Try clicking, with a fallback in case of race conditions
     try {
-      await myATITab.click({ timeout: 30000 });
+      await myATITab.click({ timeout: 10000 });
       this.logger?.success('Successfully clicked My ATI tab');
     } catch (error) {
       // If click fails, take a screenshot and rethrow for diagnostics
