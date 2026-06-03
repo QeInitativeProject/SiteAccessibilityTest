@@ -23,6 +23,13 @@ cache:
   image: mcr.microsoft.com/playwright:v1.57.0-jammy
   interruptible: true
   before_script:
+    - |
+      # Validate ENV variable
+      if [ "$ENV" != "stage" ] && [ "$ENV" != "qa" ] && [ "$ENV" != "prod" ]; then
+        echo "❌ ERROR: Invalid ENV value '$ENV'. Allowed values: stage, qa, prod"
+        exit 1
+      fi
+      echo "✅ Environment validated: $ENV"
     - echo "📦 Installing dependencies..."
     - npm ci --prefer-offline --no-audit || npm install --no-audit
     - echo "🎭 Installing Playwright..."
