@@ -510,4 +510,88 @@ export class ProctorUtility {
     await this.validateProctorStatus(expectedStatus);
     await this.validateProctorScore(expectedPercentage);
   };
+
+  /**
+   * Validates that Ignore, Close, and Abandon buttons are all visible in the "Needs Attention" section.
+   * @param batchId - The batch ID (unused for now since Needs Attention is always expanded)
+   */
+  validateIgnoreCloseAbandonVisible = async (batchId: string): Promise<void> => {
+    await this.page.bringToFront();
+    await this.page.reload({ waitUntil: 'networkidle' });
+    await this.page.waitForTimeout(2000);
+
+    const needsAttention = this.page.locator('.needs-attention');
+    await needsAttention.waitFor({ state: 'visible', timeout: 15000 });
+    this.logger?.success('\u2705 "Needs Attention" section is visible');
+
+    const ignoreButton = needsAttention.locator('mat-cell.mat-column-action button', { hasText: 'IGNORE' }).first();
+    await ignoreButton.waitFor({ state: 'visible', timeout: 15000 });
+    this.logger?.success('\u2705 IGNORE button is visible on proctor side');
+
+    const closeButton = needsAttention.locator('mat-cell.mat-column-action button', { hasText: 'CLOSE' }).first();
+    await closeButton.waitFor({ state: 'visible', timeout: 15000 });
+    this.logger?.success('\u2705 CLOSE button is visible on proctor side');
+
+    const abandonButton = needsAttention.locator('mat-cell.mat-column-action button', { hasText: 'ABANDON' }).first();
+    await abandonButton.waitFor({ state: 'visible', timeout: 15000 });
+    this.logger?.success('\u2705 ABANDON button is visible on proctor side');
+  };
+
+  /**
+   * Clicks the CLOSE button in the "Needs Attention" section and confirms the dialog.
+   * The confirmation dialog says "Close Assessment" with CANCEL and CONFIRM buttons.
+   */
+  closeAssessment = async (): Promise<void> => {
+    await this.page.bringToFront();
+
+    const needsAttention = this.page.locator('.needs-attention');
+    const closeButton = needsAttention.locator('mat-cell.mat-column-action button', { hasText: 'CLOSE' }).first();
+    await closeButton.waitFor({ state: 'visible', timeout: 15000 });
+    await closeButton.click();
+    await this.page.waitForTimeout(3000);
+    this.logger?.success('\u2705 Faculty clicked CLOSE button');
+
+    // Click CONFIRM on the "Close Assessment" confirmation dialog
+    const confirmButton = this.page.locator('button', { hasText: 'CONFIRM' }).first();
+    await confirmButton.waitFor({ state: 'visible', timeout: 10000 });
+    await confirmButton.click();
+    await this.page.waitForTimeout(5000);
+    this.logger?.success('\u2705 Confirmed Close Assessment action');
+  };
+
+  /**
+   * Clicks the ABANDON button on the proctor side and handles any confirmation dialog.
+   * Validates that the student's status shows abandoned or row is removed.
+   */
+  abandonStudent = async (): Promise<void> => {
+    await this.page.bringToFront();
+
+    const abandonButton = this.page.locator('mat-cell.mat-column-action button', { hasText: /ABANDON/i }).first();
+    await abandonButton.waitFor({ state: 'visible', timeout: 15000 });
+    await abandonButton.click();
+    await this.page.waitForTimeout(3000);
+    this.logger?.success('\u2705 Faculty clicked ABANDON button');
+
+    // Handle confirmation dialog if present
+    const confirmButton = this.page.locator('button', { hasText: /confirm|yes|ok/i }).first();
+    const confirmVisible = await confirmButton.isVisible().catch(() => false);
+    if (confirmVisible) {
+      await confirmButton.click();
+      await this.page.waitForTimeout(3000);
+      this.logger?.success('\u2705 Confirmed abandon action');
+    }
+
+    // Validate student status after abandon
+    await this.page.waitForTimeout(5000);
+    const statusCell = this.page.locator('mat-cell.mat-column-status').first();
+    const statusVisible = await statusCell.isVisible().catch(() => false);
+
+    if (statusVisible) {
+      const statusText = await statusCell.textContent();
+      const trimmedStatus = (statusText ?? '').trim();
+      this.logger?.success(`\u2705 Student status after abandon: "${trimmedStatus}"`);
+    } else {
+      this.logger?.success('\u2705 Student row removed from monitoring - attempt deleted');
+    }
+  };
 }

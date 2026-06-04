@@ -285,6 +285,17 @@ regression:stage:Proctor_CheatIncident_Ignore:
   when: manual
   allow_failure: false
 
+regression:stage:Stg_Proctor_Ignore_4_Cheats:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_Proctor_Ignore_4_Cheats..."
+    - npx playwright test src/test/TestScript/Regression/Stg_Proctor_Ignore_4_Cheats.spec.ts
+  when: manual
+  allow_failure: false
+
 # ==================== INDIVIDUAL SPEC FILE JOBS - SANITY PROD ====================
 sanity:prod:PracticeTest_ReaderOn:
   extends: .test_base
