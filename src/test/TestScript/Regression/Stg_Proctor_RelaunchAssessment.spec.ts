@@ -184,8 +184,8 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
       const stuLogin = new LoginPage(studentTab);
       stuLogin.setLogger(logger);
       await studentTab.waitForTimeout(2000);
-      await stuLogin.fillStuUserName(process.env.stuUsernamezzcab1!);
-      await stuLogin.fillStuPassword(process.env.stuPasswordzzcab1!);
+      await stuLogin.fillStuUserName(process.env.stuUsernameauto3!);
+      await stuLogin.fillStuPassword(process.env.stuPasswordauto1!);
       await stuLogin.clickLogin();
       await studentTab.waitForLoadState('load');
 
@@ -312,8 +312,8 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
       const stuLogin = new LoginPage(studentTab);
       stuLogin.setLogger(logger);
       await studentTab.waitForTimeout(2000);
-      await stuLogin.fillStuUserName(process.env.stuUsernamezzcab1!);
-      await stuLogin.fillStuPassword(process.env.stuPasswordzzcab1!);
+      await stuLogin.fillStuUserName(process.env.stuUsernameauto3!);
+      await stuLogin.fillStuPassword(process.env.stuPasswordauto1!);
       await stuLogin.clickLogin();
       await studentTab.waitForLoadState('load');
       logger.success('Student logged back in');

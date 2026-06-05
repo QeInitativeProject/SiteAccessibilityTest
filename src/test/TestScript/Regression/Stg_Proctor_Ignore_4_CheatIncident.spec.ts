@@ -121,8 +121,8 @@ test.describe.serial('@Regression - Stg_Proctor_Ignore_4_CheatIncident.spec.ts',
 
       const studentLoginPage = new LoginPage(studentTab);
       await studentTab.waitForTimeout(2000);
-      await studentLoginPage.fillStuUserName(process.env.stuUsernamezzcabMultiSelectDD!);
-      await studentLoginPage.fillStuPassword(process.env.stuPasswordzzcabMultiSelectDD!);
+      await studentLoginPage.fillStuUserName(process.env.stuUsernameauto5!);
+      await studentLoginPage.fillStuPassword(process.env.stuPasswordauto1!);
       await studentLoginPage.clickLogin();
       await studentTab.waitForLoadState('load');
 
@@ -240,8 +240,8 @@ test.describe.serial('@Regression - Stg_Proctor_Ignore_4_CheatIncident.spec.ts',
 
       const studentLoginPage = new LoginPage(studentTab);
       await studentTab.waitForTimeout(2000);
-      await studentLoginPage.fillStuUserName(process.env.stuUsernamezzcab1!);
-      await studentLoginPage.fillStuPassword(process.env.stuPasswordzzcab1!);
+      await studentLoginPage.fillStuUserName(process.env.stuUsernameauto5!);
+      await studentLoginPage.fillStuPassword(process.env.stuPasswordauto1!);
       await studentLoginPage.clickLogin();
       await studentTab.waitForLoadState('load');
 

@@ -376,15 +376,7 @@ export class ProctorUtility {
     this.logger?.success(`✅ Batch ID (${batchId}) is visible in monitoring page`);
   };
 
-  /**
-   * Expands a batch section in the proctor monitoring page.
-   * @param batchId - The batch ID section to expand
-   */
-  expandBatchSection = async (batchId: string): Promise<void> => {
-    await this.page.getByText(batchId).first().click();
-    await this.page.waitForTimeout(3000);
-    this.logger?.success(`✅ Expanded batch section for Batch ID (${batchId})`);
-  };
+
 
   /**
    * Handles a misbehaviour incident - creates cheat incident if none exists, then ignores it.
@@ -463,11 +455,28 @@ export class ProctorUtility {
   /**
    * Validates that the proctor side shows the expected status.
    * @param expectedStatus - Expected status string (e.g., 'Completed', 'In Progress')
+   * @param batchId - Optional batch ID to scope to a specific batch panel
    */
-  validateProctorStatus = async (expectedStatus: string): Promise<string> => {
-    const statusCell = this.page.locator('mat-cell.mat-column-status');
-    await statusCell.first().waitFor({ state: 'visible', timeout: 15000 });
-    const statusText = await statusCell.first().textContent();
+  validateProctorStatus = async (expectedStatus: string, batchId?: string): Promise<string> => {
+    let statusCell;
+    if (batchId) {
+      const batchPanel = this.page.locator('mat-expansion-panel', { hasText: batchId }).first();
+      await batchPanel.waitFor({ state: 'visible', timeout: 15000 });
+
+      // Expand the panel if it's collapsed
+      const isExpanded = await batchPanel.evaluate(el => el.classList.contains('mat-expanded'));
+      if (!isExpanded) {
+        this.logger?.step(`Expanding batch panel for batch ID: ${batchId}`);
+        await batchPanel.locator('mat-expansion-panel-header').click();
+        await this.page.waitForTimeout(1000);
+      }
+
+      statusCell = batchPanel.locator('mat-cell.mat-column-status').first();
+    } else {
+      statusCell = this.page.locator('mat-cell.mat-column-status').first();
+    }
+    await statusCell.waitFor({ state: 'visible', timeout: 15000 });
+    const statusText = await statusCell.textContent();
     const trimmedStatus = (statusText ?? '').trim();
     if (!trimmedStatus.toLowerCase().includes(expectedStatus.toLowerCase())) {
       throw new Error(`Expected status "${expectedStatus}" but got "${trimmedStatus}"`);
@@ -493,11 +502,28 @@ export class ProctorUtility {
   /**
    * Validates that the proctor side shows the expected score.
    * @param expectedPercentage - Expected score string (e.g., '100.0%')
+   * @param batchId - Optional batch ID to scope to a specific batch panel
    */
-  validateProctorScore = async (expectedPercentage: string): Promise<string> => {
-    const scoreCell = this.page.locator('mat-cell.mat-column-completed');
-    await scoreCell.first().waitFor({ state: 'visible', timeout: 15000 });
-    const scoreText = await scoreCell.first().textContent();
+  validateProctorScore = async (expectedPercentage: string, batchId?: string): Promise<string> => {
+    let scoreCell;
+    if (batchId) {
+      const batchPanel = this.page.locator('mat-expansion-panel', { hasText: batchId }).first();
+      await batchPanel.waitFor({ state: 'visible', timeout: 15000 });
+
+      // Expand the panel if it's collapsed
+      const isExpanded = await batchPanel.evaluate(el => el.classList.contains('mat-expanded'));
+      if (!isExpanded) {
+        this.logger?.step(`Expanding batch panel for batch ID: ${batchId}`);
+        await batchPanel.locator('mat-expansion-panel-header').click();
+        await this.page.waitForTimeout(1000);
+      }
+
+      scoreCell = batchPanel.locator('mat-cell.mat-column-completed').first();
+    } else {
+      scoreCell = this.page.locator('mat-cell.mat-column-completed').first();
+    }
+    await scoreCell.waitFor({ state: 'visible', timeout: 15000 });
+    const scoreText = await scoreCell.textContent();
     const trimmedScore = (scoreText ?? '').trim();
     if (!trimmedScore.includes(expectedPercentage)) {
       throw new Error(`Expected score "${expectedPercentage}" but got "${trimmedScore}"`);
@@ -506,16 +532,7 @@ export class ProctorUtility {
     return trimmedScore;
   };
 
-  /**
-   * Validates that the proctor side shows the expected score and status.
-   * @param expectedPercentage - Expected score string (e.g., '100.0%')
-   * @param expectedStatus - Expected status string (default: 'Completed')
-   */
-  validateProctorScoreAndStatus = async (expectedPercentage: string, expectedStatus: string = 'Completed'): Promise<void> => {
-    await this.validateProctorStatus(expectedStatus);
-    await this.validateProctorScore(expectedPercentage);
-  };
-
+ 
   /**
    * Validates that Ignore, Close, and Abandon buttons are all visible in the "Needs Attention" section.
    * @param batchId - The batch ID (unused for now since Needs Attention is always expanded)
