@@ -8,6 +8,7 @@ variables:
   NODE_VERSION: "20"
   GIT_DEPTH: "1"
   GIT_STRATEGY: "fetch"
+  ENV: "stage"  # Default environment - override at pipeline trigger time for qa/prod
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
@@ -57,14 +58,12 @@ cache:
   # Removed job-level retry; Playwright will retry only failed tests
   allow_failure: false
 
-# ==================== SMOKE TEST JOBS ====================
+# ==================== SUITE-LEVEL JOBS (Run All Tests by Environment) ====================
 smoke:qa:
   extends: .smoke_test
   variables:
     ENV: "qa"
 
-
-# ==================== SMOKE-STAGE (Manual, Stage Only, Folder Restricted) ====================
 smoke:stage:
   extends: .smoke_test
   variables:
@@ -74,20 +73,15 @@ smoke:stage:
     - npx playwright test --grep @smoke src/test/TestScript/Smoke-Stage --workers=4
   when: manual
 
-
-# ==================== REGRESSION TEST JOBS ====================
-
-# ==================== REGRESSION (Manual, Stage Only, Folder Restricted) ====================
-regression:stage:
-  extends: .regression_test
+smoke:prod:
+  extends: .smoke_test
   variables:
-    ENV: "stage"
+    ENV: "prod"
   script:
-    - echo "🔬 Running Regression Tests on ${ENV} environment (Regression folder only)..."
-    - npx playwright test --grep @regression  src/test/TestScript/Regression --workers=100%
+    - echo "🧪 Running Smoke Tests on ${ENV} environment (Sanity-Prod folder only)..."
+    - npx playwright test --grep @smoke src/test/TestScript/Sanity-Prod --workers=4
   when: manual
 
-# ==================== SANITY-PROD (Manual, Prod Only, Folder Restricted) ====================
 sanity:prod:
   extends: .test_base
   stage: test
@@ -102,6 +96,249 @@ sanity:prod:
     when:
       - runner_system_failure
       - stuck_or_timeout_failure
+  allow_failure: false
+
+regression:stage:
+  extends: .regression_test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Regression Tests on ${ENV} environment (Regression folder only)..."
+    - npx playwright test --grep @regression  src/test/TestScript/Regression --workers=100%
+  when: manual
+
+# ==================== INDIVIDUAL SPEC FILE JOBS - SMOKE STAGE ====================
+smoke:stage:PracticeTest_ReaderOn:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🧪 Running Stg_PracticeTest_ReaderOn..."
+    - npx playwright test src/test/TestScript/Smoke-Stage/Stg_PracticeTest_ReaderOn.spec.ts
+  when: manual
+  allow_failure: false
+
+smoke:stage:PracticeTest_ReaderOff:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🧪 Running Stg_PracticeTest_ReaderOff..."
+    - npx playwright test src/test/TestScript/Smoke-Stage/Stg_PracticeTest_ReaderOff.spec.ts
+  when: manual
+  allow_failure: false
+
+smoke:stage:Proctor_ReaderOn:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🧪 Running Stg_Proctor_ReaderOn..."
+    - npx playwright test src/test/TestScript/Smoke-Stage/Stg_Proctor_ReaderOn.spec.ts
+  when: manual
+  allow_failure: false
+
+smoke:stage:Proctor_ReaderOff:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🧪 Running Stg_Proctor_ReaderOff..."
+    - npx playwright test src/test/TestScript/Smoke-Stage/Stg_Proctor_ReaderOff.spec.ts
+  when: manual
+  allow_failure: false
+
+# ==================== INDIVIDUAL SPEC FILE JOBS - REGRESSION ====================
+regression:stage:0_Percent:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_0_Percent..."
+    - npx playwright test src/test/TestScript/Regression/Stg_0_Percent.spec.ts
+  when: manual
+  allow_failure: false
+
+regression:stage:50_Percent:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_50_Percent..."
+    - npx playwright test src/test/TestScript/Regression/Stg_50_Percent.spec.ts
+  when: manual
+  allow_failure: false
+
+regression:stage:75_Percent:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_75_Percent..."
+    - npx playwright test src/test/TestScript/Regression/Stg_75_Percent.spec.ts
+  when: manual
+  allow_failure: false
+
+regression:stage:100_Percent:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_100_Percent..."
+    - npx playwright test src/test/TestScript/Regression/Stg_100_Percent.spec.ts
+  when: manual
+  allow_failure: false
+
+regression:stage:Multi_Select:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_Multi_Select..."
+    - npx playwright test src/test/TestScript/Regression/Stg_Multi_Select.spec.ts
+  when: manual
+  allow_failure: false
+
+regression:stage:Multi_SelectDropdown:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_Multi_SelectDropdown..."
+    - npx playwright test src/test/TestScript/Regression/Stg_Multi_SelectDropdown.spec.ts
+  when: manual
+  allow_failure: false
+
+regression:stage:MultiAssessment_Proctor:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_MultiAssessment_Proctor..."
+    - npx playwright test src/test/TestScript/Regression/Stg_MultiAssessment_Proctor.spec.ts
+  when: manual
+  allow_failure: false
+
+regression:stage:Practice_AllItemTypes:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_Practice_AllItemTypes..."
+    - npx playwright test src/test/TestScript/Regression/Stg_Practice_AllItemTypes.spec.ts
+  when: manual
+  allow_failure: false
+
+regression:stage:Practice_TTS_On:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_Practice_TTS_On..."
+    - npx playwright test src/test/TestScript/Regression/Stg_Practice_TTS_On.spec.ts
+  when: manual
+  allow_failure: false
+
+regression:stage:Proctor_TTS_On:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_Proctor_TTS_On..."
+    - npx playwright test src/test/TestScript/Regression/Stg_Proctor_TTS_On.spec.ts
+  when: manual
+  allow_failure: false
+
+regression:stage:Proctor_RelaunchAssessment:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_Proctor_RelaunchAssessment..."
+    - npx playwright test src/test/TestScript/Regression/Stg_Proctor_RelaunchAssessment.spec.ts
+  when: manual
+  allow_failure: false
+
+regression:stage:Proctor_CheatIncident_Ignore:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_Proctor_CheatIncident_Ignore..."
+    - npx playwright test src/test/TestScript/Regression/Stg_Proctor_CheatIncident_Ignore.spec.ts
+  when: manual
+  allow_failure: false
+
+regression:stage:Stg_Proctor_Ignore_4_CheatIncident:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_Proctor_Ignore_4_CheatsIncidents..."
+    - npx playwright test src/test/TestScript/Regression/Stg_Proctor_Ignore_4_CheatIncident.spec.ts
+  when: manual
+  allow_failure: false
+
+# ==================== INDIVIDUAL SPEC FILE JOBS - SANITY PROD ====================
+sanity:prod:PracticeTest_ReaderOn:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "prod"
+  script:
+    - echo "🧪 Running Prod_PracticeTest_ReaderOn..."
+    - npx playwright test src/test/TestScript/Sanity-Prod/Prod_PracticeTest_ReaderOn.spec.ts
+  when: manual
+  allow_failure: false
+
+sanity:prod:PracticeTest_ReaderOff:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "prod"
+  script:
+    - echo "🧪 Running Prod_PracticeTest_ReaderOff..."
+    - npx playwright test src/test/TestScript/Sanity-Prod/Prod_PracticeTest_ReaderOff.spec.ts
+  when: manual
+  allow_failure: false
+
+sanity:prod:Proctor_ReaderOn:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "prod"
+  script:
+    - echo "🧪 Running Prod_Proctor_ReaderOn..."
+    - npx playwright test src/test/TestScript/Sanity-Prod/Prod_Proctor_ReaderOn.spec.ts
+  when: manual
+  allow_failure: false
+
+sanity:prod:Proctor_ReaderOff:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "prod"
+  script:
+    - echo "🧪 Running Prod_Proctor_ReaderOff..."
+    - npx playwright test src/test/TestScript/Sanity-Prod/Prod_Proctor_ReaderOff.spec.ts
+  when: manual
   allow_failure: false
 
 # ==================== CONSOLIDATED REPORT ====================

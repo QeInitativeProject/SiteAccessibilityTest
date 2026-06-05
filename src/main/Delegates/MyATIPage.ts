@@ -390,4 +390,28 @@ export class MyATIPage {
     await batchIdContinueButton.click();
     this.logger?.success(`✅ Clicked Continue for batch ID: ${batchId}`);
   };
+
+  /**
+   * Navigate to Results tab and click on the assessment name to view IPP details.
+   * @param assessmentName - The assessment name to click on in the Results page
+   */
+  navigateToResultsAndOpenAssessment = async (assessmentName: string): Promise<void> => {
+    this.logger?.step(`Navigating to Results and opening assessment: ${assessmentName}`);
+
+    // Click on Results navigation link
+    const resultsLink = this.page.getByRole('link', { name: 'Select this link to navigate to the Results page' });
+    await resultsLink.waitFor({ state: 'visible', timeout: 15000 });
+    await resultsLink.click();
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(5000);
+    this.logger?.success('✅ Navigated to Results page');
+
+    // Click on the assessment name to open IPP details
+    const assessmentLink = this.page.locator(`a:has-text("${assessmentName}")`).first();
+    await assessmentLink.waitFor({ state: 'visible', timeout: 15000 });
+    await assessmentLink.click();
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(5000);
+    this.logger?.success(`✅ Clicked on assessment: ${assessmentName}`);
+  };
 }

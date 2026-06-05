@@ -31,9 +31,9 @@ export class FACHomePage {
   };
 
   clickOnMenuBar = async () => {
-    await this.page.locator('//div[@class="flex items-center"]/button').click();
+    await this.page.getByRole('button', { name: 'Open Menu' }).click();
     await this.page.waitForTimeout(2000);
-    await this.page.locator('//div[@class="flex items-center"]/button').click();
+    await this.page.getByRole('button', { name: 'Open Menu' }).click();
   };
 
   visiblecustomizeHomePage = async () => {
