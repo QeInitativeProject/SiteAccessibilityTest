@@ -18,8 +18,7 @@ createTestSuite({
     test.setTimeout(600000); 
     const { page, assertions, locators, myATIPage, logger } = getCtx(testInfo, 'TC1');
     try {
-      await page.waitForLoadState('domcontentloaded');
-      await page.waitForTimeout(3000);
+       await page.waitForLoadState('load');
       await myATIPage.clickOnMyATITab();
       await myATIPage.clickOnAssessmentsTabOnMyAti();
       await myATIPage.clickAssessmentButton("All item_Neeraj");

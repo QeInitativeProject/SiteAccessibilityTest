@@ -47,7 +47,7 @@ export class MyATIPage {
   clickOnAssessmentsTabOnMyAti = async (): Promise<void> => {
     this.logger?.step('Clicking on Assessments tab on My ATI page');
     const assessmentsTab = this.page.getByRole('link', { name: 'Assessments Tab: Select to' });
-    await assessmentsTab.waitFor({ state: 'visible', timeout: 15000 });
+    await assessmentsTab.waitFor({ state: 'visible', timeout: 30000 });
     await assessmentsTab.click();
     await this.page.waitForLoadState('domcontentloaded');
     this.logger?.success('Clicked Assessments tab on My ATI');

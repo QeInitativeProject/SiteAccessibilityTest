@@ -67,8 +67,6 @@ export async function setupTestEnvironment(options: SetupOptions): Promise<TestC
   await atiLoginPage.clickLogin();
   await page.waitForLoadState('load');
   await page.waitForLoadState('domcontentloaded');
-  // Wait for the SPA navigation tabs to render after login
-  await page.locator('text=My ATI').first().waitFor({ state: 'attached', timeout: 30000 });
   console.log(`[Setup] ${options.loginAs} login complete`);
 
   return {
