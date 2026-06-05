@@ -22,6 +22,12 @@ build/
 # Playwright
 playwright-report/
 playwright/.cache/
+test-results/
+screenshots/
+
+# Allure
+allure-results/
+allure-report/
 
 # VS Code
 .vscode/

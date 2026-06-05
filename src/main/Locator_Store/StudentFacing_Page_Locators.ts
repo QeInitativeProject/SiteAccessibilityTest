@@ -58,7 +58,7 @@ export class StudentFacingPageLocators {
    * Used in: TC3 - Home page navigation elements validation
    */
   get homeNavigationLink() {
-    return this.page.getByRole('link', { name: 'Select this link to navigate to the Home page' });
+    return this.page.locator('#homeTab');
   }
 
   /**
@@ -618,6 +618,13 @@ export class StudentFacingPageLocators {
     return this.assessmentFrame.getByRole('button', { name: 'CLOSE' });
   }
 
+
+getQuestionNumber()
+{
+  return this.assessmentFrame.locator('h1 span:first-child');
+}
+
+
   /**
    * Yes button in close confirmation dialog
    * Used in: QnAUtil.verifyCloseDialogFunctionality()
@@ -689,4 +696,33 @@ export class StudentFacingPageLocators {
   get overallPercentageScore() {
   return this.page.locator('.ipp-test-reporting-header-score > span').first();
 }
+
+  // ============================================
+  // REGRESSION TEST LOCATORS
+  // Used in: Stg_RegressionCases.spec.ts
+  // ============================================
+
+  /**
+   * IN PROGRESS assessment dial on home page
+   * Used in: TC1, TC2 - Clicking in-progress assessment
+   */
+  get inProgressAssessmentDial() {
+    return this.page.locator('div.rb-row-main div.status-in-progress-dial[aria-label="IN PROGRESS"]').first();
+  }
+
+  /**
+   * Calculator dialog/window inside assessment frame
+   * Used in: TC1 - Drag calculator window validation
+   */
+  getCalculatorDialog() {
+    return this.assessmentFrame.locator('#viewCalculator');
+  }
+
+  /**
+   * Unflag this question button (after flagging)
+   * Used in: TC2 - Verify flag persists after resume
+   */
+  getUnflagThisQuestionButton() {
+    return this.assessmentFrame.locator('button[aria-label="Unflag this question"]');
+  }
 }
