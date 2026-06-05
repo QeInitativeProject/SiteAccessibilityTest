@@ -46,21 +46,26 @@ export class ProctorUtility {
     const proctorLink = this.page.locator('//a[@href="/faculty/proctor"]');
     await proctorLink.waitFor({ state: 'visible', timeout: 10000 });
     await proctorLink.click();
+    await this.page.waitForLoadState('load');
+    await this.dismissPendoPopup();
     this.logger?.success('Navigated to Proctor Tab');
   };
 
   /**
-   * Dismiss the "Stop! Test Security Update" popup if it appears on the Proctor page
+   * Dismiss the Pendo "Stop! Test Security Update" popup if it appears.
+   * This popup appears intermittently on the Proctor page before entering the batch ID.
+   * Safe to call anytime - does nothing if popup is not present.
    */
-  dismissSecurityPopup = async (): Promise<void> => {
-    this.logger?.step('Checking for security update popup');
-    const closeBtn = this.page.locator('button.close, button[aria-label="Close"], .modal-header button, mat-dialog-container button.close');
+  dismissPendoPopup = async (): Promise<void> => {
+    this.logger?.step('Checking for Pendo security popup');
     try {
-      await closeBtn.first().waitFor({ state: 'visible', timeout: 5000 });
-      await closeBtn.first().click();
-      this.logger?.success('Dismissed security update popup');
+      const closeBtn = this.page.locator('button._pendo-close-guide');
+      await closeBtn.waitFor({ state: 'visible', timeout: 5000 });
+      await closeBtn.click();
+      await this.page.waitForTimeout(1000);
+      this.logger?.success('Dismissed Pendo security popup');
     } catch {
-      this.logger?.info('No security popup appeared');
+      this.logger?.info('No Pendo popup appeared - continuing');
     }
   };
 
