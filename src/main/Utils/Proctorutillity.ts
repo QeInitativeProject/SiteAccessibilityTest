@@ -31,7 +31,7 @@ export class ProctorUtility {
    */
   clickOnMenuBar = async (): Promise<void> => {
     this.logger?.step('Clicking menu bar');
-    const menuBtn = this.page.locator('//div[@class="flex items-center"]/button');
+    const menuBtn = this.page.getByRole('button', { name: 'Open Menu' });
     await menuBtn.waitFor({ state: 'visible', timeout: 1000 });
     await menuBtn.click();
     this.logger?.success('Menu bar clicked');
