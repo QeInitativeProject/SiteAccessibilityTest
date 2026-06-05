@@ -194,8 +194,8 @@ test.describe.serial('@Regression - Stg_Proctor_CheatIncident_Ignore', { tag: '@
 
       const studentLoginPage = new LoginPage(studentTab);
       await studentTab.waitForTimeout(2000);
-      await studentLoginPage.fillStuUserName(process.env.stuUsernamezzcab1!);
-      await studentLoginPage.fillStuPassword(process.env.stuPasswordzzcab1!);
+      await studentLoginPage.fillStuUserName(process.env.stuUsernameauto4!);
+      await studentLoginPage.fillStuPassword(process.env.stuPasswordauto1!);
       await studentLoginPage.clickLogin();
       await studentTab.waitForLoadState('load');
 
@@ -398,8 +398,8 @@ test.describe.serial('@Regression - Stg_Proctor_CheatIncident_Ignore', { tag: '@
     try {
       await page.bringToFront();
       await page.waitForTimeout(5000);
-      await proctorUtil.validateProctorStatus(ASSESSMENT_STATUS);
-      await proctorUtil.validateProctorScore(EXPECTED_PERCENTAGE);
+      await proctorUtil.validateProctorStatus(ASSESSMENT_STATUS, extractedBatchId);
+      await proctorUtil.validateProctorScore(EXPECTED_PERCENTAGE, extractedBatchId);
       logger.success('TC14 PASS: Proctor side shows Completed status and correct score');
     } catch (error: any) {
       await logger?.error('TC14 FAIL: ' + error.message, error);
