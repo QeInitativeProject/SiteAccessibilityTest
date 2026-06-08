@@ -171,8 +171,8 @@ test.describe.serial('@Regression - Stg_Proctor_Ignore_4_CheatIncident.spec.ts',
 
     try {
       await page.goto(process.env.baseUrl!, { waitUntil: 'load' });
-      await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab!);
-      await atiLoginPage.fillfacPassword(process.env.facPasswordzzcab!);
+      await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab2!);
+      await atiLoginPage.fillfacPassword(process.env.facPasswordzzcab2!);
       await atiLoginPage.clickLogin();
       await page.waitForLoadState('load');
       await assertions.assertURLNotContains('/login');
