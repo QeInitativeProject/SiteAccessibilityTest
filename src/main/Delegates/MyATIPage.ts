@@ -414,4 +414,31 @@ export class MyATIPage {
     await this.page.waitForTimeout(5000);
     this.logger?.success(`✅ Clicked on assessment: ${assessmentName}`);
   };
+
+  /**
+   * Validate that no results are generated for an assessment on the Results page.
+   * Navigates to Results tab and asserts the assessment is NOT listed.
+   * @param assessmentName - The assessment name to verify is absent from Results
+   */
+  validateNoResultsGenerated = async (assessmentName: string): Promise<void> => {
+    this.logger?.step(`Validating no results generated for: ${assessmentName}`);
+
+    // Navigate to Results page
+    const resultsLink = this.page.getByRole('link', { name: 'Select this link to navigate to the Results page' });
+    await resultsLink.waitFor({ state: 'visible', timeout: 15000 });
+    await resultsLink.click();
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(5000);
+    this.logger?.success('✅ Navigated to Results page');
+
+    // Validate assessment is NOT visible in Results
+    const assessmentLink = this.page.locator(`a:has-text("${assessmentName}")`).first();
+    const isVisible = await assessmentLink.isVisible({ timeout: 10000 }).catch(() => false);
+
+    if (!isVisible) {
+      this.logger?.success(`✅ No results generated - "${assessmentName}" is not listed on Results page`);
+    } else {
+      throw new Error(`Results were generated after abandon - "${assessmentName}" is visible on Results page`);
+    }
+  };
 }
