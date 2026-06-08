@@ -2360,8 +2360,7 @@ export class QnAUtil {
         await this.executeAnswerStrategy(frame, questionType, answers, i);
       }
 
-      // 5. Wait for rationale screen to appear, then click Continue again to advance
-      await this.page.waitForTimeout(1000);
+      await new Promise(resolve => setTimeout(resolve, 5000));
       await this.clickContinueButton(frame, i);
 
       // 6. Wait for UI to update before next question
@@ -2434,6 +2433,7 @@ export class QnAUtil {
         await this.clickContinueButton(frame, questionIndex);
         return;
     }
+     await new Promise(resolve => setTimeout(resolve, 1000));
     // Always click Continue after answering
     await this.clickContinueButton(frame, questionIndex);
   };

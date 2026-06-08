@@ -171,8 +171,8 @@ test.describe.serial('@Regression - Stg_Proctor_Ignore_4_CheatIncident.spec.ts',
 
     try {
       await page.goto(process.env.baseUrl!, { waitUntil: 'load' });
-      await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab!);
-      await atiLoginPage.fillfacPassword(process.env.facPasswordzzcab!);
+      await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab2!);
+      await atiLoginPage.fillfacPassword(process.env.facPasswordzzcab2!);
       await atiLoginPage.clickLogin();
       await page.waitForLoadState('load');
       await assertions.assertURLNotContains('/login');
@@ -261,7 +261,6 @@ test.describe.serial('@Regression - Stg_Proctor_Ignore_4_CheatIncident.spec.ts',
 
     myATIPage = new MyATIPage(studentTab);
     assessmentPage = new AssessmentPage(studentTab);
-    locators = new StudentFacingPageLocators(studentTab);
     myATIPage.setLogger(logger);
     assessmentPage.setLogger(logger);
 
@@ -277,17 +276,12 @@ test.describe.serial('@Regression - Stg_Proctor_Ignore_4_CheatIncident.spec.ts',
 
       await studentTab.locator('.blockUI.blockOverlay').waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
 
-     await myATIPage.clickOnMyATITab();
+      await myATIPage.clickOnMyATITab();
       await studentTab.waitForLoadState('load');
       await studentTab.waitForTimeout(5000);
 
-      await myATIPage.clickOnAssessmentsTab();
-      await studentTab.waitForTimeout(2000);
-
-      await studentAssertions.waitAndAssertVisible(locators.idTextbox, 15000);
-      await locators.idTextbox.fill(extractedBatchId.trim());
-      await studentAssertions.waitAndAssertVisible(locators.continueButton, 10000);
-      await locators.continueButton.click();
+      // Product was already added in TC2, so use reloadSameAssessment instead of re-entering batch ID
+      await myATIPage.reloadSameAssessment(EXPECTED_ASSESSMENT_NAME!, extractedBatchId);
       await studentTab.waitForTimeout(3000);
 
       const studentProctorUtil = new ProctorUtility(studentTab);

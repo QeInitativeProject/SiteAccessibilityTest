@@ -365,7 +365,7 @@ test.describe.serial('@Regression - Stg_MultiAssessment_Proctor', { tag: '@regre
       const stu2Login = new LoginPage(studentTab2);
       stu2Login.setLogger(logger);
       await studentTab2.waitForTimeout(2000);
-      await stu2Login.fillStuUserName(process.env.stuUsernameauto2!);
+      await stu2Login.fillStuUserName(process.env.stuUsernameauto8!);
       await stu2Login.fillStuPassword(process.env.stuPasswordauto1!);
       await stu2Login.clickLogin();
       await studentTab2.waitForLoadState('load');
@@ -626,7 +626,7 @@ test.describe.serial('@Regression - Stg_MultiAssessment_Proctor', { tag: '@regre
 
       const stu2Login = new LoginPage(studentTab2);
       stu2Login.setLogger(logger);
-      await stu2Login.fillStuUserName(process.env.stuUsernameauto2!);
+      await stu2Login.fillStuUserName(process.env.stuUsernameauto8!);
       await stu2Login.fillStuPassword(process.env.stuPasswordauto1!);
       await stu2Login.clickLogin();
       await studentTab2.waitForLoadState('load');
