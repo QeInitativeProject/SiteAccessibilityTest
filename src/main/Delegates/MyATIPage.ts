@@ -242,7 +242,7 @@ export class MyATIPage {
   ): Promise<void> => {
     await this.page.waitForLoadState('load');
     await this.page.waitForLoadState('domcontentloaded');
-    await this.page.waitForTimeout(5000);
+    await this.page.waitForTimeout(10000);
 
     // Dismiss blockUI overlay if present
     await this.page.locator('.blockUI.blockOverlay').waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
