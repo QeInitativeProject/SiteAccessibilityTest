@@ -15,6 +15,7 @@ import { Logger } from '@utils/Logger';
 import { AssessmentPage } from '@delegates/AssessmentPage';
 import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators';
 import { BatchCreation } from '@utils/BatchCreation';
+import { clearSessionCookies } from '@utils/TestSetup';
 
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store_Stage';
@@ -301,6 +302,8 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
     logger.separator('TC8: STUDENT RE-LOGIN AND RELAUNCH');
 
     try {
+      await clearSessionCookies(context);
+
       studentTab = await context.newPage();
       await studentTab.goto(process.env.baseUrl!, { waitUntil: 'load' });
 

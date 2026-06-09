@@ -236,7 +236,7 @@ export class ProctorUtility {
     await this.page.locator('#initial3').fill(initial3);
     await this.page.locator('#fullName2').click();
     await this.page.locator('#fullName2').fill(fullName2);
-    await this.page.locator('(//label[@id="disabledApplyProductCheckbox"])[2]').click();
+    await this.page.locator('#newAttestationAgreeLabel span.stu-mat-checkbox').click();
     this.logger?.success('Attestation page filled successfully');
   };
 

@@ -75,7 +75,6 @@ export class LoginPage {
     const dialogPromise = this.page.waitForEvent('dialog', { timeout: 5000 }).catch(() => null);
     await Promise.race([loginClickPromise, dialogPromise]);
     this.logger?.success('Login button clicked with dialog race handling');
-    await this.page.waitForLoadState('domcontentloaded');
   };
 
   verifyInstitution = async () => {
