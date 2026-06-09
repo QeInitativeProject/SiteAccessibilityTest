@@ -122,8 +122,8 @@ test.describe.serial('@Regression - Stg_Proctor_RelaunchAssessment', { tag: '@re
 
     try {
       await page.goto(process.env.baseUrl!, { waitUntil: 'load' });
-      await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab2!);
-      await atiLoginPage.fillfacPassword(process.env.facPasswordzzcab2!);
+      await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab!);
+      await atiLoginPage.fillfacPassword(process.env.facPasswordzzcab!);
       await atiLoginPage.clickLogin();
       await page.waitForLoadState('load');
       await assertions.assertURLNotContains('/login');
