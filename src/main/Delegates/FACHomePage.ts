@@ -212,7 +212,7 @@ export class FACHomePage {
     await this.page.locator('#initial3').fill('test');
     await this.page.locator('#fullName2').click();
     await this.page.locator('#fullName2').fill('test');
-    await this.page.locator('(//label[@id="disabledApplyProductCheckbox"])[2]').click();
+    await this.page.locator('#newAttestationAgreeLabel span.stu-mat-checkbox').click();
   };
 
   approveByProctor = async () => {
