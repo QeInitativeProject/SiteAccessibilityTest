@@ -89,7 +89,7 @@ sanity:prod:
     ENV: "prod"
   script:
     - echo "🧪 Running Sanity Tests on ${ENV} environment (Sanity-Prod folder only)..."
-    - npx playwright test --testDir src/test/TestScript/Sanity-Prod --workers=4
+    - npx playwright test src/test/TestScript/Sanity-Prod --workers=4
   when: manual
   retry:
     max: 2
