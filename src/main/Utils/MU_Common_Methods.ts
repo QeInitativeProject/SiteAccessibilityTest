@@ -29,10 +29,10 @@ export class MU_Common_Methods {
     await this.page.goto(process.env.baseUrl_MU || '');
     this.logger?.info(`Navigated to: ${process.env.baseUrl_MU}`);
 
-    await this.locators.usernameInput.fill(process.env.muUsername2 || '');
+    await this.locators.usernameInput.fill(process.env.muUsername || '');
     this.logger?.debug('Username entered');
 
-    await this.locators.passwordInput.fill(process.env.muPassword2 || '');
+    await this.locators.passwordInput.fill(process.env.muPassword || '');
     this.logger?.debug('Password entered');
 
     await this.locators.signInButton.click();
