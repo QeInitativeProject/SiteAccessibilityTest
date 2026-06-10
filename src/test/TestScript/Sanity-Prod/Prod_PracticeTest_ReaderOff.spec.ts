@@ -69,8 +69,8 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', { tag: '@sanity' }, 
 
     try {
       await page.goto(process.env.baseUrl);
-      await atiLoginPage.fillStuUserName(process.env.studentUsernamezzcab || '');
-      await atiLoginPage.fillStuPassword(process.env.studentPasswordzzcab || '');
+      await atiLoginPage.fillStuUserName(process.env.studentUsernamezzcab2 || '');
+      await atiLoginPage.fillStuPassword(process.env.studentPasswordzzcab3 || '');
       await atiLoginPage.clickLogin();
       logger.success('TC1 PASS: Logged into ATI successfully');
     } catch (error: any) {

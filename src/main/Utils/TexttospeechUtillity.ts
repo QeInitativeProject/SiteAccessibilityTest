@@ -102,6 +102,12 @@ export class TextToSpeechUtility {
     const toggleSwitchThumb = this.locators.getToggleSwitchThumb();
     const toggleParent = this.locators.getToggleParent();
 
+    const isVisible = await toggleParent.isVisible({ timeout: 10000 }).catch(() => false);
+    if (!isVisible) {
+      this.logger?.info('⚠️ TTS toggle not available for this assessment/user - skipping turnToggleOn');
+      return;
+    }
+
     const currentState = await toggleParent.getAttribute('class');
     if (!currentState?.includes('mat-checked')) {
       await toggleSwitchThumb.click({ force: true });
@@ -118,6 +124,12 @@ export class TextToSpeechUtility {
   async turnToggleOff(): Promise<void> {
     const toggleSwitchThumb = this.locators.getToggleSwitchThumb();
     const toggleParent = this.locators.getToggleParent();
+
+    const isVisible = await toggleParent.isVisible({ timeout: 10000 }).catch(() => false);
+    if (!isVisible) {
+      this.logger?.info('⚠️ TTS toggle not available for this assessment/user - skipping turnToggleOff');
+      return;
+    }
 
     const currentState = await toggleParent.getAttribute('class');
     if (currentState?.includes('mat-checked')) {

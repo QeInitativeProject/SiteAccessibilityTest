@@ -190,8 +190,8 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
 
       const studentLoginPage = new LoginPage(studentTab);
       studentLoginPage.setLogger(logger);
-      await studentLoginPage.fillStuUserName(process.env.studentUsernamezzcab!);
-      await studentLoginPage.fillStuPassword(process.env.studentPasswordzzcab!);
+      await studentLoginPage.fillStuUserName(process.env.studentUsernamezzcab4!);
+      await studentLoginPage.fillStuPassword(process.env.studentPasswordzzcab2!);
       await studentLoginPage.clickLogin();
       await studentTab.waitForLoadState('load');
 

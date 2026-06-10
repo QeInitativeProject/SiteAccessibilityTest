@@ -67,8 +67,8 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOn', () => {
       await logger.logNavigation(process.env.baseUrl || '');
 
       logger.step('Enter student credentials');
-      await atiLoginPage.fillStuUserName(process.env.studentUsernamezzcab || '');
-      await atiLoginPage.fillStuPassword(process.env.studentPasswordzzcab || '');
+      await atiLoginPage.fillStuUserName(process.env.studentUsernamezzcab3 || '');
+      await atiLoginPage.fillStuPassword(process.env.studentPasswordzzcab3 || '');
 
       logger.step('Click login button');
       await atiLoginPage.clickLogin();
