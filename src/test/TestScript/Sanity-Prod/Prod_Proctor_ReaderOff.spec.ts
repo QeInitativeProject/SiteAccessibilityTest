@@ -141,6 +141,7 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
       throw error;
     }
   });
+  
 
   test('TC4: Enter Assessment ID and Setup Proctoring', { tag: '@sanity' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC4__Setup_Proctoring', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
