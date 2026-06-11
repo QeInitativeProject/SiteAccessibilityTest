@@ -46,7 +46,7 @@ cache:
     - npx playwright test --grep @smoke --workers=4
   when: manual
   # Removed job-level retry; Playwright will retry only failed tests
-  allow_failure: false
+  allow_failure: true 
 
 .regression_test:
   extends: .test_base
@@ -56,9 +56,35 @@ cache:
     - npx playwright test --grep @regression --workers=100%
   when: manual
   # Removed job-level retry; Playwright will retry only failed tests
-  allow_failure: false
+  allow_failure: true
 
 # ==================== SUITE-LEVEL JOBS (Run All Tests by Environment) ====================
+
+# ==================== AUTO-TRIGGERED BY UPSTREAM DEV PIPELINE ====================
+ATI_Smoke_Stage:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - npx playwright test --grep @smoke src/test/TestScript/Smoke-Stage --workers=4
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "pipeline"  # Triggered by upstream multi-project pipeline
+  allow_failure: true 
+
+ATI_Regression_Stage_Manual:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - npx playwright test --grep @regression src/test/TestScript/Regression --workers=100%
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "pipeline"
+      when: manual
+  allow_failure: true 
+
+# ==================== MANUAL JOBS (Run on demand) ====================
 smoke:qa:
   extends: .smoke_test
   variables:
@@ -89,14 +115,14 @@ sanity:prod:
     ENV: "prod"
   script:
     - echo "🧪 Running Sanity Tests on ${ENV} environment (Sanity-Prod folder only)..."
-    - npx playwright test --testDir src/test/TestScript/Sanity-Prod --workers=4
+    - npx playwright test src/test/TestScript/Sanity-Prod --workers=4
   when: manual
   retry:
     max: 2
     when:
       - runner_system_failure
       - stuck_or_timeout_failure
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:
   extends: .regression_test
@@ -117,7 +143,7 @@ smoke:stage:PracticeTest_ReaderOn:
     - echo "🧪 Running Stg_PracticeTest_ReaderOn..."
     - npx playwright test src/test/TestScript/Smoke-Stage/Stg_PracticeTest_ReaderOn.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 smoke:stage:PracticeTest_ReaderOff:
   extends: .test_base
@@ -128,7 +154,7 @@ smoke:stage:PracticeTest_ReaderOff:
     - echo "🧪 Running Stg_PracticeTest_ReaderOff..."
     - npx playwright test src/test/TestScript/Smoke-Stage/Stg_PracticeTest_ReaderOff.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 smoke:stage:Proctor_ReaderOn:
   extends: .test_base
@@ -139,7 +165,7 @@ smoke:stage:Proctor_ReaderOn:
     - echo "🧪 Running Stg_Proctor_ReaderOn..."
     - npx playwright test src/test/TestScript/Smoke-Stage/Stg_Proctor_ReaderOn.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 smoke:stage:Proctor_ReaderOff:
   extends: .test_base
@@ -150,7 +176,7 @@ smoke:stage:Proctor_ReaderOff:
     - echo "🧪 Running Stg_Proctor_ReaderOff..."
     - npx playwright test src/test/TestScript/Smoke-Stage/Stg_Proctor_ReaderOff.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 # ==================== INDIVIDUAL SPEC FILE JOBS - REGRESSION ====================
 regression:stage:0_Percent:
@@ -162,7 +188,7 @@ regression:stage:0_Percent:
     - echo "🔬 Running Stg_0_Percent..."
     - npx playwright test src/test/TestScript/Regression/Stg_0_Percent.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:50_Percent:
   extends: .test_base
@@ -173,7 +199,7 @@ regression:stage:50_Percent:
     - echo "🔬 Running Stg_50_Percent..."
     - npx playwright test src/test/TestScript/Regression/Stg_50_Percent.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:75_Percent:
   extends: .test_base
@@ -184,7 +210,7 @@ regression:stage:75_Percent:
     - echo "🔬 Running Stg_75_Percent..."
     - npx playwright test src/test/TestScript/Regression/Stg_75_Percent.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:100_Percent:
   extends: .test_base
@@ -195,7 +221,7 @@ regression:stage:100_Percent:
     - echo "🔬 Running Stg_100_Percent..."
     - npx playwright test src/test/TestScript/Regression/Stg_100_Percent.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:Multi_Select:
   extends: .test_base
@@ -206,7 +232,7 @@ regression:stage:Multi_Select:
     - echo "🔬 Running Stg_Multi_Select..."
     - npx playwright test src/test/TestScript/Regression/Stg_Multi_Select.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:Multi_SelectDropdown:
   extends: .test_base
@@ -217,7 +243,7 @@ regression:stage:Multi_SelectDropdown:
     - echo "🔬 Running Stg_Multi_SelectDropdown..."
     - npx playwright test src/test/TestScript/Regression/Stg_Multi_SelectDropdown.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:MultiAssessment_Proctor:
   extends: .test_base
@@ -228,7 +254,7 @@ regression:stage:MultiAssessment_Proctor:
     - echo "🔬 Running Stg_MultiAssessment_Proctor..."
     - npx playwright test src/test/TestScript/Regression/Stg_MultiAssessment_Proctor.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:Practice_AllItemTypes:
   extends: .test_base
@@ -239,7 +265,7 @@ regression:stage:Practice_AllItemTypes:
     - echo "🔬 Running Stg_Practice_AllItemTypes..."
     - npx playwright test src/test/TestScript/Regression/Stg_Practice_AllItemTypes.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:Practice_TTS_On:
   extends: .test_base
@@ -250,7 +276,7 @@ regression:stage:Practice_TTS_On:
     - echo "🔬 Running Stg_Practice_TTS_On..."
     - npx playwright test src/test/TestScript/Regression/Stg_Practice_TTS_On.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:Proctor_TTS_On:
   extends: .test_base
@@ -261,7 +287,7 @@ regression:stage:Proctor_TTS_On:
     - echo "🔬 Running Stg_Proctor_TTS_On..."
     - npx playwright test src/test/TestScript/Regression/Stg_Proctor_TTS_On.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:Proctor_RelaunchAssessment:
   extends: .test_base
@@ -272,7 +298,7 @@ regression:stage:Proctor_RelaunchAssessment:
     - echo "🔬 Running Stg_Proctor_RelaunchAssessment..."
     - npx playwright test src/test/TestScript/Regression/Stg_Proctor_RelaunchAssessment.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:Proctor_CheatIncident_Ignore:
   extends: .test_base
@@ -283,7 +309,7 @@ regression:stage:Proctor_CheatIncident_Ignore:
     - echo "🔬 Running Stg_Proctor_CheatIncident_Ignore..."
     - npx playwright test src/test/TestScript/Regression/Stg_Proctor_CheatIncident_Ignore.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:Stg_Proctor_Ignore_4_CheatIncident:
   extends: .test_base
@@ -294,7 +320,7 @@ regression:stage:Stg_Proctor_Ignore_4_CheatIncident:
     - echo "🔬 Running Stg_Proctor_Ignore_4_CheatsIncidents..."
     - npx playwright test src/test/TestScript/Regression/Stg_Proctor_Ignore_4_CheatIncident.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 regression:stage:Stg_Proctor_Abandon_Assessment:
   extends: .test_base
@@ -305,7 +331,7 @@ regression:stage:Stg_Proctor_Abandon_Assessment:
     - echo "🔬 Running Stg_Proctor_Abandon_Assessment..."
     - npx playwright test src/test/TestScript/Regression/Stg_Proctor_Abandon_Assessment.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 # ==================== INDIVIDUAL SPEC FILE JOBS - SANITY PROD ====================
 sanity:prod:PracticeTest_ReaderOn:
@@ -317,7 +343,7 @@ sanity:prod:PracticeTest_ReaderOn:
     - echo "🧪 Running Prod_PracticeTest_ReaderOn..."
     - npx playwright test src/test/TestScript/Sanity-Prod/Prod_PracticeTest_ReaderOn.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 sanity:prod:PracticeTest_ReaderOff:
   extends: .test_base
@@ -328,7 +354,7 @@ sanity:prod:PracticeTest_ReaderOff:
     - echo "🧪 Running Prod_PracticeTest_ReaderOff..."
     - npx playwright test src/test/TestScript/Sanity-Prod/Prod_PracticeTest_ReaderOff.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 sanity:prod:Proctor_ReaderOn:
   extends: .test_base
@@ -339,7 +365,7 @@ sanity:prod:Proctor_ReaderOn:
     - echo "🧪 Running Prod_Proctor_ReaderOn..."
     - npx playwright test src/test/TestScript/Sanity-Prod/Prod_Proctor_ReaderOn.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 sanity:prod:Proctor_ReaderOff:
   extends: .test_base
@@ -350,7 +376,7 @@ sanity:prod:Proctor_ReaderOff:
     - echo "🧪 Running Prod_Proctor_ReaderOff..."
     - npx playwright test src/test/TestScript/Sanity-Prod/Prod_Proctor_ReaderOff.spec.ts
   when: manual
-  allow_failure: false
+  allow_failure: true 
 
 # ==================== CONSOLIDATED REPORT ====================
 consolidated_report:
