@@ -67,7 +67,6 @@ ATI_Smoke_Stage:
   variables:
     ENV: "stage"
   script:
-  
     - npx playwright test --grep @smoke src/test/TestScript/Smoke-Stage --workers=4
   rules:
     - if: $CI_PIPELINE_SOURCE == "pipeline"  # Triggered by upstream multi-project pipeline
