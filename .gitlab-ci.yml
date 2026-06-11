@@ -468,6 +468,8 @@ pages:
 # ==================== WORKFLOW RULES ====================
 workflow:
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "pipeline"'
+      when: always
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
       when: always
     - if: '$CI_PIPELINE_SOURCE == "web"'
