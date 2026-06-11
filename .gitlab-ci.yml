@@ -59,6 +59,33 @@ cache:
   allow_failure: false
 
 # ==================== SUITE-LEVEL JOBS (Run All Tests by Environment) ====================
+
+# ==================== AUTO-TRIGGERED BY UPSTREAM DEV PIPELINE ====================
+ATI_Smoke_Stage:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+  
+    - npx playwright test --grep @smoke src/test/TestScript/Smoke-Stage --workers=4
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "pipeline"  # Triggered by upstream multi-project pipeline
+  allow_failure: false
+
+ATI_Regression_Stage_Manual:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - npx playwright test --grep @regression src/test/TestScript/Regression --workers=100%
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "pipeline"
+      when: manual
+  allow_failure: true
+
+# ==================== MANUAL JOBS (Run on demand) ====================
 smoke:qa:
   extends: .smoke_test
   variables:
