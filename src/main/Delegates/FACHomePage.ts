@@ -31,13 +31,13 @@ export class FACHomePage {
     this.logger?.step('Clicking Student Catalog Access');
     const studentCatalogBtn = this.page.locator('(//span[@class="mat-mdc-list-item-unscoped-content mdc-list-item__primary-text"])[8]');
     const lazyLoader = this.page.locator('text=Loading...').first();
-    await studentCatalogBtn.waitFor({ state: 'visible', timeout: 10000 });
+    await studentCatalogBtn.waitFor({ state: 'visible', timeout: 20000 });
     await studentCatalogBtn.scrollIntoViewIfNeeded();
     await studentCatalogBtn.click({ force: true });
-    await lazyLoader.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
+    await lazyLoader.waitFor({ state: 'visible', timeout: 50000 }).catch(() => {
       this.logger?.info('Student Catalog lazy loader did not become visible');
     });
-    await lazyLoader.waitFor({ state: 'hidden', timeout: 40000 }).catch(() => {
+    await lazyLoader.waitFor({ state: 'hidden', timeout: 50000 }).catch(() => {
       this.logger?.info('Student Catalog lazy loader did not fully disappear within timeout');
     });
     await this.page.waitForLoadState('load');
@@ -134,8 +134,25 @@ export class FACHomePage {
     this.logger?.step(`Enabling batch for batch ID: ${batchId}`);
 
     const rowMatcher = new RegExp(`\\b${batchId}\\b`);
-    const batchRow = this.page.locator('mat-row, tr, [role="row"], .mat-mdc-row, .mat-row').filter({ hasText: rowMatcher }).first();
-    await batchRow.waitFor({ state: 'visible', timeout: 20000 });
+    let batchRow = this.page.locator('[role="row"]').filter({ hasText: rowMatcher }).first();
+
+    // If batch not on current page, navigate through pagination
+    if (!(await batchRow.isVisible().catch(() => false))) {
+      this.logger?.info('Batch not on current page, navigating to next page...');
+      const nextBtn = this.page.locator('button.mat-mdc-paginator-navigation-next');
+      for (let i = 0; i < 20; i++) {
+        if (await nextBtn.isEnabled().catch(() => false)) {
+          await nextBtn.click();
+          await this.page.waitForTimeout(2000);
+          batchRow = this.page.locator('[role="row"]').filter({ hasText: rowMatcher }).first();
+          if (await batchRow.isVisible().catch(() => false)) break;
+        } else {
+          break;
+        }
+      }
+    }
+
+    await batchRow.waitFor({ state: 'visible', timeout: 15000 });
 
     // Enable toggle lives in the same row and exposes current state through aria-checked.
     const enableSwitch = batchRow.locator('button[role="switch"]').first();
@@ -146,8 +163,19 @@ export class FACHomePage {
       this.logger?.step(`Batch ${batchId} is disabled. Enabling now.`);
       await enableSwitch.scrollIntoViewIfNeeded();
       await enableSwitch.click({ force: true });
-      await expect(enableSwitch).toHaveAttribute('aria-checked', 'true', { timeout: 10000 });
-      await this.page.waitForTimeout(10000);
+
+      // Handle confirmation dialog if it appears
+      const confirmBtn = this.page.locator('button:has-text("Yes"), button:has-text("Confirm"), button:has-text("OK"), button:has-text("Enable")');
+      try {
+        await confirmBtn.first().waitFor({ state: 'visible', timeout: 5000 });
+        this.logger?.info('Confirmation dialog detected, clicking confirm...');
+        await confirmBtn.first().click();
+      } catch {
+        // No confirmation dialog appeared
+      }
+
+      await expect(enableSwitch).toHaveAttribute('aria-checked', 'true', { timeout: 15000 });
+      await this.page.waitForTimeout(5000);
       this.logger?.success(`Batch ${batchId} enabled`);
     } else {
       this.logger?.info(`Batch ${batchId} already enabled`);
