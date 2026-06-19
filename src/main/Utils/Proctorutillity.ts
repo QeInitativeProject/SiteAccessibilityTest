@@ -43,7 +43,7 @@ export class ProctorUtility {
   navigateToProctorTab = async (): Promise<void> => {
     this.logger?.step('Navigating to Proctor tab');
     await this.page.waitForLoadState('domcontentloaded');
-    const proctorLink = this.page.locator('//a[@href="/faculty/proctor"]');
+    const proctorLink = this.page.locator('(//button[@class="btn-unstyled sidebar-action"])[3]');
     await proctorLink.waitFor({ state: 'visible', timeout: 10000 });
     await proctorLink.click();
     await this.page.waitForLoadState('load');
@@ -67,6 +67,119 @@ export class ProctorUtility {
     } catch {
       this.logger?.info('No Pendo popup appeared - continuing');
     }
+  };
+
+  /**
+   * Search for batch by ID in proctoring setup
+   * @param batchId - The batch ID to search for
+   */
+  searchBatch = async (batchId: string): Promise<void> => {
+    this.logger?.step(`Searching for batch: ${batchId}`);
+    const searchBox = this.page.locator('input[placeholder*="Search"], input[placeholder*="search"]').first();
+    await searchBox.waitFor({ state: 'visible', timeout: 10000 });
+    await searchBox.fill(batchId);
+    await this.page.keyboard.press('Enter');
+    await this.page.waitForTimeout(4000);
+    this.logger?.success(`Batch searched: ${batchId}`);
+  };
+
+  /**
+   * Click Continue button in batch search dialog
+   */
+  clickContinueButton = async (): Promise<void> => {
+    this.logger?.step('Clicking Continue button');
+    const continueBtn = this.page.getByRole('button', { name: /continue/i }).first();
+    await continueBtn.waitFor({ state: 'visible', timeout: 10000 });
+    await continueBtn.click();
+
+    // If the wizard is still on "Assessments selected to proctor", click Continue once more.
+    const selectedToProctorPanel = this.page.locator('text=Assessments selected to proctor').first();
+    const signatureCandidate = this.page
+      .locator('//label[@for="signature"]/following::input[1]')
+      .or(this.page.locator('//mat-label[contains(normalize-space(),"Electronic Signature")]/following::input[1]'))
+      .first();
+
+    await this.page.waitForTimeout(1500);
+    const isStillOnSelectedPanel = await selectedToProctorPanel.isVisible().catch(() => false);
+    const hasSignatureField = await signatureCandidate.isVisible().catch(() => false);
+
+    if (isStillOnSelectedPanel && !hasSignatureField) {
+      this.logger?.info('Still on selected assessments panel. Clicking Continue again to load agreement step.');
+      await continueBtn.click();
+    }
+
+    await this.page.waitForLoadState('domcontentloaded').catch(() => {
+      this.logger?.info('No full page navigation after Continue; proceeding with agreement checks.');
+    });
+    await this.page.waitForTimeout(2000);
+    this.logger?.success('Continue button clicked');
+  };
+
+  /**
+   * Check all checkboxes on attestation form
+   */
+  checkAllCheckboxes = async (): Promise<void> => {
+    this.logger?.step('Checking all checkboxes');
+    const checkboxes = this.page.locator('mat-checkbox input[type="checkbox"], input[type="checkbox"]');
+
+    // Give lazy content time to render on Complete Agreement step.
+    await checkboxes.first().waitFor({ state: 'visible', timeout: 20000 }).catch(() => {
+      this.logger?.info('Agreement checkboxes not immediately visible; continuing with available elements.');
+    });
+
+    const checkboxCount = await checkboxes.count();
+    for (let i = 0; i < checkboxCount; i++) {
+      const checkbox = checkboxes.nth(i);
+      const isChecked = await checkbox.isChecked();
+      if (!isChecked) {
+        await checkbox.click();
+        
+      }
+    }
+    this.logger?.success(`Checked ${checkboxCount} checkboxes`);
+  };
+
+  /**
+   * Fill electronic signature field
+   * @param signatureName - Name to use for electronic signature
+   */
+  fillElectronicSignature = async (signatureName: string): Promise<void> => {
+    this.logger?.step(`Filling electronic signature: ${signatureName}`);
+    const signatureField = this.page
+      .locator('//label[@for="signature"]/following::input[1]')
+      .or(this.page.locator('//mat-label[contains(normalize-space(),"Electronic Signature")]/following::input[1]'))
+      .or(this.page.locator('input[id*="signature" i], input[formcontrolname*="signature" i]'))
+      .first();
+
+    await signatureField.waitFor({ state: 'visible', timeout: 30000 });
+    await signatureField.fill(signatureName);
+    await this.page.waitForTimeout(2000);
+    this.logger?.success(`Electronic signature filled: ${signatureName}`);
+  };
+
+  /**
+   * Click I Agree button
+   */
+  clickIAgreeButton = async (): Promise<void> => {
+    this.logger?.step('Clicking I Agree button');
+    const iAgreeBtn = this.page.locator('//span[@class="mat-mdc-button-persistent-ripple mdc-button__ripple"]');
+    await iAgreeBtn.waitFor({ state: 'visible', timeout: 10000 });
+    await iAgreeBtn.click();
+    await this.page.waitForTimeout(2000);
+    this.logger?.success('I Agree button clicked');
+  };
+
+  /**
+   * Click Start Proctoring button
+   */
+  clickStartProctoringButton = async (): Promise<void> => {
+    this.logger?.step('Clicking Start Proctoring button');
+    const startProctoringBtn = this.page.getByRole('button', { name: /start proctoring/i });
+    await startProctoringBtn.waitFor({ state: 'visible', timeout: 15000 });
+    await startProctoringBtn.click();
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('load');
+    this.logger?.success('Start Proctoring button clicked');
   };
 
   /**
