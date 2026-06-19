@@ -100,7 +100,6 @@ smoke:stage:
   when: manual
 
 smoke:prod:
-smoke:prod:
   extends: .test_base
   stage: test
   variables:

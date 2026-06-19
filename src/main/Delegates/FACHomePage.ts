@@ -24,6 +24,162 @@ export class FACHomePage {
     this.ati.setLogger(logger);
   }
 
+  /**
+   * Click on Student Catalog Access from sidebar menu
+   */
+  clickStudentCatalogAccess = async (): Promise<void> => {
+    this.logger?.step('Clicking Student Catalog Access');
+    const studentCatalogBtn = this.page.locator('(//span[@class="mat-mdc-list-item-unscoped-content mdc-list-item__primary-text"])[8]');
+    const lazyLoader = this.page.locator('text=Loading...').first();
+    await studentCatalogBtn.waitFor({ state: 'visible', timeout: 10000 });
+    await studentCatalogBtn.scrollIntoViewIfNeeded();
+    await studentCatalogBtn.click({ force: true });
+    await lazyLoader.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
+      this.logger?.info('Student Catalog lazy loader did not become visible');
+    });
+    await lazyLoader.waitFor({ state: 'hidden', timeout: 40000 }).catch(() => {
+      this.logger?.info('Student Catalog lazy loader did not fully disappear within timeout');
+    });
+    await this.page.waitForLoadState('load');
+    this.logger?.success('Student Catalog Access clicked');
+  };
+
+  /**
+   * Navigate to Assessment Builder page for setting up proctoring
+   */
+  clickAssessmentsTab = async (): Promise<void> => {
+    this.logger?.step('Clicking Assessments button');
+
+    const assessmentButton = this.page.locator('(//span[@class="mdc-tab__text-label"])[3]');
+
+
+    
+        await assessmentButton.waitFor({ state: 'visible', timeout: 5000 });
+        await assessmentButton.scrollIntoViewIfNeeded();
+        await assessmentButton.click({ force: true });
+        await this.page.waitForTimeout(2000);
+        await this.page.waitForLoadState('load');
+        this.logger?.success('Assessments button clicked');
+
+      
+    
+  };
+
+  /**
+   * Search for assessment by name
+   * @param assessmentName - Name of the assessment to search for
+   */
+  searchAssessment = async (assessmentName: string): Promise<void> => {
+    this.logger?.step(`Searching for assessment: ${assessmentName}`);
+    
+    // Look for search input with placeholder containing 'search' (case insensitive)
+    const searchBox = this.page.locator('//input[@name="search"]').first();
+    
+    // Scroll it into view if needed
+    await searchBox.scrollIntoViewIfNeeded().catch(() => {
+      this.logger?.step('Could not scroll search box, trying anyway');
+    });
+    
+    // Wait for it to be visible (scroll into view might help)
+    await searchBox.waitFor({ state: 'visible', timeout: 10000 });
+    await searchBox.fill(assessmentName);
+    await this.page.waitForTimeout(2000);
+    this.logger?.success(`Assessment search: ${assessmentName}`);
+  };
+
+  /**
+   * Click on assessment card by name
+   * @param assessmentName - Name of the assessment card to click
+   */
+  clickAssessmentCard = async (assessmentName: string): Promise<void> => {
+    this.logger?.step(`Clicking assessment card: ${assessmentName}`);
+      const assessmentCard = this.page.locator(`//span[@class="assessment-card-name" and text()="${assessmentName}"]`);
+    await assessmentCard.waitFor({ state: 'visible', timeout: 10000 });
+    await assessmentCard.click();
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('load');
+    this.logger?.success(`Assessment card clicked: ${assessmentName}`);
+  };
+
+  /**
+   * Click Proctor Insights icon for a specific batch ID.
+   * @param batchId - Batch ID whose proctor insights icon should be clicked
+   */
+  clickProctorInsightsIcon = async (batchId: string): Promise<void> => {
+    this.logger?.step(`Clicking Proctor Insights for batch ID: ${batchId}`);
+      const batchRow = this.page.locator('mat-row, tr, [role="row"], .mat-mdc-row, .mat-row').filter({ hasText: batchId }).first();
+      await batchRow.waitFor({ state: 'visible', timeout: 15000 });
+
+      const proctorButton = batchRow.locator('xpath=.//button[.//mat-icon[normalize-space()="assessment"]]').first();
+      const proctorIcon = batchRow.locator('xpath=.//mat-icon[normalize-space()="assessment"]').first();
+      await proctorIcon.waitFor({ state: 'visible', timeout: 15000 });
+
+      if (await proctorButton.isVisible()) {
+        await proctorButton.scrollIntoViewIfNeeded();
+        await proctorButton.click({ force: true });
+      } else {
+        await proctorIcon.scrollIntoViewIfNeeded();
+        await proctorIcon.click({ force: true });
+      }
+    await this.page.waitForTimeout(10000);
+    await this.page.waitForLoadState('load');
+    this.logger?.success(`Proctor Insights clicked for batch ID: ${batchId}`);
+  };
+
+  /**
+   * Enable a specific batch from the Assessments grid, if currently disabled.
+   * @param batchId - Batch ID whose Enable toggle should be set to ON
+   */
+  enableBatchById = async (batchId: string): Promise<void> => {
+    this.logger?.step(`Enabling batch for batch ID: ${batchId}`);
+
+    const rowMatcher = new RegExp(`\\b${batchId}\\b`);
+    const batchRow = this.page.locator('mat-row, tr, [role="row"], .mat-mdc-row, .mat-row').filter({ hasText: rowMatcher }).first();
+    await batchRow.waitFor({ state: 'visible', timeout: 20000 });
+
+    // Enable toggle lives in the same row and exposes current state through aria-checked.
+    const enableSwitch = batchRow.locator('button[role="switch"]').first();
+    await enableSwitch.waitFor({ state: 'visible', timeout: 15000 });
+    const isEnabled = (await enableSwitch.getAttribute('aria-checked')) === 'true';
+
+    if (!isEnabled) {
+      this.logger?.step(`Batch ${batchId} is disabled. Enabling now.`);
+      await enableSwitch.scrollIntoViewIfNeeded();
+      await enableSwitch.click({ force: true });
+      await expect(enableSwitch).toHaveAttribute('aria-checked', 'true', { timeout: 10000 });
+      await this.page.waitForTimeout(10000);
+      this.logger?.success(`Batch ${batchId} enabled`);
+    } else {
+      this.logger?.info(`Batch ${batchId} already enabled`);
+    }
+  };
+
+  /**
+   * Click Proctor Insights icon for a specific batch.
+   * @param batchId - Batch ID whose Proctor Insights icon should be clicked
+   */
+  clickProctorInsightsIconByBatchId = async (batchId: string): Promise<void> => {
+    this.logger?.step(`Clicking Proctor Insights icon for batch ID: ${batchId}`);
+
+    const rowMatcher = new RegExp(`\\b${batchId}\\b`);
+    const batchRow = this.page.locator('mat-row, tr, [role="row"], .mat-mdc-row, .mat-row').filter({ hasText: rowMatcher }).first();
+    await batchRow.waitFor({ state: 'visible', timeout: 20000 });
+
+    const proctorButton = batchRow.locator('xpath=.//button[.//mat-icon[normalize-space()="assessment"]]').first();
+    await expect(proctorButton).toBeVisible({ timeout: 15000 });
+    await expect(proctorButton).toBeEnabled({ timeout: 15000 });
+    await proctorButton.scrollIntoViewIfNeeded();
+    await proctorButton.click({ force: true });
+    await this.page.waitForLoadState('load', { timeout: 30000 }).catch(() => {
+      this.logger?.info('Full page load state not reached after clicking Proctor Insights');
+    });
+    await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {
+      this.logger?.info('Network did not become idle after clicking Proctor Insights');
+    });
+
+    this.logger?.success(`Proctor Insights icon clicked for batch ID: ${batchId}`);
+  };
+
   validateHeaderTitle = async (_header: string) => {
     await expect(this.page.locator('.blockUI.bblockPagelockMsg.')).toHaveCount(0);
     await expect(this.page.getByText('My Cohorts')).toBeVisible();
@@ -128,7 +284,7 @@ export class FACHomePage {
 }*/
 
   clickOnProctorTab = async () => {
-    await this.page.locator('//a[@href="/faculty/proctor"]').click();
+    await this.page.locator('[]]').click();
   };
 
   closeGuidePage = async () => {
