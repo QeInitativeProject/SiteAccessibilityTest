@@ -35,12 +35,138 @@ export class MyATIPage {
     await this.atiCommonMethod.clickOnMyATITab();
   };
 
+  clickOnCourseEnablementMyATITab = async (): Promise<void> => {
+    this.logger?.step('Clicking Course Enablement My ATI tab');
+    const myATITab = this.page.locator('//a[@id="productsAssessmentsTab"]');
+    await myATITab.waitFor({ state: 'visible', timeout: 30000 });
+    await myATITab.click();
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('domcontentloaded');
+    this.logger?.success('Course Enablement My ATI tab clicked');
+  };
+
+  addCourseEnablementProduct = async (batchId: string): Promise<void> => {
+    this.logger?.step(`Adding Course Enablement product with batch ID: ${batchId}`);
+    const addProductsButton = this.page.locator('section.addproduct ftr-button:has-text("Add Products"), ftr-button:has-text("Add Products")').first();
+    await addProductsButton.waitFor({ state: 'visible', timeout: 30000 });
+    await addProductsButton.scrollIntoViewIfNeeded();
+    await addProductsButton.click();
+
+    const addProductDialog = this.page.locator('section.addPrd', { hasText: 'Add a product to your account' }).first();
+    const isDialogVisible = await addProductDialog.isVisible({ timeout: 5000 }).catch(() => false);
+    if (!isDialogVisible) {
+      await addProductsButton.evaluate((element: HTMLElement) => {
+        const shadowButton = element.shadowRoot?.querySelector('button') as HTMLButtonElement | null;
+        shadowButton?.click();
+        if (!shadowButton) {
+          element.click();
+        }
+      });
+    }
+    await addProductDialog.waitFor({ state: 'visible', timeout: 30000 });
+
+    const batchIdTextInput = addProductDialog.locator('ftr-textinput[formcontrolname="id"]').first();
+    await batchIdTextInput.waitFor({ state: 'visible', timeout: 30000 });
+    await batchIdTextInput.scrollIntoViewIfNeeded();
+
+    const batchIdTextbox = batchIdTextInput.locator('input, textarea').or(
+      addProductDialog.locator('input[formcontrolname="id"], textarea[formcontrolname="id"]')
+    ).or(
+      this.page.getByRole('textbox', { name: /ID|Product ID|Assessment ID/i })
+    ).first();
+
+    if (await batchIdTextbox.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await batchIdTextbox.fill(batchId.trim());
+    } else {
+      await batchIdTextInput.click({ force: true });
+      await this.page.keyboard.press('Control+A');
+      await this.page.keyboard.type(batchId.trim());
+    }
+
+    const continueButton = this.page.getByRole('button', { name: /^Continue$/i }).or(
+      this.page.getByRole('link', { name: /^Continue$/i })
+    ).or(
+      this.page.locator('ftr-button:has-text("Continue")')
+    ).first();
+    await continueButton.waitFor({ state: 'visible', timeout: 30000 });
+    await continueButton.click({ force: true });
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('domcontentloaded');
+    this.logger?.success(`Course Enablement product batch ID submitted: ${batchId}`);
+  };
+
   clickOnLearnTab = async () => {
     await this.atiCommonMethod.clickOnLearnTab();
   };
 
   clickOnAssessmentsTab = async () => {
     await this.atiCommonMethod.clickOnAssessmentsTab();
+  };
+
+  clickOnCourseEnablementAssessmentsTab = async (): Promise<void> => {
+    this.logger?.step('Clicking Course Enablement Assessments tab');
+    const assessmentsTab = this.page.getByRole('tab', { name: 'Assessments' }).or(
+      this.page.locator('#tab-button-assessments, ftr-tab-button[tab="assessments"]')
+    ).first();
+    await assessmentsTab.waitFor({ state: 'visible', timeout: 30000 });
+    await assessmentsTab.scrollIntoViewIfNeeded();
+    await assessmentsTab.click({ force: true });
+    await this.page.locator('#tab-button-assessments[aria-selected="true"], ftr-tab[tab="assessments"].ftr-tab-active').first()
+      .waitFor({ state: 'attached', timeout: 10000 })
+      .catch(async () => {
+        await assessmentsTab.focus();
+        await this.page.keyboard.press('Enter');
+        await this.page.locator('#tab-button-assessments[aria-selected="true"], ftr-tab[tab="assessments"].ftr-tab-active').first()
+          .waitFor({ state: 'attached', timeout: 10000 });
+      });
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('domcontentloaded');
+    this.logger?.success('Course Enablement Assessments tab clicked');
+  };
+
+  clickCourseEnablementCheckForProctors = async (): Promise<void> => {
+    this.logger?.step('Clicking Course Enablement Check for Proctors button');
+    const checkForProctorsButton = this.page.getByRole('button', { name: /Check for Proctors/i }).or(
+      this.page.locator('button[aria-label="Check for Proctors button"], button:has-text("Check for Proctors"), ftr-button:has-text("Check for Proctors")')
+    ).first();
+    await checkForProctorsButton.waitFor({ state: 'visible', timeout: 30000 });
+    await checkForProctorsButton.scrollIntoViewIfNeeded();
+    await checkForProctorsButton.click();
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('domcontentloaded');
+    this.logger?.success('Course Enablement Check for Proctors button clicked');
+  };
+
+  openCourseEnablementAssessment = async (assessmentName: string, batchId?: string): Promise<void> => {
+    this.logger?.step(`Opening Course Enablement assessment: ${assessmentName}${batchId ? ` (${batchId})` : ''}`);
+    const rowSelector = batchId
+      ? `.ag-center-cols-container [role="row"][row-id="${batchId}"]`
+      : '.ag-center-cols-container [role="row"]';
+    const assessmentRow = this.page.locator(rowSelector).filter({ hasText: assessmentName }).first();
+    const assessmentNameCell = assessmentRow.locator('[col-id="productName"]').first();
+    await assessmentNameCell.waitFor({ state: 'visible', timeout: 30000 });
+
+    const actualAssessmentName = (await assessmentNameCell.textContent())?.trim() || '';
+    if (!actualAssessmentName.includes(assessmentName) || (batchId && !actualAssessmentName.includes(batchId))) {
+      throw new Error(`Expected assessment row to contain "${assessmentName}"${batchId ? ` and batch ID "${batchId}"` : ''}, but found "${actualAssessmentName}"`);
+    }
+
+    const assessmentActionButton = assessmentRow.locator('[col-id="actions"] ftr-button').filter({ hasText: /Open|Retake/i }).first();
+    await assessmentActionButton.waitFor({ state: 'visible', timeout: 30000 });
+
+    const actionText = (await assessmentActionButton.textContent())?.trim() || 'Open/Retake';
+    await assessmentActionButton.scrollIntoViewIfNeeded();
+    const urlBeforeClick = this.page.url();
+    await assessmentActionButton.click({ force: true });
+
+    let actionStarted = await Promise.race([
+      this.page.waitForURL((url) => url.toString() !== urlBeforeClick, { timeout: 5000 }).then(() => true).catch(() => false),
+      this.page.locator('#assessmentLoadForm, form#assessmentLoadForm').first().waitFor({ state: 'attached', timeout: 5000 }).then(() => true).catch(() => false),
+    ]);
+
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('domcontentloaded');
+    this.logger?.success(`Course Enablement assessment ${actionText} clicked: ${actualAssessmentName}`);
   };
 
   // Click on assessments tab specifically on My ATI page (not from home page)

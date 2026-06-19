@@ -38,6 +38,7 @@ export class MU_Batch_Creation_Locators {
   // Dropdown locators
   readonly assessmentDropdown: Locator;
   readonly institutionDropdown: Locator;
+  readonly cohortDropdown: Locator;
 
   // Textbox locators
   readonly paidBookletsTextbox: Locator;
@@ -95,6 +96,8 @@ export class MU_Batch_Creation_Locators {
     // Dropdown locators
     this.assessmentDropdown = page.locator('#ctl00_CPHolder_ddlAssessment');
     this.institutionDropdown = page.locator('#ctl00_CPHolder_ddlInstitution');
+    // Some MU pages expose cohort as ddlClass instead of ddlCohort.
+    this.cohortDropdown = page.locator('#ctl00_CPHolder_ddlClass, #ctl00_CPHolder_ddlCohort');
 
     // Textbox locators
     this.paidBookletsTextbox = page.locator('#ctl00_CPHolder_txtPaidBooklets');
