@@ -55,6 +55,7 @@ export class BatchCreation {
     await muLocators.manageUtilityOption.hover();
     await muLocators.manageAssessments.click();
     await muLocators.addNewAssessmentButton.click();
+    
 
     await this.muPage.waitForLoadState('load');
     this.logger?.debug('Page loaded, preparing to fill batch details');
@@ -80,6 +81,90 @@ export class BatchCreation {
     this.logger?.info(`Assessment option selected: "${assessmentValue}"`);
 
     // Wait for any postback after assessment selection
+    try {
+      await this.muPage.waitForLoadState('load', { timeout: 15000 });
+    } catch {
+      // No postback expected for assessment, continue
+    }
+    await this.muPage.waitForTimeout(1000);
+
+    this.logger?.step('Entering password and paid booklets');
+    await muLoginPage.enterTextInTextbox(
+      muLocators.passwordTextbox,
+      process.env.muassessmentpassword,
+      'Password'
+    );
+    await muLoginPage.enterTextInTextbox(
+      muLocators.paidBookletsTextbox,
+      process.env.paidbookletcounts,
+      'Paid Booklets'
+    );
+
+    this.logger?.step('Saving batch');
+    await muLoginPage.clickSaveButton('Save');
+
+    this.batchId = await muLoginPage.extractTextFromNextCell('ID:', 'Batch ID');
+    this.logger?.success(`Batch ID created: ${this.batchId}`);
+
+    await muLoginPage.logoutFromApplication();
+    await this.cleanup();
+
+    this.logger?.separator();
+    return this.batchId;
+  }
+
+  /**
+   * Creates a new MU batch using the specific assessment button and returns the batch ID
+   * @param assessmentName - Optional assessment name (defaults to process.env.Assessment)
+   * @param institution - Optional institution name (defaults to process.env.Institution)
+   * @returns Promise<string> - The created batch ID
+   */
+  async createSpecificBatch(assessmentName?: string, institution?: string): Promise<string> {
+    this.logger?.separator('MU BATCH CREATION (Specific)');
+
+    this.logger?.step('Creating new browser context for MU');
+    this.muContext = await this.browser.newContext();
+    this.muPage = await this.muContext.newPage();
+
+    if (this.logger && this.muPage) {
+      this.logger = new Logger(this.muPage, 'BatchCreation', undefined);
+    }
+
+    const muLoginPage = new MU_Common_Methods(this.muPage);
+    const muLocators = new MU_Batch_Creation_Locators(this.muPage);
+
+    this.logger?.step('Logging into MU application');
+    await muLoginPage.loginToApplication();
+    await muLoginPage.assertNavigationToUrl(/main\.aspx$/);
+
+    this.logger?.step('Navigating to Manage Assessments');
+    await muLocators.systemAdministrationText.hover();
+    await muLocators.manageUtilityOption.hover();
+    await muLocators.manageAssessments.click();
+    await muLocators.addspecificAssessmentButton.click();
+
+    await this.muPage.waitForLoadState('load');
+    this.logger?.debug('Page loaded, preparing to fill batch details');
+
+    const institutionValue = institution || process.env.Institution || '';
+    const assessmentValue = assessmentName || process.env.Assessment || '';
+
+    this.logger?.step(`Selecting institution: ${institutionValue}`);
+    await muLocators.institutionDropdown.selectOption({ label: institutionValue });
+    this.logger?.info(`Institution option selected: "${institutionValue}"`);
+
+    try {
+      await this.muPage.waitForLoadState('load', { timeout: 15000 });
+      this.logger?.info('Page auto-refresh after institution selection completed');
+    } catch {
+      this.logger?.info('No auto-refresh detected, continuing...');
+    }
+    await this.muPage.waitForTimeout(2000);
+
+    this.logger?.step(`Selecting assessment: ${assessmentValue}`);
+    await muLocators.assessmentDropdown.selectOption({ label: assessmentValue });
+    this.logger?.info(`Assessment option selected: "${assessmentValue}"`);
+
     try {
       await this.muPage.waitForLoadState('load', { timeout: 15000 });
     } catch {

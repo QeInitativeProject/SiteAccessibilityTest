@@ -212,15 +212,15 @@ export class FACHomePage {
     await this.page.locator('#initial3').fill('test');
     await this.page.locator('#fullName2').click();
     await this.page.locator('#fullName2').fill('test');
-    await this.page.locator('(//label[@id="disabledApplyProductCheckbox"])[2]').click();
+    await this.page.locator('//label[@id="newAttestationAgreeLabel"]').click();
   };
 
   approveByProctor = async () => {
-    await this.page.locator('//span[text()="APPROVE"]').click();
+    await this.page.locator('//span[text()="APPROVE" or text()="RESUME"]').click();
   };
 
   startTest = async () => {
-    await this.page.locator('//span[text()="START TEST"]').click();
+    await this.page.locator('(//button[@aria-label="Start or Resume Assessment"])[1]').click();
     await this.page.locator('//button[@onclick="closeEnterFullscreenDialog()"]').click();
   };
 

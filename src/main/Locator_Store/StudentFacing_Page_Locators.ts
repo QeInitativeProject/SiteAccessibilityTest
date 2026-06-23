@@ -123,7 +123,7 @@ export class StudentFacingPageLocators {
    * Used in: ATICommonMethod.clickOnMyATITab()
    */
   get myATITabLink() {
-    return this.page.locator('text=My ATI').first();
+    return this.page.locator("//a[@id='productTab']").first();
   }
 
   /**

@@ -60,8 +60,8 @@ export async function setupTestEnvironment(options: SetupOptions): Promise<TestC
     await atiLoginPage.fillStuUserName(process.env.stuUsername!);
     await atiLoginPage.fillStuPassword(process.env.stuPassword!);
   } else {
-    await atiLoginPage.fillfacUserName(process.env.stuUsernamezzcab!);
-    await atiLoginPage.fillfacPassword(process.env.stuUsernamezzcab!);
+    await atiLoginPage.fillfacUserName(process.env.facultyUsername!);
+    await atiLoginPage.fillfacPassword(process.env.facultyPassword!);
   }
 
   await atiLoginPage.clickLogin();

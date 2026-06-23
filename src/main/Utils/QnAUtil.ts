@@ -572,6 +572,62 @@ export class QnAUtil {
   };
 
   /**
+   * Complete the survey that appears after finalizing the assessment.
+   * Clicks the "Complete Survey" or similar survey button inside the assessment iframe or main page.
+   * @returns Promise<void>
+   */
+  completeSurvey = async (): Promise<void> => {
+    this.logger?.step('Completing survey...');
+
+    // Check both inside iframe and on main page
+    const surveyButtonSelectors = [
+      this.page.frameLocator('iframe[name="assessmentFrame"]').locator('button:has-text("Complete Survey")'),
+      this.page.frameLocator('iframe[name="assessmentFrame"]').locator('button:has-text("Submit Survey")'),
+      this.page.frameLocator('iframe[name="assessmentFrame"]').locator('button:has-text("Done")'),
+      this.page.locator('button:has-text("Complete Survey")'),
+      this.page.locator('button:has-text("Submit Survey")'),
+      this.page.locator('a:has-text("Complete Survey")'),
+      this.page.locator('button:has-text("Done")'),
+      this.page.locator('button:has-text("Skip Survey")'),
+      this.page.locator('button:has-text("No Thanks")'),
+    ];
+
+    let clicked = false;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      for (const btnLocator of surveyButtonSelectors) {
+        try {
+          const count = await btnLocator.count();
+          if (count > 0) {
+            const btn = btnLocator.first();
+            if (await btn.isVisible({ timeout: 2000 })) {
+              const btnText = (await btn.textContent())?.trim();
+              await btn.click();
+              this.logger?.success(`Survey button clicked: "${btnText}"`);
+              clicked = true;
+              break;
+            }
+          }
+        } catch {
+          // try next selector
+        }
+      }
+      if (clicked) break;
+      this.logger?.debug(`Attempt ${attempt}: Survey button not found yet, waiting...`);
+      await this.page.waitForTimeout(2000);
+    }
+
+    if (!clicked) {
+      this.logger?.debug('No survey button found — survey may not be present, proceeding');
+      return;
+    }
+
+    // Wait for survey to complete/page to transition
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('load');
+    this.logger?.success('Survey completed');
+  };
+
+  /**
    * Extract dynamic test attempt ID from URL
    * Extracts the number after the pattern in URL
    * Example: https://stage-student.atitesting.com/ViewResult/IPPTestResult/308105440
