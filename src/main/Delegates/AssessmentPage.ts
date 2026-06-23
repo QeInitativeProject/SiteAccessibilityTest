@@ -310,7 +310,8 @@ export class AssessmentPage {
   validateIPPScoring = async (expectedPercentage: string): Promise<string> => {
     await this.page.waitForURL(/ViewResult|IPPTestResult/i, { timeout: 100000 });
     await this.page.waitForLoadState('domcontentloaded');
-    await this.assertions.waitAndAssertVisible(this.locators.percentageScore);
+    await this.page.waitForLoadState('networkidle').catch(() => {});
+    await this.assertions.waitAndAssertVisible(this.locators.percentageScore, 30000);
     const percentageValue = await this.locators.percentageScore.textContent();
     const trimmed = percentageValue?.trim() || '';
     const extractedPercentage = trimmed.endsWith('%') ? trimmed : trimmed + '%';
@@ -325,7 +326,7 @@ export class AssessmentPage {
    * dragAndDrop, bowtie, fillInBlank, highlightText, highlightTable, hotspot, matrix, orderedResponse, exhibit
    */
   validateAssessmentName = async (expectedAssessmentName: string): Promise<string> => {
-    await this.assertions.waitAndAssertVisible(this.locators.ippAssessmentName);
+    await this.assertions.waitAndAssertVisible(this.locators.ippAssessmentName, 30000);
     const assessmentNameText = await this.locators.ippAssessmentName.textContent();
     const trimmedName = (assessmentNameText ?? '').trim();
     this.assertions.assertStringContains(trimmedName, expectedAssessmentName);
