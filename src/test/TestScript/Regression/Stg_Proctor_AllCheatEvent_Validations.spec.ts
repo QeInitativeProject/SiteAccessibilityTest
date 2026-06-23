@@ -131,8 +131,8 @@ test.describe.serial('@Regression - Stg_Proctor_AllCheatEvent_Validations', { ta
 
     try {
       await page.goto(process.env.baseUrl!, { waitUntil: 'load' });
-      await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab2!);
-      await atiLoginPage.fillfacPassword(process.env.facPasswordzzcab2!);
+      await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab3!);
+      await atiLoginPage.fillfacPassword(process.env.facPasswordzzcab3!);
       await atiLoginPage.clickLogin();
       await page.waitForLoadState('load');
       await assertions.assertURLNotContains('/login');
