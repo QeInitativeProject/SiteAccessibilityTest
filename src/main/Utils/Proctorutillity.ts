@@ -731,4 +731,189 @@ export class ProctorUtility {
       this.logger?.success('\u2705 Student row removed from monitoring - attempt deleted');
     }
   };
+
+  /**
+   * Pauses a student's assessment and validates that the pause popup auto-expires.
+   * Flow: Click pause → popup appears → wait ~5s → popup auto-dismisses → assessment resumes.
+   * @param studentTab - The student's page/tab
+   * @param pauseDurationMs - How long to wait for pause popup to auto-expire (default: 8000ms)
+   */
+  pauseStudentAndValidateAutoResume = async (
+    studentTab: Page,
+    pauseDurationMs: number = 8000
+  ): Promise<void> => {
+    // Navigate to student tab and pause from within the assessment iframe
+    await studentTab.bringToFront();
+    await studentTab.waitForTimeout(2000);
+
+    const assessmentFrame = studentTab.frameLocator('iframe').first();
+
+    // Verify pause button is visible and clickable
+    const pauseButton = assessmentFrame.getByRole('button', { name: 'Pause this assessment' });
+    await pauseButton.waitFor({ state: 'visible', timeout: 15000 });
+    this.logger?.success('Pause button is visible');
+
+    await pauseButton.click();
+    this.logger?.success('✅ Clicked "Pause this assessment" button');
+    await studentTab.waitForTimeout(1000);
+
+    // Verify Resume assessment button is showing (pause popup opened)
+    const resumeButton = assessmentFrame.getByRole('button', { name: 'Resume assessment' });
+    await resumeButton.waitFor({ state: 'visible', timeout: 15000 });
+    this.logger?.success('✅ Pause popup opened - "Resume assessment" button is visible');
+
+    // Wait for pause popup to auto-expire (~5 seconds)
+    this.logger?.info('Waiting 8s for pause popup to auto-expire...');
+    await studentTab.waitForTimeout(8000);
+
+    // Verify popup has auto-dismissed - Resume button should be gone
+    const resumeStillVisible = await resumeButton.isVisible().catch(() => false);
+    if (!resumeStillVisible) {
+      this.logger?.success('✅ Pause popup auto-expired - assessment resumed');
+    } else {
+      // Popup still visible, wait a bit more
+      await resumeButton.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
+      const stillThere = await resumeButton.isVisible().catch(() => false);
+      if (!stillThere) {
+        this.logger?.success('✅ Pause popup auto-expired (after extra wait) - assessment resumed');
+      } else {
+        throw new Error('Pause popup did not auto-expire within expected time');
+      }
+    }
+
+    // Verify Pause button is visible again (assessment fully resumed)
+    await pauseButton.waitFor({ state: 'visible', timeout: 15000 });
+    this.logger?.success('✅ Pause button visible again - assessment fully resumed');
+  };
+
+  /**
+   * Stops proctoring from the faculty monitoring page.
+   * Clicks the Stop Proctoring button and confirms the action.
+   */
+  stopProctoring = async (): Promise<void> => {
+    await this.page.bringToFront();
+    await this.page.reload({ waitUntil: 'networkidle' });
+    await this.page.waitForTimeout(3000);
+
+    const stopProctoringBtn = this.page.locator('button', { hasText: /Stop Proctoring|End Session|End Proctoring/i }).first();
+    await stopProctoringBtn.waitFor({ state: 'visible', timeout: 15000 });
+    await stopProctoringBtn.click();
+    await this.page.waitForTimeout(2000);
+    this.logger?.success('✅ Clicked Stop Proctoring button');
+
+    // Handle confirmation dialog - wait for it to appear
+    const confirmBtn = this.page.locator('role=dialog >> text=/CONFIRM/i').or(
+      this.page.locator('a, button, span').filter({ hasText: /^CONFIRM$/i })
+    ).first();
+    await confirmBtn.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+    const confirmVisible = await confirmBtn.isVisible().catch(() => false);
+    if (confirmVisible) {
+      await confirmBtn.click();
+      await this.page.waitForTimeout(3000);
+      this.logger?.success('✅ Confirmed stop proctoring action');
+    } else {
+      // Fallback: try clicking any element with CONFIRM text
+      const fallbackConfirm = this.page.getByText('CONFIRM', { exact: true });
+      const fallbackVisible = await fallbackConfirm.isVisible().catch(() => false);
+      if (fallbackVisible) {
+        await fallbackConfirm.click();
+        await this.page.waitForTimeout(3000);
+        this.logger?.success('✅ Confirmed stop proctoring (fallback)');
+      }
+    }
+  };
+
+  /**
+   * Validates that a student's assessment has been stopped/ended after proctor stops proctoring.
+   * Clicks the OK button on the "Stopped Assessment Confirmation" dialog.
+   * @param studentTab - The student's page/tab
+   * @returns true if stopped indicator found, false otherwise
+   */
+  validateStudentAssessmentStopped = async (studentTab: Page): Promise<boolean> => {
+    await studentTab.bringToFront();
+    await studentTab.waitForTimeout(10000); // Wait for stop signal to propagate
+
+    // The dialog may be in the main frame OR inside an iframe
+    // Strategy: use page.evaluate to find and click the OK button across all frames
+    const clicked = await studentTab.evaluate(async () => {
+      // Check main document
+      const mainBtn = document.querySelector('button[aria-label="OK"]') as HTMLButtonElement;
+      if (mainBtn && mainBtn.offsetParent !== null) {
+        mainBtn.click();
+        return 'main';
+      }
+      // Check all iframes
+      const iframes = document.querySelectorAll('iframe');
+      for (const iframe of iframes) {
+        try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (iframeDoc) {
+            const btn = iframeDoc.querySelector('button[aria-label="OK"]') as HTMLButtonElement;
+            if (btn && btn.offsetParent !== null) {
+              btn.click();
+              return 'iframe';
+            }
+          }
+        } catch (e) { /* cross-origin iframe, skip */ }
+      }
+      return null;
+    }).catch(() => null);
+
+    if (clicked) {
+      this.logger?.success(`✅ Clicked OK on stopped confirmation dialog (found in ${clicked} frame)`);
+      await studentTab.waitForTimeout(2000);
+      return true;
+    }
+
+    // If evaluate didn't find it, wait and retry with Playwright locator on all frames
+    this.logger?.info('OK button not found via evaluate, trying frame-by-frame with Playwright...');
+    const frames = studentTab.frames();
+    for (const frame of frames) {
+      const okBtn = frame.locator('button[aria-label="OK"]').first();
+      const isVisible = await okBtn.isVisible().catch(() => false);
+      if (isVisible) {
+        await okBtn.click({ force: true });
+        this.logger?.success(`✅ Clicked OK on stopped confirmation dialog (frame: ${frame.url()})`);
+        await studentTab.waitForTimeout(2000);
+        return true;
+      }
+    }
+
+    // Last fallback: check URL redirect
+    const currentUrl = studentTab.url();
+    if (!currentUrl.includes('/Assessment')) {
+      this.logger?.success(`✅ Student redirected away from assessment: ${currentUrl}`);
+      return true;
+    }
+
+    this.logger?.info(`Student still on assessment page, no stop dialog found. URL: ${currentUrl}`);
+    return false;
+  };
+
+  /**
+   * Verifies that assessment content is visible on the student tab (inside iframe).
+   * Checks for question content or validates the URL contains '/Assessment'.
+   * @param studentTab - The student's page/tab
+   */
+  verifyAssessmentContentVisible = async (studentTab: Page): Promise<void> => {
+    await studentTab.bringToFront();
+    await studentTab.waitForTimeout(3000);
+
+    const assessmentFrame = studentTab.frameLocator('iframe').first();
+    const assessmentContent = assessmentFrame.locator('.stem-text, .question-content, .item-content').first();
+    const contentVisible = await assessmentContent.isVisible({ timeout: 30000 }).catch(() => false);
+
+    if (contentVisible) {
+      this.logger?.success('✅ Assessment content is visible - student is actively in assessment');
+      return;
+    }
+
+    const currentUrl = studentTab.url();
+    if (currentUrl.includes('/Assessment')) {
+      this.logger?.success('✅ Student is on assessment page');
+      return;
+    }
+
+    throw new Error(`Student not in assessment page. URL: ${currentUrl}`);
+  };
 }

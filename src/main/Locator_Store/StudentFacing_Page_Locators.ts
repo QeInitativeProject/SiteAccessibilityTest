@@ -679,7 +679,9 @@ getQuestionNumber()
    * Works for both Angular and Knockout IPP pages
    */
   get ippAssessmentName() {
-    return this.page.locator('section.lesson-header-details li span[tabindex="0"]:not([aria-label])').last();
+    return this.page.locator('span[data-bind="text: AssessmentName"]').or(
+      this.page.locator('section.lesson-header-details li span[tabindex="0"]:not([aria-label])')
+    ).first();
   }
 
   

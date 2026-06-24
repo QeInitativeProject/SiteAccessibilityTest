@@ -336,6 +336,17 @@ regression:stage:Stg_Proctor_AllCheatEvent_Validations:
   when: manual
   allow_failure: true
 
+regression:stage:Stg_Proctor_StopProctoring_Validations:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Stg_Proctor_StopProctoring_Validations..."
+    - npx playwright test src/test/TestScript/Regression/Stg_Proctor_StopProctoring_Validations.spec.ts
+  when: manual
+  allow_failure: true
+
 regression:stage:Stg_CE_StuCatalogueAccess:
   extends: .test_base
   stage: test
