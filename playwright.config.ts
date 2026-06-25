@@ -32,7 +32,8 @@ export default defineConfig({
 
   forbidOnly: !!process.env.CI,
   // Retries only failed tests in CI (not the whole suite)
-  retries: process.env.CI ? 1 : 0,
+ // retries: process.env.CI ? 1 : 0,
+  retries: 0,
 
   // ✅ Workers for parallel execution
   workers: process.env.CI ? 4 : 1,
