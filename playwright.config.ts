@@ -61,7 +61,7 @@ export default defineConfig({
     headless: process.env.CI ? true : false,
     ignoreHTTPSErrors: true,
 
-    trace: 'on-first-retry', // Automatic trace capture on retry/failure
+    trace: 'retain-on-failure', // Only keeps trace for tests that ultimately fail (avoids allure ENOENT crash)
     screenshot: 'only-on-failure', // Playwright captures failure screenshots
     video: 'off', // Disabled to reduce report size — use trace for debugging instead
 
