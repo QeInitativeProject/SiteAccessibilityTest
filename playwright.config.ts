@@ -37,8 +37,8 @@ export default defineConfig({
   // ✅ Workers for parallel execution
   workers: process.env.CI ? 4 : 1,
 
-  // ✅ Clear previous run data to avoid stale cache issues
-  preserveOutput: 'never',
+
+  preserveOutput: 'failures-only',
 
   // HTML report configuration - Only HTML report in playwright-report folder
   reporter: [
