@@ -31,7 +31,7 @@ cache:
   artifacts:
     when: always
     paths:
-      - playwright-report/
+      - playwright-report/test-summary.html
       - test-results/logs/
       - test-results/Failed_screenshots/
       - test-results/success-screenshots/
