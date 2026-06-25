@@ -10,6 +10,7 @@ interface TestEntry {
   error?: string;
   duration: number;
   steps: number;
+  screenshotPath?: string;
 }
 
 class CIReporter implements Reporter {
@@ -38,6 +39,12 @@ class CIReporter implements Reporter {
         ? 'Test timed out'
         : (result.errors?.[0]?.message?.split('\n')[0] || 'Unknown error').substring(0, 120);
       entry.error = errorMsg;
+
+      // Capture screenshot path for failed tests
+      const screenshot = result.attachments.find(a => a.contentType === 'image/png' && a.path);
+      if (screenshot?.path) {
+        entry.screenshotPath = screenshot.path;
+      }
     }
 
     // Always overwrite — last attempt is the final result
@@ -111,15 +118,15 @@ class CIReporter implements Reporter {
       specMap.set(t.file, list);
     }
 
-    // Build failed rows: Spec File | Test Case | Steps | Error
-    const failedEntries: { file: string; title: string; steps: number; error: string }[] = [];
+    // Build failed rows: Spec File | Test Case | Steps | Error | Screenshot | Status
+    const failedEntries: { file: string; title: string; steps: number; error: string; screenshotPath?: string }[] = [];
     const passedFileData: { file: string; testCount: number; totalSteps: number }[] = [];
 
     for (const [file, tests] of specMap) {
       const failures = tests.filter(t => t.status === 'failed' || t.status === 'timedOut');
       if (failures.length > 0) {
         for (const t of failures) {
-          failedEntries.push({ file, title: t.title, steps: t.steps, error: t.error || '' });
+          failedEntries.push({ file, title: t.title, steps: t.steps, error: t.error || '', screenshotPath: t.screenshotPath });
         }
       } else if (tests.some(t => t.status === 'passed')) {
         const passedInFile = tests.filter(t => t.status === 'passed');
@@ -131,7 +138,17 @@ class CIReporter implements Reporter {
     const totalSpecs = specMap.size;
 
     const failedRows = failedEntries
-      .map((t, i) => `<tr><td>${i + 1}</td><td>${this.escapeHtml(t.file)}</td><td>${this.escapeHtml(t.title)}</td><td>${t.steps}</td><td class="error">${this.escapeHtml(t.error)}</td><td class="fail">FAILED</td></tr>`)
+      .map((t, i) => {
+        let ssHtml = '<td>—</td>';
+        if (t.screenshotPath) {
+          try {
+            const imgBuf = fs.readFileSync(t.screenshotPath);
+            const b64 = imgBuf.toString('base64');
+            ssHtml = `<td><img src="data:image/png;base64,${b64}" class="thumb" onclick="this.classList.toggle('expanded')" title="Click to expand"/></td>`;
+          } catch { ssHtml = '<td>—</td>'; }
+        }
+        return `<tr><td>${i + 1}</td><td>${this.escapeHtml(t.file)}</td><td>${this.escapeHtml(t.title)}</td><td>${t.steps}</td><td class="error">${this.escapeHtml(t.error)}</td>${ssHtml}<td class="fail">FAILED</td></tr>`;
+      })
       .join('\n');
 
     const passedRows = passedFileData
@@ -160,6 +177,9 @@ class CIReporter implements Reporter {
   .error{color:#dc2626;font-size:12px;max-width:400px;word-break:break-word}
   .section-title{font-size:18px;font-weight:600;margin:32px 0 12px;padding-left:4px}
   .pass{color:#16a34a;font-weight:600} .fail{color:#dc2626;font-weight:600}
+  .thumb{width:120px;height:auto;border-radius:6px;cursor:pointer;transition:all .3s;border:1px solid #e2e8f0}
+  .thumb:hover{transform:scale(1.05);box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  .thumb.expanded{width:600px;position:relative;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,.3)}
   .meta-bar{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px;font-size:13px;color:#64748b}
   .meta-bar a{color:#3b82f6;text-decoration:none}
   .meta-bar a:hover{text-decoration:underline}
@@ -186,7 +206,7 @@ class CIReporter implements Reporter {
   <div class="card"><div class="value">${passRate}%</div><div class="label">Pass Rate</div></div>
 </div>
 ${failedRows ? `<div class="section-title fail">❌ Failed</div>
-<table><thead><tr><th>#</th><th>Spec File</th><th>Test Case</th><th>Steps</th><th>Error</th><th>Status</th></tr></thead><tbody>${failedRows}</tbody></table>` : ''}
+<table><thead><tr><th>#</th><th>Spec File</th><th>Test Case</th><th>Steps</th><th>Error</th><th>Screenshot</th><th>Status</th></tr></thead><tbody>${failedRows}</tbody></table>` : ''}
 <div class="section-title pass">✅ Passed</div>
 <table><thead><tr><th>#</th><th>Spec File</th><th>Test Cases</th><th>Steps</th><th>Status</th></tr></thead><tbody>${passedRows || '<tr><td colspan="5">No fully passed spec files</td></tr>'}</tbody></table>
 </body></html>`;
