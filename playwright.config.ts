@@ -62,7 +62,7 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
 
     trace: 'retain-on-failure', // Only keeps trace for tests that ultimately fail (avoids allure ENOENT crash)
-    screenshot: 'on', // Captures screenshots for all tests (pass and fail)
+    screenshot: 'only-on-failure', // Only auto-capture on failure; success screenshots handled via manual page.screenshot()
     video: 'off', // Disabled to reduce report size — use trace for debugging instead
 
     viewport: { width: 1680, height: 1050 },

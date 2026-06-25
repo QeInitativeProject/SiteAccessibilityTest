@@ -32,11 +32,9 @@ cache:
     when: always
     paths:
       - playwright-report/
-      - monocart-report/
-      - test-results/
-    exclude:
-      - test-results/**/trace.zip
-      - test-results/**/video.webm
+      - test-results/logs/
+      - test-results/Failed_screenshots/
+      - test-results/success-screenshots/
     expose_as: 'Test Report'
     expire_in: 7 days
 
