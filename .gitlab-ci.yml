@@ -34,6 +34,9 @@ cache:
       - playwright-report/
       - monocart-report/
       - test-results/
+    exclude:
+      - test-results/**/trace.zip
+      - test-results/**/video.webm
     expose_as: 'Test Report'
     expire_in: 7 days
 
