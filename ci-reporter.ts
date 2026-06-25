@@ -9,6 +9,7 @@ interface TestEntry {
   status: 'passed' | 'failed' | 'timedOut' | 'skipped';
   error?: string;
   duration: number;
+  steps: number;
 }
 
 class CIReporter implements Reporter {
@@ -29,6 +30,7 @@ class CIReporter implements Reporter {
       file,
       status: result.status as TestEntry['status'],
       duration: result.duration,
+      steps: result.steps.length,
     };
 
     if (result.status === 'failed' || result.status === 'timedOut') {
@@ -96,14 +98,39 @@ class CIReporter implements Reporter {
     const statusColor = failed === 0 ? '#22c55e' : '#ef4444';
     const statusText = failed === 0 ? 'ALL PASSED' : `${failed} FAILED`;
 
-    const failedRows = allResults
-      .filter(t => t.status === 'failed' || t.status === 'timedOut')
-      .map((t, i) => `<tr><td>${i + 1}</td><td>${this.escapeHtml(t.title)}</td><td>${t.file}</td><td>${this.formatDuration(t.duration)}</td><td class="error">${this.escapeHtml(t.error || '')}</td></tr>`)
+    // Group tests by spec file
+    const specMap = new Map<string, TestEntry[]>();
+    for (const t of allResults) {
+      const list = specMap.get(t.file) || [];
+      list.push(t);
+      specMap.set(t.file, list);
+    }
+
+    // Build failed rows: Spec File | Test Case | Steps | Error
+    const failedEntries: { file: string; title: string; steps: number; error: string }[] = [];
+    const passedFileData: { file: string; testCount: number; totalSteps: number }[] = [];
+
+    for (const [file, tests] of specMap) {
+      const failures = tests.filter(t => t.status === 'failed' || t.status === 'timedOut');
+      if (failures.length > 0) {
+        for (const t of failures) {
+          failedEntries.push({ file, title: t.title, steps: t.steps, error: t.error || '' });
+        }
+      } else if (tests.some(t => t.status === 'passed')) {
+        const passedInFile = tests.filter(t => t.status === 'passed');
+        passedFileData.push({ file, testCount: passedInFile.length, totalSteps: passedInFile.reduce((sum, t) => sum + t.steps, 0) });
+      }
+    }
+
+    const totalSteps = allResults.reduce((sum, t) => sum + t.steps, 0);
+    const totalSpecs = specMap.size;
+
+    const failedRows = failedEntries
+      .map((t, i) => `<tr><td>${i + 1}</td><td>${this.escapeHtml(t.file)}</td><td>${this.escapeHtml(t.title)}</td><td>${t.steps}</td><td class="error">${this.escapeHtml(t.error)}</td></tr>`)
       .join('\n');
 
-    const passedRows = allResults
-      .filter(t => t.status === 'passed')
-      .map((t, i) => `<tr><td>${i + 1}</td><td>${this.escapeHtml(t.title)}</td><td>${t.file}</td><td>${this.formatDuration(t.duration)}</td></tr>`)
+    const passedRows = passedFileData
+      .map((f, i) => `<tr><td>${i + 1}</td><td>${f.file}</td><td>${f.testCount}</td><td>${f.totalSteps}</td><td class="pass">PASSED</td></tr>`)
       .join('\n');
 
     const html = `<!DOCTYPE html>
@@ -126,8 +153,8 @@ class CIReporter implements Reporter {
   tr:last-child td{border-bottom:none}
   tr:hover{background:#f1f5f9}
   .error{color:#dc2626;font-size:12px;max-width:400px;word-break:break-word}
-  .section-title{font-size:18px;font-weight:600;margin:24px 0 12px;padding-left:4px}
-  .pass{color:#16a34a} .fail{color:#dc2626}
+  .section-title{font-size:18px;font-weight:600;margin:32px 0 12px;padding-left:4px}
+  .pass{color:#16a34a;font-weight:600} .fail{color:#dc2626}
   @media print{body{padding:12px}.cards{gap:8px}}
 </style></head>
 <body>
@@ -137,16 +164,18 @@ class CIReporter implements Reporter {
   <div class="status-badge" style="background:${statusColor}">${statusText}</div>
 </div>
 <div class="cards">
-  <div class="card"><div class="value">${allResults.length}</div><div class="label">Total Tests</div></div>
+  <div class="card"><div class="value">${totalSpecs}</div><div class="label">Spec Files</div></div>
+  <div class="card"><div class="value">${allResults.length}</div><div class="label">Test Cases</div></div>
+  <div class="card"><div class="value">${totalSteps}</div><div class="label">Total Steps</div></div>
   <div class="card"><div class="value pass">${passed}</div><div class="label">Passed</div></div>
   <div class="card"><div class="value fail">${failed}</div><div class="label">Failed</div></div>
   <div class="card"><div class="value">${skipped}</div><div class="label">Skipped</div></div>
   <div class="card"><div class="value">${passRate}%</div><div class="label">Pass Rate</div></div>
 </div>
-${failedRows ? `<div class="section-title fail">❌ Failed Tests</div>
-<table><thead><tr><th>#</th><th>Test</th><th>File</th><th>Duration</th><th>Error</th></tr></thead><tbody>${failedRows}</tbody></table>` : ''}
-<div class="section-title pass">✅ Passed Tests</div>
-<table><thead><tr><th>#</th><th>Test</th><th>File</th><th>Duration</th></tr></thead><tbody>${passedRows || '<tr><td colspan="4">No passed tests</td></tr>'}</tbody></table>
+${failedRows ? `<div class="section-title fail">❌ Failed</div>
+<table><thead><tr><th>#</th><th>Spec File</th><th>Test Case</th><th>Steps</th><th>Error</th></tr></thead><tbody>${failedRows}</tbody></table>` : ''}
+<div class="section-title pass">✅ Passed</div>
+<table><thead><tr><th>#</th><th>Spec File</th><th>Test Cases</th><th>Steps</th><th>Status</th></tr></thead><tbody>${passedRows || '<tr><td colspan="5">No fully passed spec files</td></tr>'}</tbody></table>
 </body></html>`;
 
     const reportDir = path.resolve('playwright-report');
