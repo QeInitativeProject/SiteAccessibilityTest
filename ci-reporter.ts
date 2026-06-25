@@ -98,6 +98,11 @@ class CIReporter implements Reporter {
     const statusColor = failed === 0 ? '#22c55e' : '#ef4444';
     const statusText = failed === 0 ? 'ALL PASSED' : `${failed} FAILED`;
 
+    // CI/Environment info
+    const pipelineUrl = process.env.CI_PIPELINE_URL || '';
+    const browser = 'Chromium';
+    const env = (process.env.ENV || 'stage').toUpperCase();
+
     // Group tests by spec file
     const specMap = new Map<string, TestEntry[]>();
     for (const t of allResults) {
@@ -126,7 +131,7 @@ class CIReporter implements Reporter {
     const totalSpecs = specMap.size;
 
     const failedRows = failedEntries
-      .map((t, i) => `<tr><td>${i + 1}</td><td>${this.escapeHtml(t.file)}</td><td>${this.escapeHtml(t.title)}</td><td>${t.steps}</td><td class="error">${this.escapeHtml(t.error)}</td></tr>`)
+      .map((t, i) => `<tr><td>${i + 1}</td><td>${this.escapeHtml(t.file)}</td><td>${this.escapeHtml(t.title)}</td><td>${t.steps}</td><td class="error">${this.escapeHtml(t.error)}</td><td class="fail">FAILED</td></tr>`)
       .join('\n');
 
     const passedRows = passedFileData
@@ -154,7 +159,10 @@ class CIReporter implements Reporter {
   tr:hover{background:#f1f5f9}
   .error{color:#dc2626;font-size:12px;max-width:400px;word-break:break-word}
   .section-title{font-size:18px;font-weight:600;margin:32px 0 12px;padding-left:4px}
-  .pass{color:#16a34a;font-weight:600} .fail{color:#dc2626}
+  .pass{color:#16a34a;font-weight:600} .fail{color:#dc2626;font-weight:600}
+  .meta-bar{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px;font-size:13px;color:#64748b}
+  .meta-bar a{color:#3b82f6;text-decoration:none}
+  .meta-bar a:hover{text-decoration:underline}
   @media print{body{padding:12px}.cards{gap:8px}}
 </style></head>
 <body>
@@ -162,6 +170,11 @@ class CIReporter implements Reporter {
   <h1>ATI UI Automation — Test Execution Report</h1>
   <p>${date} &nbsp;|&nbsp; Duration: ${this.formatDuration(totalDuration)}</p>
   <div class="status-badge" style="background:${statusColor}">${statusText}</div>
+</div>
+<div class="meta-bar">
+  <span>Environment: <strong>${env}</strong></span>
+  <span>Browser: <strong>${browser}</strong></span>
+  ${pipelineUrl ? `<span>Pipeline: <a href="${pipelineUrl}" target="_blank">${pipelineUrl.split('/').pop()}</a></span>` : ''}
 </div>
 <div class="cards">
   <div class="card"><div class="value">${totalSpecs}</div><div class="label">Spec Files</div></div>
@@ -173,7 +186,7 @@ class CIReporter implements Reporter {
   <div class="card"><div class="value">${passRate}%</div><div class="label">Pass Rate</div></div>
 </div>
 ${failedRows ? `<div class="section-title fail">❌ Failed</div>
-<table><thead><tr><th>#</th><th>Spec File</th><th>Test Case</th><th>Steps</th><th>Error</th></tr></thead><tbody>${failedRows}</tbody></table>` : ''}
+<table><thead><tr><th>#</th><th>Spec File</th><th>Test Case</th><th>Steps</th><th>Error</th><th>Status</th></tr></thead><tbody>${failedRows}</tbody></table>` : ''}
 <div class="section-title pass">✅ Passed</div>
 <table><thead><tr><th>#</th><th>Spec File</th><th>Test Cases</th><th>Steps</th><th>Status</th></tr></thead><tbody>${passedRows || '<tr><td colspan="5">No fully passed spec files</td></tr>'}</tbody></table>
 </body></html>`;
