@@ -1,7 +1,9 @@
 /**
- * Regression Test - Proctor Cheat Incident Ignore Flow
- * Description: Validate that when faculty/proctor ignores the incident, student should be able to resume the test
- * @author [Ashok Singh]
+ * Sanity Test - Proctor Flow (Reader Off)
+ * Description: Faculty login and proctor student assessment with Reader Off.
+ * Covers: MU batch creation, faculty proctoring setup, student login, attestation,
+ * flag/unflag flow, calculator, pause/resume, answer questions, IPP validation.
+ * @author [Ashish Ranjan]
  */
 
 import { test, Browser, BrowserContext, Page } from '@playwright/test';
@@ -15,22 +17,19 @@ import { AssessmentPage } from '@delegates/AssessmentPage';
 import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators';
 import { BatchCreation } from '@utils/BatchCreation';
 
-const EXPECTED_ASSESSMENT_NAME = process.env.ProctoredAssessment;
+const PROCTORED_ASSESSMENT_NAME = process.env.Proctored_Assessment;
 const EXPECTED_INSTITUTION = process.env.Institution_zzcab;
-const SCENARIO_NAME = 'Stg_Proctor_CheatIncident_Ignore';
+const SCENARIO_NAME = 'Prod_Proctor_ReaderOff';
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
-const ASSESSMENT_TYPE = 'Question Store_Stage';
+const ASSESSMENT_TYPE = 'Question Store Prod';
 const EXPECTED_PERCENTAGE = '100.0%';
-const ASSESSMENT_STATUS = 'Completed';
-const IppPageHeading = 'heading';
-const IndividualPerformanceProfile = 'Individual Performance Profile';
-const IppHeading = 'IPP Page Heading';
 
-test.describe.serial('@Regression - Stg_Proctor_CheatIncident_Ignore', { tag: '@regression' }, () => {
+test.describe.serial('@smoke - Prod_Proctor_ReaderOff', { tag: '@smoke' }, () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;
   let studentTab: Page;
+
   let atiLoginPage: LoginPage;
   let facHomePage: FACHomePage;
   let myATIPage: MyATIPage;
@@ -44,28 +43,19 @@ test.describe.serial('@Regression - Stg_Proctor_CheatIncident_Ignore', { tag: '@
 
   test.beforeAll(async () => {
     const { chromium } = await import('@playwright/test');
-    browser = await chromium.launch({
-      headless: process.env.CI ? true : false,
-    });
+    browser = await chromium.launch();
     context = await browser.newContext();
     page = await context.newPage();
+
     atiLoginPage = new LoginPage(page);
     facHomePage = new FACHomePage(page);
     proctorUtil = new ProctorUtility(page);
     assertions = new Assertions(page);
     batchCreation = new BatchCreation(browser);
 
-    // Automatically dismiss all dialogs
     page.on('dialog', async (dialog) => {
       logger?.info(`Dialog ${dialog.type()} dismissed: ${dialog.message()}`);
       await dialog.dismiss();
-    });
-
-    // Handle console errors
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        logger?.info(`Console error: ${msg.text()}`);
-      }
     });
   });
 
@@ -77,54 +67,51 @@ test.describe.serial('@Regression - Stg_Proctor_CheatIncident_Ignore', { tag: '@
 
   test.afterAll(async () => {
     try {
-      if (studentTab && !studentTab.isClosed()) {
-        await studentTab.close();
-      }
-      if (context) {
-        await context.close();
-      }
-      if (browser) {
-        await browser.close();
-      }
+      if (studentTab && !studentTab.isClosed()) await studentTab.close();
+      if (context) await context.close();
+      if (browser) await browser.close();
     } catch (error) {
       console.error('Error in cleanup:', error);
     }
   });
 
-  test('TC1: MU batch creation', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC1__MU_Batch_Creation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
-    proctorUtil.setLogger(logger);
+  // ============================================================
+  // BATCH CREATION & FACULTY SETUP
+  // ============================================================
+
+  test('TC1: MU batch creation', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(page, 'TC1__MU_batch_creation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     assertions.setLogger(logger);
 
     logger.separator('TC1: MU BATCH CREATION');
 
     try {
       const stopTimer = logger.startTimer('Batch creation');
-      extractedBatchId = await batchCreation.createBatch(
-        EXPECTED_ASSESSMENT_NAME!,
-        EXPECTED_INSTITUTION!
-      );
+      extractedBatchId = await batchCreation.createBatch(PROCTORED_ASSESSMENT_NAME!, EXPECTED_INSTITUTION!);
       stopTimer();
 
       assertions.assertValidNumericId(extractedBatchId, 5);
-      logger.success(`TC1 PASS: Batch created with ID: ${extractedBatchId}`);
+      logger.success(`Batch created with ID: ${extractedBatchId}`);
+      logger.success('TC1 PASS: MU Batch created successfully');
     } catch (error: any) {
       await logger?.error('TC1 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC2: Faculty login to ATI', { tag: '@regression' }, async ({}, testInfo) => {
+  test('TC2: Faculty login to ATI', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC2__Faculty_Login', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });
     atiLoginPage.setLogger(logger);
+    facHomePage.setLogger(logger);
+    proctorUtil.setLogger(logger);
     assertions.setLogger(logger);
 
     logger.separator('TC2: FACULTY LOGIN');
 
     try {
       await page.goto(process.env.baseUrl!, { waitUntil: 'load' });
-      await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab!);
-      await atiLoginPage.fillfacPassword(process.env.facPasswordzzcab!);
+      await atiLoginPage.fillfacUserName(process.env.facUsernamezzcab2!);
+      await atiLoginPage.fillfacPassword(process.env.facPasswordzzcab2!);
       await atiLoginPage.clickLogin();
       await page.waitForLoadState('load');
       await assertions.assertURLNotContains('/login');
@@ -135,7 +122,7 @@ test.describe.serial('@Regression - Stg_Proctor_CheatIncident_Ignore', { tag: '@
     }
   });
 
-  test('TC3: Navigate to Proctor Tab', { tag: '@regression' }, async ({}, testInfo) => {
+  test('TC3: Navigate to Proctor Tab', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC3__Navigate_Proctor_Tab', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
     facHomePage.setLogger(logger);
     proctorUtil.setLogger(logger);
@@ -154,21 +141,23 @@ test.describe.serial('@Regression - Stg_Proctor_CheatIncident_Ignore', { tag: '@
       throw error;
     }
   });
+  
 
-  test('TC4: Enter Assessment ID and Setup Proctoring', { tag: '@regression' }, async ({}, testInfo) => {
+  test('TC4: Enter Assessment ID and Setup Proctoring', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC4__Setup_Proctoring', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
     proctorUtil.setLogger(logger);
 
     logger.separator('TC4: SETUP PROCTORING');
 
     try {
-      await page.waitForLoadState('load');
       await page.waitForTimeout(20000);
       await proctorUtil.fillAssessmentID(extractedBatchId);
       await page.waitForLoadState('load');
+
       await proctorUtil.completeProctorAgreementPage();
       await page.waitForLoadState('load');
       await page.waitForTimeout(3000);
+
       await proctorUtil.checkInStudents();
       await page.waitForLoadState('load');
       logger.success('TC4 PASS: Assessment ID entered and proctoring setup complete');
@@ -178,7 +167,11 @@ test.describe.serial('@Regression - Stg_Proctor_CheatIncident_Ignore', { tag: '@
     }
   });
 
-  test('TC5: Start Proctoring Session and Student Login', { tag: '@regression' }, async ({}, testInfo) => {
+  // ============================================================
+  // STUDENT FLOW
+  // ============================================================
+
+  test('TC5: Start Proctoring Session and Student Login', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC5__Start_Proctoring_Student_Login', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
     proctorUtil.setLogger(logger);
 
@@ -188,21 +181,23 @@ test.describe.serial('@Regression - Stg_Proctor_CheatIncident_Ignore', { tag: '@
       await proctorUtil.startProctoring();
       await page.waitForLoadState('load');
 
-      // Create a new student tab and login
       studentTab = await context.newPage();
       await studentTab.goto(process.env.baseUrl!, { waitUntil: 'load' });
 
+      studentTab.on('dialog', async (dialog) => {
+        logger?.info(`Dialog ${dialog.type()} dismissed: ${dialog.message()}`);
+        await dialog.dismiss();
+      });
+
       const studentLoginPage = new LoginPage(studentTab);
-      await studentTab.waitForTimeout(2000);
-      await studentLoginPage.fillStuUserName(process.env.stuUsernameauto4!);
-      await studentLoginPage.fillStuPassword(process.env.stuPasswordauto1!);
+      studentLoginPage.setLogger(logger);
+      await studentLoginPage.fillStuUserName(process.env.studentUsernamezzcab4!);
+      await studentLoginPage.fillStuPassword(process.env.studentPasswordzzcab2!);
       await studentLoginPage.clickLogin();
       await studentTab.waitForLoadState('load');
 
       await studentTab.bringToFront();
       await studentTab.waitForTimeout(2000);
-      await studentTab.waitForLoadState('load');
-
       logger.success('TC5 PASS: Proctoring started and student logged in');
     } catch (error: any) {
       await logger?.error('TC5 FAIL: ' + error.message, error);
@@ -210,10 +205,9 @@ test.describe.serial('@Regression - Stg_Proctor_CheatIncident_Ignore', { tag: '@
     }
   });
 
-  test('TC6: Add Product - Enter Batch ID and Complete Attestation', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC6__Add_Product', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
+  test('TC6: Student adds Product and fills Attestation', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC6__Student_AddProduct', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
 
-    // Initialize delegates for student tab
     myATIPage = new MyATIPage(studentTab);
     assessmentPage = new AssessmentPage(studentTab);
     locators = new StudentFacingPageLocators(studentTab);
@@ -223,43 +217,42 @@ test.describe.serial('@Regression - Stg_Proctor_CheatIncident_Ignore', { tag: '@
     const studentAssertions = new Assertions(studentTab);
     studentAssertions.setLogger(logger);
 
-    logger.separator('TC6: ADD PRODUCT AND ATTESTATION');
+    logger.separator('TC6: STUDENT ADD PRODUCT AND ATTESTATION');
 
     try {
-      await studentTab.waitForLoadState('load');
-      await studentTab.waitForLoadState('domcontentloaded');
+      await studentTab.waitForLoadState('networkidle', { timeout: 30000 }).catch(() =>
+        logger.info('Network idle timeout - continuing')
+      );
       await studentTab.waitForTimeout(5000);
-
-      // Wait for blockUI overlay to disappear
-      await studentTab.locator('.blockUI.blockOverlay').waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
 
       await myATIPage.clickOnMyATITab();
       await studentTab.waitForLoadState('load');
+      logger.success('Clicked on My ATI tab');
+
       await studentTab.waitForTimeout(10000);
 
       await myATIPage.clickOnAssessmentsTab();
       await studentTab.waitForTimeout(2000);
+      logger.success('Add Product dialog opened');
 
-      // Enter Batch ID
       await studentAssertions.waitAndAssertVisible(locators.idTextbox, 15000);
+      await studentAssertions.assertEnabled(locators.idTextbox);
       await locators.idTextbox.fill(extractedBatchId.trim());
+      await studentAssertions.assertHasValue(locators.idTextbox, extractedBatchId.trim());
       logger.success(`Batch ID entered: ${extractedBatchId.trim()}`);
 
-      // Click Continue
       await studentAssertions.waitAndAssertVisible(locators.continueButton, 10000);
       await locators.continueButton.click();
       await studentTab.waitForTimeout(2000);
+      logger.success('Continue clicked after ID entry');
 
-      // Fill attestation page
       const studentProctorUtil = new ProctorUtility(studentTab);
       studentProctorUtil.setLogger(logger);
       await studentProctorUtil.fillAttestationPage();
 
-      // Verify navigation to Assessment page
       await myATIPage.waitForPageLoadAndVerifyNavigation('/Assessment');
       const finalUrl = studentTab.url();
       studentAssertions.assertStringContains(finalUrl, '/Assessment');
-
       logger.success('TC6 PASS: Product added and navigated to Assessment page');
     } catch (error: any) {
       await logger?.error('TC6 FAIL: ' + error.message, error);
@@ -267,142 +260,140 @@ test.describe.serial('@Regression - Stg_Proctor_CheatIncident_Ignore', { tag: '@
     }
   });
 
-  test('TC7: Approve and Resume Test', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC7__Approve_Resume_Test', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
+  test('TC7: Faculty approves Student and Student launches assessment', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(page, 'TC7__Approve_Start_Test', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
     proctorUtil.setLogger(logger);
 
-    logger.separator('TC7: APPROVE AND RESUME TEST');
+    logger.separator('TC7: FACULTY APPROVES AND STUDENT STARTS TEST');
 
     try {
       await page.bringToFront();
       await page.reload();
       await page.waitForLoadState('load');
+      await page.waitForTimeout(5000);
 
       await proctorUtil.approveByProctor();
       await page.waitForLoadState('load');
+      logger.success('Faculty approved student');
 
       await studentTab.bringToFront();
       await studentTab.waitForLoadState('load');
-      await page.waitForTimeout(5000);
+      await studentTab.waitForTimeout(3000);
 
       const studentProctorUtil = new ProctorUtility(studentTab);
-      await studentProctorUtil.resumeTest();
-      await page.waitForLoadState('load');
+      studentProctorUtil.setLogger(logger);
+      await studentProctorUtil.startTest();
+      await studentTab.waitForLoadState('load');
 
-      logger.success('TC7 PASS: Test approved and resumed successfully');
+      const assessmentIframe = studentTab.frameLocator('iframe').first();
+      await assessmentIframe.locator('body').waitFor({ state: 'visible', timeout: 30000 });
+      await studentTab.waitForTimeout(5000);
+      logger.success('TC7 PASS: Faculty approved, student launched assessment');
     } catch (error: any) {
       await logger?.error('TC7 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC8: Create Cheat Incident in Student Portal', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC8__Create_Cheat_Incident', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
+  // ============================================================
+  // ASSESSMENT FLOW
+  // ============================================================
+
+  test('TC8: Flag, Continue, Previous, Unflag robust flow', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC8__Flag_Unflag_Flow', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
     assessmentPage.setLogger(logger);
 
-    logger.separator('TC8: CREATE CHEAT INCIDENT');
+    logger.separator('TC8: FLAG/UNFLAG FLOW');
 
     try {
-      await assessmentPage.createCheatIncident();
-      logger.success('TC8 PASS: Cheat incident created successfully');
+      await studentTab.waitForLoadState('load');
+      await assessmentPage.flagContinuePreviousUnflagFlow(assertions);
+      logger.success('TC8 PASS: Full Flag-Continue-Previous-Unflag flow succeeded');
     } catch (error: any) {
       await logger?.error('TC8 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC9: Faculty Ignores the Incident', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC9__Faculty_Ignores_Incident', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
-    proctorUtil.setLogger(logger);
+  test('TC9: Calculator functionality', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC9__Calculator', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
+    assessmentPage.setLogger(logger);
 
-    logger.separator('TC9: FACULTY IGNORES INCIDENT');
+    logger.separator('TC9: CALCULATOR FUNCTIONALITY');
 
     try {
-      await proctorUtil.ignoreIncident();
-      logger.success('TC9 PASS: Faculty ignored the incident');
+      await assessmentPage.verifyCalculatorFunctionality();
+      logger.success('TC9 PASS: Calculator functionality verified');
     } catch (error: any) {
       await logger?.error('TC9 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC10: Student Resumes Assessment', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC10__Student_Resumes', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC10' });
+  test('TC10: Pause and Resume assessment', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC10__Pause_Resume', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC10' });
     assessmentPage.setLogger(logger);
 
-    logger.separator('TC10: STUDENT RESUMES ASSESSMENT');
+    logger.separator('TC10: PAUSE AND RESUME');
 
     try {
-      await assessmentPage.resumeAfterIncident();
-      logger.success('TC10 PASS: Student resumed assessment successfully');
+      await assessmentPage.verifyPauseAndResumeFunctionality();
+      logger.success('TC10 PASS: Pause and resume functionality verified');
     } catch (error: any) {
       await logger?.error('TC10 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC11: Answer assessment and finalize', { tag: '@regression' }, async ({}, testInfo) => {
+  test('TC11: Answer assessment', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(studentTab, 'TC11__Answer_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC11' });
     assessmentPage.setLogger(logger);
 
-    logger.separator('TC11: ANSWER ASSESSMENT AND FINALIZE');
+    logger.separator('TC11: ANSWER ASSESSMENT');
 
     try {
       await assessmentPage.answerAssessmentQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE);
-      await assessmentPage.finalizeAssessmentAndViewResults();
-      logger.success('TC11 PASS: Assessment answered and finalized');
+      logger.success('TC11 PASS: Assessment questions answered');
     } catch (error: any) {
       await logger?.error('TC11 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC12: Validate IPP scoring and heading', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC12__IPP_Score_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC12' });
+  test('TC12: Finish assessment and IPP page loaded', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC12__Finalize_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC12' });
     assessmentPage.setLogger(logger);
 
-    logger.separator('TC12: IPP SCORING VALIDATION');
+    logger.separator('TC12: FINALIZE ASSESSMENT');
 
     try {
-      await assessmentPage.validateIPPScoring(EXPECTED_PERCENTAGE);
-      await assessmentPage.verifyElementByRole(IppPageHeading, IndividualPerformanceProfile, IppHeading);
-      await assessmentPage.takeScreenshot(SCENARIO_NAME, extractedBatchId);
-      logger.success('TC12 PASS: IPP score and heading validated');
+      await assessmentPage.finalizeAssessmentAndViewResults();
+      logger.success('TC12 PASS: Assessment finished and IPP page loaded');
     } catch (error: any) {
       await logger?.error('TC12 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC13: Validate current date on IPP page', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC13__IPP_Date_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC13' });
+  test('TC13: IPP page shows 100% score', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC13__IPP_Score', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC13' });
     assessmentPage.setLogger(logger);
 
-    logger.separator('TC13: IPP DATE VALIDATION');
+    logger.separator('TC13: IPP SCORE VALIDATION');
 
     try {
-      await assessmentPage.validateIPPDate();
-      logger.success('TC13 PASS: Current date is reflecting correctly on IPP');
+      await assessmentPage.validateIPPScoring(EXPECTED_PERCENTAGE);
+      logger.success('TC13 PASS: IPP page shows 100% score on UI');
+
+      await assessmentPage.verifyElementByRole(
+        'heading',
+        'Individual Performance Profile',
+        'IPP Page Heading'
+      );
+      await assessmentPage.takeScreenshot(SCENARIO_NAME, extractedBatchId);
+      logger.success('Proctor Flow Sanity Test Completed with 100% Score');
     } catch (error: any) {
       await logger?.error('TC13 FAIL: ' + error.message, error);
-      throw error;
-    }
-  });
-
-  test('TC14: Validate proctor side shows Completed status and correct score', { tag: '@regression' }, async ({}, testInfo) => {
-    logger = new Logger(page, 'TC14__Proctor_Status_Score', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC14' });
-    proctorUtil.setLogger(logger);
-
-    logger.separator('TC14: PROCTOR STATUS AND SCORE VALIDATION');
-
-    try {
-      await page.bringToFront();
-      await page.waitForTimeout(5000);
-      await proctorUtil.validateProctorStatus(ASSESSMENT_STATUS, extractedBatchId);
-      await proctorUtil.validateProctorScore(EXPECTED_PERCENTAGE, extractedBatchId);
-      logger.success('TC14 PASS: Proctor side shows Completed status and correct score');
-    } catch (error: any) {
-      await logger?.error('TC14 FAIL: ' + error.message, error);
       throw error;
     }
   });

@@ -29,9 +29,10 @@ export class BatchCreation {
    * Creates a new MU batch and returns the batch ID
    * @param assessmentName - Optional assessment name (defaults to process.env.Assessment)
    * @param institution - Optional institution name (defaults to process.env.Institution)
-   * @returns Promise<string> - The created batch ID
+  * @param cohort - Optional cohort name (defaults to process.env.Cohort)
+  * @returns Promise<string> - The created batch ID
    */
-  async createBatch(assessmentName?: string, institution?: string): Promise<string> {
+  async createBatch(assessmentName?: string, institution?: string, cohort?: string): Promise<string> {
     this.logger?.separator('MU BATCH CREATION');
 
     this.logger?.step('Creating new browser context for MU');
@@ -62,6 +63,7 @@ export class BatchCreation {
 
     const institutionValue = institution || process.env.Institution || '';
     const assessmentValue = assessmentName || process.env.Assessment || '';
+    const cohortValue = cohort || process.env.Cohort || '';
 
     this.logger?.step(`Selecting institution: ${institutionValue}`);
     await muLocators.institutionDropdown.selectOption({ label: institutionValue });
@@ -75,6 +77,22 @@ export class BatchCreation {
       this.logger?.info('No auto-refresh detected, continuing...');
     }
     await this.muPage.waitForTimeout(2000);
+
+    if (cohortValue.trim().length > 0) {
+      this.logger?.step(`Selecting cohort: ${cohortValue}`);
+      await muLocators.cohortDropdown.selectOption({ label: cohortValue });
+      this.logger?.info(`Cohort option selected: "${cohortValue}"`);
+
+      // Wait for any postback after cohort selection
+      try {
+        await this.muPage.waitForLoadState('load', { timeout: 15000 });
+      } catch {
+        // No postback expected for cohort, continue
+      }
+      await this.muPage.waitForTimeout(1000);
+    } else {
+      this.logger?.info('Cohort not provided, skipping cohort selection');
+    }
 
     this.logger?.step(`Selecting assessment: ${assessmentValue}`);
     await muLocators.assessmentDropdown.selectOption({ label: assessmentValue });

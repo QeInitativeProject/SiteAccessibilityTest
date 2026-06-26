@@ -368,10 +368,10 @@ ${'='.repeat(80)}
       await this.captureScreenshot(`error_${Date.now()}`);
     }
 
-    // Capture HTML snapshot on error
-    if (this.options.captureHtmlSnapshot) {
-      await this.captureHtmlSnapshot(`error_${Date.now()}`);
-    }
+    // HTML snapshot disabled to reduce report size
+    // if (this.options.captureHtmlSnapshot) {
+    //   await this.captureHtmlSnapshot(`error_${Date.now()}`);
+    // }
   }
 
   /**
@@ -442,25 +442,16 @@ ${'='.repeat(80)}
       // Wait a moment for any animations/transitions to complete
       await this.page.waitForTimeout(500);
 
-      // Capture screenshot as buffer with error handling
+      // Capture screenshot as buffer (viewport-only to keep report size small)
       let screenshot: Buffer;
       try {
         screenshot = await this.page.screenshot({ 
-          fullPage: true,
-          timeout: 5000  // 5 second timeout for screenshot
+          fullPage: false,
+          timeout: 5000
         });
       } catch (screenshotError) {
-        // If fullPage fails, try viewport screenshot
-        this.warning('Full page screenshot failed, attempting viewport screenshot');
-        try {
-          screenshot = await this.page.screenshot({ 
-            fullPage: false,
-            timeout: 5000
-          });
-        } catch (viewportError) {
-          this.warning(`Screenshot capture failed: ${viewportError}`);
-          return null;
-        }
+        this.warning(`Screenshot capture failed: ${screenshotError}`);
+        return null;
       }
 
       // Verify screenshot is not empty

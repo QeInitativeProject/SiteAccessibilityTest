@@ -91,6 +91,14 @@ export async function teardownTestEnvironment(ctx: TestContext): Promise<void> {
   await ctx?.browser?.close();
 }
 
+/**
+ * Clears all cookies from a browser context to avoid "Multiple Active Test Sessions" errors.
+ * Call this before re-logging in a student after a tab close.
+ */
+export async function clearSessionCookies(context: BrowserContext): Promise<void> {
+  await context.clearCookies();
+}
+
 export function createTestSuite(
   config: {
     suiteName: string;

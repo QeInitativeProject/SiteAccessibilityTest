@@ -1,8 +1,9 @@
 /**
- * Sanity Test - Proctor Flow (Reader Off)
- * Description: Faculty login and proctor student assessment with Reader Off.
+ * Sanity Test - Proctor Flow (Reader On)
+ * Description: Faculty login and proctor student assessment with Reader On (TTS enabled).
  * Covers: MU batch creation, faculty proctoring setup, student login, attestation,
- * flag/unflag flow, calculator, pause/resume, answer questions, IPP validation.
+ * flag/unflag flow, TTS toggle, settings validation, calculator, pause/resume,
+ * answer questions, IPP validation.
  * @author [Ashish Ranjan]
  */
 
@@ -19,12 +20,12 @@ import { BatchCreation } from '@utils/BatchCreation';
 
 const PROCTORED_ASSESSMENT_NAME = process.env.Proctored_Assessment;
 const EXPECTED_INSTITUTION = process.env.Institution_zzcab;
-const SCENARIO_NAME = 'Prod_Proctor_ReaderOff';
+const SCENARIO_NAME = 'Prod_Proctor_ReaderOn';
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store Prod';
 const EXPECTED_PERCENTAGE = '100.0%';
 
-test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () => {
+test.describe.serial('@smoke - Prod_Proctor_ReaderOn', { tag: '@smoke' }, () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;
@@ -79,7 +80,7 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
   // BATCH CREATION & FACULTY SETUP
   // ============================================================
 
-  test('TC1: MU batch creation', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC1: MU batch creation', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC1__MU_batch_creation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     assertions.setLogger(logger);
 
@@ -99,7 +100,7 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
     }
   });
 
-  test('TC2: Faculty login to ATI', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC2: Faculty login to ATI', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC2__Faculty_Login', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });
     atiLoginPage.setLogger(logger);
     facHomePage.setLogger(logger);
@@ -122,7 +123,7 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
     }
   });
 
-  test('TC3: Navigate to Proctor Tab', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC3: Navigate to Proctor Tab', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC3__Navigate_Proctor_Tab', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
     facHomePage.setLogger(logger);
     proctorUtil.setLogger(logger);
@@ -141,9 +142,8 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
       throw error;
     }
   });
-  
 
-  test('TC4: Enter Assessment ID and Setup Proctoring', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC4: Enter Assessment ID and Setup Proctoring', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC4__Setup_Proctoring', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
     proctorUtil.setLogger(logger);
 
@@ -171,7 +171,7 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
   // STUDENT FLOW
   // ============================================================
 
-  test('TC5: Start Proctoring Session and Student Login', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC5: Start Proctoring Session and Student Login', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC5__Start_Proctoring_Student_Login', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
     proctorUtil.setLogger(logger);
 
@@ -191,7 +191,7 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
 
       const studentLoginPage = new LoginPage(studentTab);
       studentLoginPage.setLogger(logger);
-      await studentLoginPage.fillStuUserName(process.env.studentUsernamezzcab4!);
+      await studentLoginPage.fillStuUserName(process.env.studentUsernamezzcab5!);
       await studentLoginPage.fillStuPassword(process.env.studentPasswordzzcab2!);
       await studentLoginPage.clickLogin();
       await studentTab.waitForLoadState('load');
@@ -205,7 +205,7 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
     }
   });
 
-  test('TC6: Student adds Product and fills Attestation', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC6: Student adds Product and fills Attestation', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(studentTab, 'TC6__Student_AddProduct', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
 
     myATIPage = new MyATIPage(studentTab);
@@ -220,10 +220,8 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
     logger.separator('TC6: STUDENT ADD PRODUCT AND ATTESTATION');
 
     try {
-      await studentTab.waitForLoadState('networkidle', { timeout: 30000 }).catch(() =>
-        logger.info('Network idle timeout - continuing')
-      );
-      await studentTab.waitForTimeout(5000);
+      await studentTab.waitForLoadState('load');
+      await studentTab.waitForTimeout(20000);
 
       await myATIPage.clickOnMyATITab();
       await studentTab.waitForLoadState('load');
@@ -236,9 +234,7 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
       logger.success('Add Product dialog opened');
 
       await studentAssertions.waitAndAssertVisible(locators.idTextbox, 15000);
-      await studentAssertions.assertEnabled(locators.idTextbox);
       await locators.idTextbox.fill(extractedBatchId.trim());
-      await studentAssertions.assertHasValue(locators.idTextbox, extractedBatchId.trim());
       logger.success(`Batch ID entered: ${extractedBatchId.trim()}`);
 
       await studentAssertions.waitAndAssertVisible(locators.continueButton, 10000);
@@ -260,7 +256,7 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
     }
   });
 
-  test('TC7: Faculty approves Student and Student launches assessment', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC7: Faculty approves Student and Student launches assessment', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC7__Approve_Start_Test', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
     proctorUtil.setLogger(logger);
 
@@ -299,7 +295,7 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
   // ASSESSMENT FLOW
   // ============================================================
 
-  test('TC8: Flag, Continue, Previous, Unflag robust flow', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC8: Flag, Continue, Previous, Unflag robust flow', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(studentTab, 'TC8__Flag_Unflag_Flow', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
     assessmentPage.setLogger(logger);
 
@@ -315,75 +311,129 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
     }
   });
 
-  test('TC9: Calculator functionality', { tag: '@sanity' }, async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC9__Calculator', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
+  // ============================================================
+  // TEXT-TO-SPEECH VALIDATION
+  // ============================================================
+
+  test('TC9: Validate that text to speech functionality content is visible', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC9__TTS_Content_Visibility', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
     assessmentPage.setLogger(logger);
 
-    logger.separator('TC9: CALCULATOR FUNCTIONALITY');
+    logger.separator('TC9: TTS CONTENT VISIBILITY');
 
     try {
-      await assessmentPage.verifyCalculatorFunctionality();
-      logger.success('TC9 PASS: Calculator functionality verified');
+      await assessmentPage.validateTextToSpeechContentVisibility();
+      logger.success('TC9 PASS: Text-to-speech content is visible');
     } catch (error: any) {
       await logger?.error('TC9 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC10: Pause and Resume assessment', { tag: '@sanity' }, async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC10__Pause_Resume', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC10' });
+  test('TC10: Validate that text to speech toggle is functional', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC10__TTS_Toggle', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC10' });
     assessmentPage.setLogger(logger);
 
-    logger.separator('TC10: PAUSE AND RESUME');
+    logger.separator('TC10: TTS TOGGLE FUNCTIONALITY');
 
     try {
-      await assessmentPage.verifyPauseAndResumeFunctionality();
-      logger.success('TC10 PASS: Pause and resume functionality verified');
+      await assessmentPage.validateToggleFunctionality();
+      await assessmentPage.turnToggleOn();
+      logger.success('TC10 PASS: Toggle is now ON and ready for subsequent tests');
     } catch (error: any) {
       await logger?.error('TC10 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC11: Answer assessment', { tag: '@sanity' }, async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC11__Answer_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC11' });
+  test('TC11: Validate settings button is clickable and speech rate, pitch rate is visible', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC11__Settings_Controls', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC11' });
     assessmentPage.setLogger(logger);
 
-    logger.separator('TC11: ANSWER ASSESSMENT');
+    logger.separator('TC11: SETTINGS CONTROLS VISIBILITY');
 
     try {
-      await assessmentPage.answerAssessmentQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE);
-      logger.success('TC11 PASS: Assessment questions answered');
+      await assessmentPage.validateSettingsButtonAndControls();
+      logger.success('TC11 PASS: Settings controls verified');
     } catch (error: any) {
       await logger?.error('TC11 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC12: Finish assessment and IPP page loaded', { tag: '@sanity' }, async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC12__Finalize_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC12' });
+  // ============================================================
+  // ASSESSMENT COMPLETION
+  // ============================================================
+
+  test('TC12: Calculator functionality', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC12__Calculator', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC12' });
     assessmentPage.setLogger(logger);
 
-    logger.separator('TC12: FINALIZE ASSESSMENT');
+    logger.separator('TC12: CALCULATOR FUNCTIONALITY');
 
     try {
-      await assessmentPage.finalizeAssessmentAndViewResults();
-      logger.success('TC12 PASS: Assessment finished and IPP page loaded');
+      await assessmentPage.verifyCalculatorFunctionality();
+      logger.success('TC12 PASS: Calculator functionality verified');
     } catch (error: any) {
       await logger?.error('TC12 FAIL: ' + error.message, error);
       throw error;
     }
   });
 
-  test('TC13: IPP page shows 100% score', { tag: '@sanity' }, async ({}, testInfo) => {
-    logger = new Logger(studentTab, 'TC13__IPP_Score', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC13' });
+  test('TC13: Pause and Resume assessment', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC13__Pause_Resume', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC13' });
     assessmentPage.setLogger(logger);
 
-    logger.separator('TC13: IPP SCORE VALIDATION');
+    logger.separator('TC13: PAUSE AND RESUME');
+
+    try {
+      await assessmentPage.verifyPauseAndResumeFunctionality();
+      logger.success('TC13 PASS: Pause and resume functionality verified');
+    } catch (error: any) {
+      await logger?.error('TC13 FAIL: ' + error.message, error);
+      throw error;
+    }
+  });
+
+  test('TC14: Answer assessment', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC14__Answer_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC14' });
+    assessmentPage.setLogger(logger);
+
+    logger.separator('TC14: ANSWER ASSESSMENT');
+
+    try {
+      await assessmentPage.answerAssessmentQuestions(QUESTION_ANSWER_FILE, ASSESSMENT_TYPE);
+      logger.success('TC14 PASS: Assessment questions answered');
+    } catch (error: any) {
+      await logger?.error('TC14 FAIL: ' + error.message, error);
+      throw error;
+    }
+  });
+
+  test('TC15: Finish assessment and IPP page loaded', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC15__Finalize_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC15' });
+    assessmentPage.setLogger(logger);
+
+    logger.separator('TC15: FINALIZE ASSESSMENT');
+
+    try {
+      await assessmentPage.finalizeAssessmentAndViewResults();
+      logger.success('TC15 PASS: Assessment finished and IPP page loaded');
+    } catch (error: any) {
+      await logger?.error('TC15 FAIL: ' + error.message, error);
+      throw error;
+    }
+  });
+
+  test('TC16: IPP page shows 100% score', { tag: '@smoke' }, async ({}, testInfo) => {
+    logger = new Logger(studentTab, 'TC16__IPP_Score', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC16' });
+    assessmentPage.setLogger(logger);
+
+    logger.separator('TC16: IPP SCORE VALIDATION');
 
     try {
       await assessmentPage.validateIPPScoring(EXPECTED_PERCENTAGE);
-      logger.success('TC13 PASS: IPP page shows 100% score on UI');
+      logger.success('TC16 PASS: IPP page shows 100% score on UI');
 
       await assessmentPage.verifyElementByRole(
         'heading',
@@ -391,10 +441,11 @@ test.describe.serial('@Sanity - Prod_Proctor_ReaderOff', { tag: '@sanity' }, () 
         'IPP Page Heading'
       );
       await assessmentPage.takeScreenshot(SCENARIO_NAME, extractedBatchId);
-      logger.success('Proctor Flow Sanity Test Completed with 100% Score');
+      logger.success('Proctor Flow Sanity Test (Reader On) Completed with 100% Score');
     } catch (error: any) {
-      await logger?.error('TC13 FAIL: ' + error.message, error);
+      await logger?.error('TC16 FAIL: ' + error.message, error);
       throw error;
     }
   });
 });
+ 

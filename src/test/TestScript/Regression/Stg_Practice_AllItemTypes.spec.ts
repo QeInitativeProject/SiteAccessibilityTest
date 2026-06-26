@@ -18,9 +18,9 @@ import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators
 const QUESTION_ANSWER_FILE = 'AllItemTypes_QnA.json';
 const ASSESSMENT_TYPE = process.env.ASSESSMENT_TYPE;
 const EXPECTED_PERCENTAGE = '100.0%';
-const BATCH_ID = process.env.AllItemsBatchId!;
 const EXPECTED_ASSESSMENT_NAME = process.env.AllItemsAssessment!;
 const SCENARIO_NAME = 'Stg_Practice_AllItemTypes';
+const BATCH_ID = '27300764';
 const IppPageHeading = 'heading';
 const IndividualPerformanceProfile = 'Individual Performance Profile';
 const IppHeading = 'IPP Page Heading';
@@ -82,6 +82,10 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
     }
   });
 
+  // ============================================================
+  // STUDENT LOGIN & ADD PRODUCT
+  // ============================================================
+
   test('TC1: Student login to ATI', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC1__Student_Login', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     atiLoginPage.setLogger(logger);
@@ -126,6 +130,10 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
     }
   });
 
+  // ============================================================
+  // ANSWER ASSESSMENT
+  // ============================================================
+
   test('TC3: Answer all questions with all item types (shuffled)', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC3__Answer_All_Item_Types', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
     assessmentPage.setLogger(logger);
@@ -141,6 +149,10 @@ test.describe.serial('@Regression - Stg_Practice_AllItemTypes', { tag: '@regress
       throw error;
     }
   });
+
+  // ============================================================
+  // IPP PAGE VALIDATIONS
+  // ============================================================
 
   test('TC4: Validate IPP page is visible and not broken', { tag: '@regression' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC4__IPP_Page_Visible', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });

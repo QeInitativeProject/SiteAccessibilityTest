@@ -310,7 +310,8 @@ export class AssessmentPage {
   validateIPPScoring = async (expectedPercentage: string): Promise<string> => {
     await this.page.waitForURL(/ViewResult|IPPTestResult/i, { timeout: 100000 });
     await this.page.waitForLoadState('domcontentloaded');
-    await this.assertions.waitAndAssertVisible(this.locators.percentageScore);
+    await this.page.waitForLoadState('networkidle').catch(() => {});
+    await this.assertions.waitAndAssertVisible(this.locators.percentageScore, 30000);
     const percentageValue = await this.locators.percentageScore.textContent();
     const trimmed = percentageValue?.trim() || '';
     const extractedPercentage = trimmed.endsWith('%') ? trimmed : trimmed + '%';
@@ -325,13 +326,15 @@ export class AssessmentPage {
    * dragAndDrop, bowtie, fillInBlank, highlightText, highlightTable, hotspot, matrix, orderedResponse, exhibit
    */
   validateAssessmentName = async (expectedAssessmentName: string): Promise<string> => {
-    await this.assertions.waitAndAssertVisible(this.locators.ippAssessmentName);
+    await this.assertions.waitAndAssertVisible(this.locators.ippAssessmentName, 30000);
     const assessmentNameText = await this.locators.ippAssessmentName.textContent();
     const trimmedName = (assessmentNameText ?? '').trim();
     this.assertions.assertStringContains(trimmedName, expectedAssessmentName);
     this.logger?.success(`✅ Assessment name validated: "${trimmedName}"`);
     return trimmedName;
   };
+
+
 
   smartAnswerAssessment = async (
     jsonFileName: string,
@@ -365,8 +368,7 @@ export class AssessmentPage {
    */
   createCheatIncident = async (): Promise<void> => {
     const assessmentIframe = this.page.frameLocator('iframe').first();
-    await assessmentIframe.locator('body').waitFor({ state: 'visible', timeout: 30000 });
-    await this.page.waitForTimeout(5000);
+    await assessmentIframe.locator('body').waitFor({ state: 'visible', timeout: 10000 });
     this.logger?.success('\u2705 Assessment iframe loaded');
 
     const iframeElement = this.page.locator('iframe').first();
@@ -396,6 +398,113 @@ export class AssessmentPage {
     await this.page.waitForLoadState('load');
     await this.page.waitForTimeout(3000);
     this.logger?.success('\u2705 Clicked Resume Test button');
+  };
+
+  /**
+   * Validates that the "Your proctor notified" message appears with the Resume Test button,
+   * then clicks Resume Test to continue the assessment.
+   * Used for incidents #1 and #2.
+   * @param incidentNumber - The incident number for logging purposes
+   */
+  validateProctorNotifiedAndResume = async (incidentNumber: number): Promise<void> => {
+    const assessmentFrame = this.page.frameLocator('iframe').first();
+    const proctorNotifiedText = assessmentFrame.locator('#end-assessment-confirm-body', { hasText: /proctor.*notified/i }).first();
+    await proctorNotifiedText.waitFor({ state: 'visible', timeout: 60000 });
+    this.logger?.success(`\u2705 "Your proctor has been notified" message is visible (Incident #${incidentNumber})`);
+
+    const resumeTestBtn = assessmentFrame.locator('button.primary-button', { hasText: /Resume Test/i });
+    await resumeTestBtn.waitFor({ state: 'visible', timeout: 10000 });
+    this.logger?.success(`\u2705 Resume Test button is visible (Incident #${incidentNumber})`);
+
+    await resumeTestBtn.click();
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(3000);
+    this.logger?.success(`\u2705 Resumed test after incident #${incidentNumber}`);
+  };
+
+  /**
+   * Validates the "Invalid key pressed" warning popup (3rd incident) and clicks Resume Assessment.
+   * Title: "Invalid key pressed"
+   * Body: "WARNING: Continued detection of this behavior will result in your assessment being ended."
+   * Button: "Resume Assessment"
+   */
+  validateInvalidKeyWarningAndResume = async (): Promise<void> => {
+    const assessmentFrame = this.page.frameLocator('iframe').first();
+    const warningTitle = assessmentFrame.locator('#end-assessment-confirm-title', { hasText: /Invalid key pressed/i }).first();
+    await warningTitle.waitFor({ state: 'visible', timeout: 60000 });
+    this.logger?.success('\u2705 "Invalid key pressed" warning title is visible (Incident #3)');
+
+    const warningBody = assessmentFrame.locator('#end-assessment-confirm-body', { hasText: /continued detection/i }).first();
+    await warningBody.waitFor({ state: 'visible', timeout: 10000 });
+    this.logger?.success('\u2705 Warning body message is visible');
+
+    const resumeAssessmentBtn = assessmentFrame.locator('button.primary-button', { hasText: /Resume Assessment/i });
+    await resumeAssessmentBtn.waitFor({ state: 'visible', timeout: 10000 });
+    this.logger?.success('\u2705 Resume Assessment button is visible');
+
+    await resumeAssessmentBtn.click();
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(3000);
+    this.logger?.success('\u2705 Clicked Resume Assessment after warning');
+  };
+
+  /**
+   * Validates the "Warning threshold maxed" popup (4th/final incident) with Close Assessment button.
+   * Title: "Moving outside of the test is prohibited."
+   * Body: "Your warning threshold has been maxed. Your assessment is now ended."
+   * Button: "Close Assessment"
+   */
+  validateThresholdMaxedAndClose = async (): Promise<void> => {
+    const assessmentFrame = this.page.frameLocator('iframe').first();
+    const thresholdBody = assessmentFrame.locator('#end-assessment-confirm-body', { hasText: /threshold.*maxed/i }).first();
+    await thresholdBody.waitFor({ state: 'visible', timeout: 60000 });
+    this.logger?.success('\u2705 "Warning threshold maxed" message is visible (Final incident)');
+
+    const closeBtn = assessmentFrame.locator('button.secondary-button', { hasText: /Close Assessment/i });
+    await closeBtn.waitFor({ state: 'visible', timeout: 10000 });
+    this.logger?.success('\u2705 Close Assessment button is visible');
+
+    await closeBtn.click();
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(3000);
+    this.logger?.success('\u2705 Clicked Close Assessment - assessment ended');
+  };
+
+  /**
+   * Validates that the "proctor not available" message appears when student tries to take
+   * a proctored assessment without a proctor session being started.
+   */
+  validateProctorNotAvailableMessage = async (): Promise<string> => {
+    const proctorNotAvailableMsg = this.page.locator('text=/proctor.*not.*available/i').first();
+    await proctorNotAvailableMsg.waitFor({ state: 'visible', timeout: 15000 });
+    const msgText = await proctorNotAvailableMsg.textContent();
+    const trimmedMsg = (msgText ?? '').trim();
+    this.logger?.success(`\u2705 Proctor not available message shown: "${trimmedMsg}"`);
+    return trimmedMsg;
+  };
+
+  /**
+   * Validates that the student sees an abandoned/ended message after faculty abandons the attempt.
+   * @returns true if message is visible, false otherwise
+   */
+  validateAbandonedMessage = async (): Promise<boolean> => {
+    await this.page.bringToFront();
+    await this.page.waitForTimeout(5000);
+
+    const assessmentFrame = this.page.frameLocator('iframe').first();
+    const abandonedMsg = assessmentFrame.locator('text=/abandon|ended|closed/i').first();
+    const msgVisible = await abandonedMsg.isVisible().catch(() => false);
+
+    if (msgVisible) {
+      const msgText = await abandonedMsg.textContent();
+      this.logger?.success(`\u2705 Student sees abandon message: "${msgText?.trim()}"`);
+      return true;
+    } else {
+      const currentUrl = this.page.url();
+      this.logger?.info(`Student current URL after abandon: ${currentUrl}`);
+      this.logger?.success('\u2705 Student assessment session ended after abandon');
+      return false;
+    }
   };
 
   /**

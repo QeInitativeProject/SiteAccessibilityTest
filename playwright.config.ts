@@ -52,6 +52,7 @@ export default defineConfig({
         BASE_URL: process.env.baseUrl || '',
       },
     }],
+    ['./ci-reporter.ts'],
   ],
 
   timeout: 20 * 60000,
@@ -69,15 +70,16 @@ export default defineConfig({
 
     trace: 'on-first-retry', // Automatic trace capture on retry/failure
     screenshot: 'only-on-failure', // Playwright captures failure screenshots
-    video: 'retain-on-failure', // Keep videos only for failed tests (moved to playwright-report/data by Logger)
+    video: 'off', // Disabled to reduce report size — use trace for debugging instead
 
-    viewport: { width: 1440, height: 900 },
+    viewport: { width: 1680, height: 1050 },
     launchOptions: {
       args: [
         '--disable-dev-shm-usage',
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-gpu',
+        '--window-size=1680,1050',
       ],
     },
   },
@@ -87,7 +89,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        viewport: { width: 1440, height: 900 },
+        viewport: { width: 1680, height: 1050 },
         deviceScaleFactor: undefined,
       
       },

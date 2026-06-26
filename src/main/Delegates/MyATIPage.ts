@@ -35,12 +35,138 @@ export class MyATIPage {
     await this.atiCommonMethod.clickOnMyATITab();
   };
 
+  clickOnCourseEnablementMyATITab = async (): Promise<void> => {
+    this.logger?.step('Clicking Course Enablement My ATI tab');
+    const myATITab = this.page.locator('//a[@id="productsAssessmentsTab"]');
+    await myATITab.waitFor({ state: 'visible', timeout: 30000 });
+    await myATITab.click();
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('domcontentloaded');
+    this.logger?.success('Course Enablement My ATI tab clicked');
+  };
+
+  addCourseEnablementProduct = async (batchId: string): Promise<void> => {
+    this.logger?.step(`Adding Course Enablement product with batch ID: ${batchId}`);
+    const addProductsButton = this.page.locator('section.addproduct ftr-button:has-text("Add Products"), ftr-button:has-text("Add Products")').first();
+    await addProductsButton.waitFor({ state: 'visible', timeout: 30000 });
+    await addProductsButton.scrollIntoViewIfNeeded();
+    await addProductsButton.click();
+
+    const addProductDialog = this.page.locator('section.addPrd', { hasText: 'Add a product to your account' }).first();
+    const isDialogVisible = await addProductDialog.isVisible({ timeout: 5000 }).catch(() => false);
+    if (!isDialogVisible) {
+      await addProductsButton.evaluate((element: HTMLElement) => {
+        const shadowButton = element.shadowRoot?.querySelector('button') as HTMLButtonElement | null;
+        shadowButton?.click();
+        if (!shadowButton) {
+          element.click();
+        }
+      });
+    }
+    await addProductDialog.waitFor({ state: 'visible', timeout: 30000 });
+
+    const batchIdTextInput = addProductDialog.locator('ftr-textinput[formcontrolname="id"]').first();
+    await batchIdTextInput.waitFor({ state: 'visible', timeout: 30000 });
+    await batchIdTextInput.scrollIntoViewIfNeeded();
+
+    const batchIdTextbox = batchIdTextInput.locator('input, textarea').or(
+      addProductDialog.locator('input[formcontrolname="id"], textarea[formcontrolname="id"]')
+    ).or(
+      this.page.getByRole('textbox', { name: /ID|Product ID|Assessment ID/i })
+    ).first();
+
+    if (await batchIdTextbox.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await batchIdTextbox.fill(batchId.trim());
+    } else {
+      await batchIdTextInput.click({ force: true });
+      await this.page.keyboard.press('Control+A');
+      await this.page.keyboard.type(batchId.trim());
+    }
+
+    const continueButton = this.page.getByRole('button', { name: /^Continue$/i }).or(
+      this.page.getByRole('link', { name: /^Continue$/i })
+    ).or(
+      this.page.locator('ftr-button:has-text("Continue")')
+    ).first();
+    await continueButton.waitFor({ state: 'visible', timeout: 30000 });
+    await continueButton.click({ force: true });
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('domcontentloaded');
+    this.logger?.success(`Course Enablement product batch ID submitted: ${batchId}`);
+  };
+
   clickOnLearnTab = async () => {
     await this.atiCommonMethod.clickOnLearnTab();
   };
 
   clickOnAssessmentsTab = async () => {
     await this.atiCommonMethod.clickOnAssessmentsTab();
+  };
+
+  clickOnCourseEnablementAssessmentsTab = async (): Promise<void> => {
+    this.logger?.step('Clicking Course Enablement Assessments tab');
+    const assessmentsTab = this.page.getByRole('tab', { name: 'Assessments' }).or(
+      this.page.locator('#tab-button-assessments, ftr-tab-button[tab="assessments"]')
+    ).first();
+    await assessmentsTab.waitFor({ state: 'visible', timeout: 30000 });
+    await assessmentsTab.scrollIntoViewIfNeeded();
+    await assessmentsTab.click({ force: true });
+    await this.page.locator('#tab-button-assessments[aria-selected="true"], ftr-tab[tab="assessments"].ftr-tab-active').first()
+      .waitFor({ state: 'attached', timeout: 10000 })
+      .catch(async () => {
+        await assessmentsTab.focus();
+        await this.page.keyboard.press('Enter');
+        await this.page.locator('#tab-button-assessments[aria-selected="true"], ftr-tab[tab="assessments"].ftr-tab-active').first()
+          .waitFor({ state: 'attached', timeout: 10000 });
+      });
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('domcontentloaded');
+    this.logger?.success('Course Enablement Assessments tab clicked');
+  };
+
+  clickCourseEnablementCheckForProctors = async (): Promise<void> => {
+    this.logger?.step('Clicking Course Enablement Check for Proctors button');
+    const checkForProctorsButton = this.page.getByRole('button', { name: /Check for Proctors/i }).or(
+      this.page.locator('button[aria-label="Check for Proctors button"], button:has-text("Check for Proctors"), ftr-button:has-text("Check for Proctors")')
+    ).first();
+    await checkForProctorsButton.waitFor({ state: 'visible', timeout: 30000 });
+    await checkForProctorsButton.scrollIntoViewIfNeeded();
+    await checkForProctorsButton.click();
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('domcontentloaded');
+    this.logger?.success('Course Enablement Check for Proctors button clicked');
+  };
+
+  openCourseEnablementAssessment = async (assessmentName: string, batchId?: string): Promise<void> => {
+    this.logger?.step(`Opening Course Enablement assessment: ${assessmentName}${batchId ? ` (${batchId})` : ''}`);
+    const rowSelector = batchId
+      ? `.ag-center-cols-container [role="row"][row-id="${batchId}"]`
+      : '.ag-center-cols-container [role="row"]';
+    const assessmentRow = this.page.locator(rowSelector).filter({ hasText: assessmentName }).first();
+    const assessmentNameCell = assessmentRow.locator('[col-id="productName"]').first();
+    await assessmentNameCell.waitFor({ state: 'visible', timeout: 30000 });
+
+    const actualAssessmentName = (await assessmentNameCell.textContent())?.trim() || '';
+    if (!actualAssessmentName.includes(assessmentName) || (batchId && !actualAssessmentName.includes(batchId))) {
+      throw new Error(`Expected assessment row to contain "${assessmentName}"${batchId ? ` and batch ID "${batchId}"` : ''}, but found "${actualAssessmentName}"`);
+    }
+
+    const assessmentActionButton = assessmentRow.locator('[col-id="actions"] ftr-button').filter({ hasText: /Open|Retake/i }).first();
+    await assessmentActionButton.waitFor({ state: 'visible', timeout: 30000 });
+
+    const actionText = (await assessmentActionButton.textContent())?.trim() || 'Open/Retake';
+    await assessmentActionButton.scrollIntoViewIfNeeded();
+    const urlBeforeClick = this.page.url();
+    await assessmentActionButton.click({ force: true });
+
+    let actionStarted = await Promise.race([
+      this.page.waitForURL((url) => url.toString() !== urlBeforeClick, { timeout: 5000 }).then(() => true).catch(() => false),
+      this.page.locator('#assessmentLoadForm, form#assessmentLoadForm').first().waitFor({ state: 'attached', timeout: 5000 }).then(() => true).catch(() => false),
+    ]);
+
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('domcontentloaded');
+    this.logger?.success(`Course Enablement assessment ${actionText} clicked: ${actualAssessmentName}`);
   };
 
   // Click on assessments tab specifically on My ATI page (not from home page)
@@ -471,7 +597,7 @@ export class MyATIPage {
   ): Promise<void> => {
     await this.page.waitForLoadState('load');
     await this.page.waitForLoadState('domcontentloaded');
-    await this.page.waitForTimeout(5000);
+    await this.page.waitForTimeout(10000);
 
     // Dismiss blockUI overlay if present
     await this.page.locator('.blockUI.blockOverlay').waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
@@ -734,4 +860,54 @@ export class MyATIPage {
     this.logger?.success('✅ IIP (Individual Performance Profile) page is visible');
   };
 
+  /**
+   * Navigate to Results tab and click on the assessment name to view IPP details.
+   * @param assessmentName - The assessment name to click on in the Results page
+   */
+  navigateToResultsAndOpenAssessment = async (assessmentName: string): Promise<void> => {
+    this.logger?.step(`Navigating to Results and opening assessment: ${assessmentName}`);
+
+    // Click on Results navigation link
+    const resultsLink = this.page.getByRole('link', { name: 'Select this link to navigate to the Results page' });
+    await resultsLink.waitFor({ state: 'visible', timeout: 15000 });
+    await resultsLink.click();
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(5000);
+    this.logger?.success('✅ Navigated to Results page');
+
+    // Click on the assessment name to open IPP details
+    const assessmentLink = this.page.locator(`a:has-text("${assessmentName}")`).first();
+    await assessmentLink.waitFor({ state: 'visible', timeout: 15000 });
+    await assessmentLink.click();
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(5000);
+    this.logger?.success(`✅ Clicked on assessment: ${assessmentName}`);
+  };
+
+  /**
+   * Validate that no results are generated for an assessment on the Results page.
+   * Navigates to Results tab and asserts the assessment is NOT listed.
+   * @param assessmentName - The assessment name to verify is absent from Results
+   */
+  validateNoResultsGenerated = async (assessmentName: string): Promise<void> => {
+    this.logger?.step(`Validating no results generated for: ${assessmentName}`);
+
+    // Navigate to Results page
+    const resultsLink = this.page.getByRole('link', { name: 'Select this link to navigate to the Results page' });
+    await resultsLink.waitFor({ state: 'visible', timeout: 15000 });
+    await resultsLink.click();
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(5000);
+    this.logger?.success('✅ Navigated to Results page');
+
+    // Validate assessment is NOT visible in Results
+    const assessmentLink = this.page.locator(`a:has-text("${assessmentName}")`).first();
+    const isVisible = await assessmentLink.isVisible({ timeout: 10000 }).catch(() => false);
+
+    if (!isVisible) {
+      this.logger?.success(`✅ No results generated - "${assessmentName}" is not listed on Results page`);
+    } else {
+      throw new Error(`Results were generated after abandon - "${assessmentName}" is visible on Results page`);
+    }
+  };
 }

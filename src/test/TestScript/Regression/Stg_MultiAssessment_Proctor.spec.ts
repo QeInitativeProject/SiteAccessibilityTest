@@ -27,6 +27,7 @@ const ASSESSMENT_TYPE = 'Question Store_Stage';
 const SCENARIO_NAME = 'Stg_MultiAssessment_Proctor';
 const EXPECTED_PERCENTAGE = '100.0%';
 const ASSESSMENT_STATUS = 'Completed';
+const ASSESSMENT_TESTING_STATUS = 'Testing';
 const IppPageHeading = 'heading';
 const IndividualPerformanceProfile = 'Individual Performance Profile';
 const IppHeading = 'IPP Page Heading';
@@ -218,8 +219,8 @@ test.describe.serial('@Regression - Stg_MultiAssessment_Proctor', { tag: '@regre
       const stu1Login = new LoginPage(studentTab1);
       stu1Login.setLogger(logger);
       await studentTab1.waitForTimeout(2000);
-      await stu1Login.fillStuUserName(process.env.stuUsernamezzcab1!);
-      await stu1Login.fillStuPassword(process.env.stuPasswordzzcab1!);
+      await stu1Login.fillStuUserName(process.env.stuUsernameauto1!);
+      await stu1Login.fillStuPassword(process.env.stuPasswordauto1!);
       await stu1Login.clickLogin();
       await studentTab1.waitForLoadState('load');
 
@@ -364,8 +365,8 @@ test.describe.serial('@Regression - Stg_MultiAssessment_Proctor', { tag: '@regre
       const stu2Login = new LoginPage(studentTab2);
       stu2Login.setLogger(logger);
       await studentTab2.waitForTimeout(2000);
-      await stu2Login.fillStuUserName(process.env.stuUserNamezzcab2!);
-      await stu2Login.fillStuPassword(process.env.stuPasswordzzcab1!);
+      await stu2Login.fillStuUserName(process.env.stuUsernameauto8!);
+      await stu2Login.fillStuPassword(process.env.stuPasswordauto1!);
       await stu2Login.clickLogin();
       await studentTab2.waitForLoadState('load');
 
@@ -515,8 +516,7 @@ test.describe.serial('@Regression - Stg_MultiAssessment_Proctor', { tag: '@regre
       await page.waitForLoadState('load');
       await page.waitForTimeout(5000);
 
-      await proctorUtil.expandBatchSection(extractedBatchId2);
-      await proctorUtil.validateProctorStatus('Testing');
+      await proctorUtil.validateProctorStatus(ASSESSMENT_TESTING_STATUS, extractedBatchId2);
       logger.success('TC15 PASS: Testing status validated for Student 2');
     } catch (error: any) {
       await logger?.error('TC15 FAIL: ' + error.message, error);
@@ -571,9 +571,8 @@ test.describe.serial('@Regression - Stg_MultiAssessment_Proctor', { tag: '@regre
     try {
       await page.bringToFront();
       await page.waitForTimeout(5000);
-
-      await proctorUtil.expandBatchSection(extractedBatchId2);
-      await proctorUtil.validateProctorScoreAndStatus(EXPECTED_PERCENTAGE, ASSESSMENT_STATUS);
+       await proctorUtil.validateProctorStatus(ASSESSMENT_STATUS, extractedBatchId2);
+      await proctorUtil.validateProctorScore(EXPECTED_PERCENTAGE, extractedBatchId2);
       logger.success('TC18 PASS: Completed status and score validated');
     } catch (error: any) {
       await logger?.error('TC18 FAIL: ' + error.message, error);
@@ -627,8 +626,8 @@ test.describe.serial('@Regression - Stg_MultiAssessment_Proctor', { tag: '@regre
 
       const stu2Login = new LoginPage(studentTab2);
       stu2Login.setLogger(logger);
-      await stu2Login.fillStuUserName(process.env.stuUserNamezzcab2!);
-      await stu2Login.fillStuPassword(process.env.stuPasswordzzcab1!);
+      await stu2Login.fillStuUserName(process.env.stuUsernameauto8!);
+      await stu2Login.fillStuPassword(process.env.stuPasswordauto1!);
       await stu2Login.clickLogin();
       await studentTab2.waitForLoadState('load');
       await studentTab2.waitForTimeout(5000);

@@ -20,7 +20,7 @@ const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
 const ASSESSMENT_TYPE = 'Question Store Prod';
 const SCENARIO_NAME = 'Prod_PracticeTest_ReaderOff';
 
-test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', { tag: '@sanity' }, () => {
+test.describe.serial('@smoke Prod_PracticeTest_ReaderOff', { tag: '@smoke' }, () => {
   let browser: Browser;
   let context: BrowserContext;
   let page: Page;
@@ -58,7 +58,7 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', { tag: '@sanity' }, 
   // LOGIN & HOME PAGE VALIDATION
   // ============================================================
 
-  test('TC1: ATI login and verify Home page elements', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC1: ATI login and verify Home page elements', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC1__ATI_Login_Validation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC1' });
     atiLoginPage.setLogger(logger);
     myATIPage.setLogger(logger);
@@ -79,7 +79,7 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', { tag: '@sanity' }, 
     }
   });
 
-  test('TC2: Verify Home page navigation elements', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC2: Verify Home page navigation elements', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC2__Home_Page_Navigation', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC2' });
     assertions.setLogger(logger);
 
@@ -107,7 +107,7 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', { tag: '@sanity' }, 
     }
   });
 
-  test('TC3: Verify My ATI page functionality', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC3: Verify My ATI page functionality', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC3__My_ATI_Page', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC3' });
     myATIPage.setLogger(logger);
     assertions.setLogger(logger);
@@ -144,7 +144,7 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', { tag: '@sanity' }, 
   // ADD PRODUCT & ASSESSMENT SETUP
   // ============================================================
 
-  test('TC4: Click on Assessments tab, verify Add Product dialog, enter credentials and continue', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC4: Click on Assessments tab, verify Add Product dialog, enter credentials and continue', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC4__Add_Product', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC4' });
     myATIPage.setLogger(logger);
     assertions.setLogger(logger);
@@ -188,7 +188,7 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', { tag: '@sanity' }, 
   // ASSESSMENT FLOW
   // ============================================================
 
-  test('TC5: Flag, Continue, Previous, Unflag robust flow', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC5: Flag, Continue, Previous, Unflag robust flow', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC5__Flag_Unflag_Flow', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC5' });
     assessmentPage.setLogger(logger);
 
@@ -204,7 +204,7 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', { tag: '@sanity' }, 
     }
   });
 
-  test('TC6: Verify blue banner is visible with correct background color', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC6: Verify blue banner is visible with correct background color', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC6__Blue_Banner', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC6' });
     assessmentPage.setLogger(logger);
 
@@ -219,7 +219,7 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', { tag: '@sanity' }, 
     }
   });
 
-  test('TC7: Calculator functionality', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC7: Calculator functionality', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC7__Calculator', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC7' });
     assessmentPage.setLogger(logger);
 
@@ -234,7 +234,7 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', { tag: '@sanity' }, 
     }
   });
 
-  test('TC8: Pause and Resume assessment', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC8: Pause and Resume assessment', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC8__Pause_Resume', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC8' });
     assessmentPage.setLogger(logger);
 
@@ -253,7 +253,7 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', { tag: '@sanity' }, 
   // ANSWER & FINALIZE
   // ============================================================
 
-  test('TC9: Answer assessment', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC9: Answer assessment', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC9__Answer_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC9' });
     assessmentPage.setLogger(logger);
 
@@ -268,7 +268,7 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', { tag: '@sanity' }, 
     }
   });
 
-  test('TC10: Finish assessment and IPP page loaded', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC10: Finish assessment and IPP page loaded', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC10__Finalize_Assessment', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC10' });
     assessmentPage.setLogger(logger);
 
@@ -283,7 +283,7 @@ test.describe.serial('@sanity Prod_PracticeTest_ReaderOff', { tag: '@sanity' }, 
     }
   });
 
-  test('TC11: IPP page shows 100% score', { tag: '@sanity' }, async ({}, testInfo) => {
+  test('TC11: IPP page shows 100% score', { tag: '@smoke' }, async ({}, testInfo) => {
     logger = new Logger(page, 'TC11__IPP_Score', testInfo, { scenarioName: SCENARIO_NAME, tcNumber: 'TC11' });
     assessmentPage.setLogger(logger);
 
