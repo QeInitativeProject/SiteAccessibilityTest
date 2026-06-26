@@ -498,7 +498,8 @@ allure_report:
     - apt-get update && apt-get install -y default-jre-headless
   script:
     - echo "📊 Collecting allure-results from all test jobs..."
-    - ls allure-results/ 2>/dev/null && echo "✅ allure-results found" || echo "⚠️ No allure-results found"
+    - test -d "allure-results" && ls allure-results/*-result.json >/dev/null 2>&1 || { echo "❌ ERROR No allure-results found! Run a test job first."; exit 1; }
+    - echo "✅ allure-results found $(ls allure-results/*-result.json | wc -l) result files"
     - echo "📊 Generating Single-File Allure Report..."
     - npm install -g allure-commandline --save-dev || true
     - npx allure generate allure-results --clean --single-file -o allure-report
@@ -530,9 +531,8 @@ notify:email:
       REPORT_URL="${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_REF_NAME}/file/allure-report/index.html?job=allure_report"
       PIPELINE_URL="${CI_PROJECT_URL}/-/pipelines/${CI_PIPELINE_ID}"
       
-      # Use CI_JOB_TOKEN (built-in, no setup needed) to post commit comment
-      curl --request POST \
-        --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+            curl --request POST \
+        --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
         "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/commits/${CI_COMMIT_SHA}/comments" \
         --form "note=## 📊 Test Execution Complete
         
