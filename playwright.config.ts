@@ -32,13 +32,14 @@ export default defineConfig({
 
   forbidOnly: !!process.env.CI,
   // Retries only failed tests in CI (not the whole suite)
-  retries: process.env.CI ? 2 : 0,
+ // retries: process.env.CI ? 1 : 0,
+  retries: 0,
 
   // ✅ Workers for parallel execution
   workers: process.env.CI ? 4 : 1,
 
-  // ✅ Clear previous run data to avoid stale cache issues
-  preserveOutput: 'never',
+
+  preserveOutput: 'failures-only',
 
   // HTML report configuration - Only HTML report in playwright-report folder
   reporter: [
@@ -68,8 +69,8 @@ export default defineConfig({
     headless: process.env.CI ? true : false,
     ignoreHTTPSErrors: true,
 
-    trace: 'on-first-retry', // Automatic trace capture on retry/failure
-    screenshot: 'only-on-failure', // Playwright captures failure screenshots
+    trace: 'retain-on-failure', // Only keeps trace for tests that ultimately fail (avoids allure ENOENT crash)
+    screenshot: 'only-on-failure', // Only auto-capture on failure; success screenshots handled via manual page.screenshot()
     video: 'off', // Disabled to reduce report size — use trace for debugging instead
 
     viewport: { width: 1680, height: 1050 },

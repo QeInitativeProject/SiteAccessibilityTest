@@ -224,7 +224,7 @@ test.describe.serial('@Regression - Stg_Multi_SelectDropdown', { tag: '@regressi
     logger.separator('TC9: IPP HEADING AND SCREENSHOT');
 
     try {
-      await assessmentPage.validateAssessmentName(EXPECTED_ASSESSMENT_NAME);
+      await assessmentPage.validateAssessmentName1(EXPECTED_ASSESSMENT_NAME);
       await assessmentPage.verifyElementByRole(IppPageHeading, IndividualPerformanceProfile, IppHeading);
       await assessmentPage.takeScreenshot(SCENARIO_NAME, BATCH_ID);
       logger.success('TC9 PASS: IPP heading verified and screenshot taken');
