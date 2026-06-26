@@ -1,4 +1,7 @@
+/// <reference types="node" />
 import type { FullConfig, FullResult, Reporter, Suite, TestCase, TestResult } from '@playwright/test/reporter';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface TestEntry {
   title: string;
@@ -6,6 +9,8 @@ interface TestEntry {
   status: 'passed' | 'failed' | 'timedOut' | 'skipped';
   error?: string;
   duration: number;
+  steps: number;
+  screenshotPath?: string;
 }
 
 class CIReporter implements Reporter {
@@ -26,6 +31,7 @@ class CIReporter implements Reporter {
       file,
       status: result.status as TestEntry['status'],
       duration: result.duration,
+      steps: result.steps.length,
     };
 
     if (result.status === 'failed' || result.status === 'timedOut') {
@@ -33,6 +39,12 @@ class CIReporter implements Reporter {
         ? 'Test timed out'
         : (result.errors?.[0]?.message?.split('\n')[0] || 'Unknown error').substring(0, 120);
       entry.error = errorMsg;
+
+      // Capture screenshot path for failed tests
+      const screenshot = result.attachments.find(a => a.contentType === 'image/png' && a.path);
+      if (screenshot?.path) {
+        entry.screenshotPath = screenshot.path;
+      }
     }
 
     // Always overwrite — last attempt is the final result
@@ -81,7 +93,133 @@ class CIReporter implements Reporter {
       console.log('└──────────────────────────────────────────────────────────────────────────────┘');
     }
 
+    // Generate HTML summary report for sharing
+    this.generateHtmlReport(result, allResults, passed, failed, skipped, totalDuration);
+
     console.log('\n');
+  }
+
+  private generateHtmlReport(result: FullResult, allResults: TestEntry[], passed: number, failed: number, skipped: number, totalDuration: number) {
+    const date = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+    const passRate = allResults.length > 0 ? ((passed / allResults.length) * 100).toFixed(1) : '0';
+    const statusColor = failed === 0 ? '#22c55e' : '#ef4444';
+    const statusText = failed === 0 ? 'ALL PASSED' : `${failed} FAILED`;
+
+    // CI/Environment info
+    const pipelineUrl = process.env.CI_PIPELINE_URL || '';
+    const browser = 'Chromium';
+    const env = (process.env.ENV || 'stage').toUpperCase();
+
+    // Group tests by spec file
+    const specMap = new Map<string, TestEntry[]>();
+    for (const t of allResults) {
+      const list = specMap.get(t.file) || [];
+      list.push(t);
+      specMap.set(t.file, list);
+    }
+
+    // Build failed rows: Spec File | Test Case | Steps | Error | Screenshot | Status
+    const failedEntries: { file: string; title: string; steps: number; error: string; screenshotPath?: string }[] = [];
+    const passedFileData: { file: string; testCount: number; totalSteps: number }[] = [];
+
+    for (const [file, tests] of specMap) {
+      const failures = tests.filter(t => t.status === 'failed' || t.status === 'timedOut');
+      if (failures.length > 0) {
+        for (const t of failures) {
+          failedEntries.push({ file, title: t.title, steps: t.steps, error: t.error || '', screenshotPath: t.screenshotPath });
+        }
+      } else if (tests.some(t => t.status === 'passed')) {
+        const passedInFile = tests.filter(t => t.status === 'passed');
+        passedFileData.push({ file, testCount: passedInFile.length, totalSteps: passedInFile.reduce((sum, t) => sum + t.steps, 0) });
+      }
+    }
+
+    const totalSteps = allResults.reduce((sum, t) => sum + t.steps, 0);
+    const totalSpecs = specMap.size;
+
+    const failedRows = failedEntries
+      .map((t, i) => {
+        let ssHtml = '<td>—</td>';
+        if (t.screenshotPath) {
+          try {
+            const imgBuf = fs.readFileSync(t.screenshotPath);
+            const b64 = imgBuf.toString('base64');
+            ssHtml = `<td><img src="data:image/png;base64,${b64}" class="thumb" onclick="this.classList.toggle('expanded')" title="Click to expand"/></td>`;
+          } catch { ssHtml = '<td>—</td>'; }
+        }
+        return `<tr><td>${i + 1}</td><td>${this.escapeHtml(t.file)}</td><td>${this.escapeHtml(t.title)}</td><td>${t.steps}</td><td class="error">${this.escapeHtml(t.error)}</td>${ssHtml}<td class="fail">FAILED</td></tr>`;
+      })
+      .join('\n');
+
+    const passedRows = passedFileData
+      .map((f, i) => `<tr><td>${i + 1}</td><td>${f.file}</td><td>${f.testCount}</td><td>${f.totalSteps}</td><td class="pass">PASSED</td></tr>`)
+      .join('\n');
+
+    const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test Execution Report</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8fafc;color:#1e293b;padding:24px}
+  .header{text-align:center;margin-bottom:32px}
+  .header h1{font-size:24px;color:#0f172a}
+  .header p{color:#64748b;margin-top:4px}
+  .cards{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:32px}
+  .card{background:#fff;border-radius:12px;padding:20px 32px;box-shadow:0 1px 3px rgba(0,0,0,.1);text-align:center;min-width:140px}
+  .card .value{font-size:32px;font-weight:700}
+  .card .label{font-size:13px;color:#64748b;margin-top:4px}
+  .status-badge{display:inline-block;padding:6px 20px;border-radius:20px;color:#fff;font-weight:600;font-size:14px;margin-top:12px}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1);margin-bottom:24px}
+  th{background:#0f172a;color:#fff;padding:12px 16px;text-align:left;font-size:13px}
+  td{padding:10px 16px;border-bottom:1px solid #e2e8f0;font-size:13px}
+  tr:last-child td{border-bottom:none}
+  tr:hover{background:#f1f5f9}
+  .error{color:#dc2626;font-size:12px;max-width:400px;word-break:break-word}
+  .section-title{font-size:18px;font-weight:600;margin:32px 0 12px;padding-left:4px}
+  .pass{color:#16a34a;font-weight:600} .fail{color:#dc2626;font-weight:600}
+  .thumb{width:120px;height:auto;border-radius:6px;cursor:pointer;transition:all .3s;border:1px solid #e2e8f0}
+  .thumb:hover{transform:scale(1.05);box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  .thumb.expanded{width:600px;position:relative;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+  .meta-bar{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px;font-size:13px;color:#64748b}
+  .meta-bar a{color:#3b82f6;text-decoration:none}
+  .meta-bar a:hover{text-decoration:underline}
+  @media print{body{padding:12px}.cards{gap:8px}}
+</style></head>
+<body>
+<div class="header">
+  <h1>ATI UI Automation — Test Execution Report</h1>
+  <p>${date} &nbsp;|&nbsp; Duration: ${this.formatDuration(totalDuration)}</p>
+  <div class="status-badge" style="background:${statusColor}">${statusText}</div>
+</div>
+<div class="meta-bar">
+  <span>Environment: <strong>${env}</strong></span>
+  <span>Browser: <strong>${browser}</strong></span>
+  ${pipelineUrl ? `<span>Pipeline: <a href="${pipelineUrl}" target="_blank">${pipelineUrl.split('/').pop()}</a></span>` : ''}
+</div>
+<div class="cards">
+  <div class="card"><div class="value">${totalSpecs}</div><div class="label">Spec Files</div></div>
+  <div class="card"><div class="value">${allResults.length}</div><div class="label">Test Cases</div></div>
+  <div class="card"><div class="value">${totalSteps}</div><div class="label">Total Steps</div></div>
+  <div class="card"><div class="value pass">${passed}</div><div class="label">Passed</div></div>
+  <div class="card"><div class="value fail">${failed}</div><div class="label">Failed</div></div>
+  <div class="card"><div class="value">${skipped}</div><div class="label">Skipped</div></div>
+  <div class="card"><div class="value">${passRate}%</div><div class="label">Pass Rate</div></div>
+</div>
+${failedRows ? `<div class="section-title fail">❌ Failed</div>
+<table><thead><tr><th>#</th><th>Spec File</th><th>Test Case</th><th>Steps</th><th>Error</th><th>Screenshot</th><th>Status</th></tr></thead><tbody>${failedRows}</tbody></table>` : ''}
+<div class="section-title pass">✅ Passed</div>
+<table><thead><tr><th>#</th><th>Spec File</th><th>Test Cases</th><th>Steps</th><th>Status</th></tr></thead><tbody>${passedRows || '<tr><td colspan="5">No fully passed spec files</td></tr>'}</tbody></table>
+</body></html>`;
+
+    const reportDir = path.resolve('playwright-report');
+    fs.mkdirSync(reportDir, { recursive: true });
+    const reportPath = path.join(reportDir, 'test-summary.html');
+    fs.writeFileSync(reportPath, html, 'utf-8');
+    console.log(`📊 Summary report saved: ${reportPath}`);
+  }
+
+  private escapeHtml(text: string): string {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   private formatDuration(ms: number): string {

@@ -335,6 +335,15 @@ export class AssessmentPage {
   };
 
 
+   validateAssessmentName1 = async (expectedAssessmentName: string): Promise<string> => {
+    await this.assertions.waitAndAssertVisible(this.locators.ippAssessmentName1, 30000);
+    const assessmentNameText = await this.locators.ippAssessmentName1.textContent();
+    const trimmedName = (assessmentNameText ?? '').trim();
+    this.assertions.assertStringContains(trimmedName, expectedAssessmentName);
+    this.logger?.success(`✅ Assessment name validated: "${trimmedName}"`);
+    return trimmedName;
+  };
+
 
   smartAnswerAssessment = async (
     jsonFileName: string,

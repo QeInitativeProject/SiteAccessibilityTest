@@ -31,9 +31,10 @@ cache:
   artifacts:
     when: always
     paths:
-      - playwright-report/
-      - monocart-report/
-      - test-results/
+      - playwright-report/test-summary.html
+      - test-results/logs/
+      - test-results/Failed_screenshots/
+      - test-results/success-screenshots/
     expose_as: 'Test Report'
     expire_in: 7 days
 
