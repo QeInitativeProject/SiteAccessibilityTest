@@ -400,11 +400,11 @@ export class FACHomePage {
   };
 
   approveByProctor = async () => {
-    await this.page.locator('//span[text()="APPROVE"]').click();
+    await this.page.locator('//span[text()="APPROVE" or text()="RESUME"]').click();
   };
 
   startTest = async () => {
-    await this.page.locator('//span[text()="START TEST"]').click();
+    await this.page.locator('(//button[@aria-label="Start or Resume Assessment"])[1]').click();
     await this.page.locator('//button[@onclick="closeEnterFullscreenDialog()"]').click();
   };
 

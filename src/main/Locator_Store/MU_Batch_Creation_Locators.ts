@@ -34,6 +34,7 @@ export class MU_Batch_Creation_Locators {
   readonly assessmentsIframe: Locator;
   readonly assessmentsFrameLocator: FrameLocator;
   readonly addNewAssessmentButton: Locator;
+  readonly addspecificAssessmentButton: Locator;
 
   // Dropdown locators
   readonly assessmentDropdown: Locator;
@@ -91,6 +92,9 @@ export class MU_Batch_Creation_Locators {
     this.assessmentsFrameLocator = page.frameLocator('#ctl00_CPHolder_assessmentsIframe');
     this.addNewAssessmentButton = this.assessmentsFrameLocator.getByRole('button', {
       name: 'Add New Assessment',
+    });
+    this.addspecificAssessmentButton = this.assessmentsFrameLocator.getByRole('button', {
+      name: 'Add Specific Assessment Form',
     });
 
     // Dropdown locators

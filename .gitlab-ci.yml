@@ -1,6 +1,7 @@
 stages:
   - test
   - report
+  - notify
 
 variables:
   npm_config_cache: "$CI_PROJECT_DIR/.npm"
@@ -31,7 +32,11 @@ cache:
   artifacts:
     when: always
     paths:
+      - playwright-report/
       - playwright-report/test-summary.html
+      - allure-results/
+      - monocart-report/
+      - test-results/
       - test-results/logs/
       - test-results/Failed_screenshots/
       - test-results/success-screenshots/
@@ -60,6 +65,20 @@ cache:
   allow_failure: true
 
 # ==================== SUITE-LEVEL JOBS (Run All Tests by Environment) ====================
+
+# ==================== AUTO-TRIGGERED ON MERGE TO MAIN ====================
+ATI_Regression_OnMerge_Main:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "🔬 Running Regression Tests (triggered by merge to main)..."
+    - npx playwright test --grep @regression src/test/TestScript/Regression --workers=100%
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      when: always
+  allow_failure: true
 
 # ==================== AUTO-TRIGGERED BY UPSTREAM DEV PIPELINE ====================
 ATI_Smoke_Stage:
@@ -471,24 +490,93 @@ consolidated_report:
     - when: always  # Run after ANY job in previous stage completes
   allow_failure: true
 
-# ==================== GITLAB PAGES (AUTO-HOST REPORT) ====================
+# ==================== ALLURE REPORT ====================
+allure_report:
+  stage: report
+  image: mcr.microsoft.com/playwright:v1.57.0-jammy
+  needs:
+    - job: ATI_Regression_OnMerge_Main
+      artifacts: true
+      optional: true
+    - job: ATI_Smoke_Stage
+      artifacts: true
+      optional: true
+    - job: ATI_Regression_Stage_Manual
+      artifacts: true
+      optional: true
+  script:
+    - echo "📊 Generating Allure Report..."
+    - npm install -g allure-commandline --save-dev || true
+    - npx allure generate allure-results --clean -o public/allure-report
+    - echo "✅ Allure report generated at public/allure-report"
+  artifacts:
+    when: always
+    paths:
+      - public/allure-report/
+    expose_as: 'Allure Report'
+    expire_in: 30 days
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      when: always
+    - when: manual
+  allow_failure: true
+
+# ==================== GITLAB PAGES - ALLURE ====================
 pages:
   stage: report
   image: alpine:latest
   needs:
-    - job: consolidated_report
+    - job: allure_report
       artifacts: true
   script:
-    - echo "🌐 Publishing test reports to GitLab Pages..."
-    - echo "✅ Report will be live at your project's Pages URL"
+    - echo "🌐 Publishing Allure report to GitLab Pages..."
+    - mkdir -p public
+    - echo '<!DOCTYPE html><html><head><title>Test Reports</title><meta http-equiv="refresh" content="0; url=allure-report/index.html"></head><body><p>Redirecting to <a href="allure-report/index.html">Allure Report</a>...</p></body></html>' > public/index.html
+    - echo "✅ Report will be live at ${CI_PAGES_URL}"
   artifacts:
     paths:
       - public
     expire_in: 7 days
   rules:
-    - if: '$CI_COMMIT_BRANCH == "regression-automation"'
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       when: on_success
-    - when: never
+    - when: manual
+  allow_failure: true
+
+# ==================== EMAIL NOTIFICATION ====================
+notify:email:
+  stage: notify
+  image: alpine:latest
+  needs:
+    - job: allure_report
+      artifacts: false
+  before_script:
+    - apk add --no-cache curl || true
+  script:
+    - |
+      echo "📧 Sending email notification..."
+      REPORT_URL="${CI_PAGES_URL}/allure-report/index.html"
+      PIPELINE_URL="${CI_PROJECT_URL}/-/pipelines/${CI_PIPELINE_ID}"
+      
+      # Use GitLab API to send notification (works without SMTP setup)
+      curl --request POST \
+        --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/commits/${CI_COMMIT_SHA}/comments" \
+        --form "note=## 📊 Test Execution Complete
+        
+      **Pipeline:** [#${CI_PIPELINE_ID}](${PIPELINE_URL})  
+      **Branch:** ${CI_COMMIT_REF_NAME}  
+      **Allure Report:** [View Report](${REPORT_URL})  
+      **Triggered by:** ${GITLAB_USER_NAME}
+      " || echo "⚠️ Could not post comment via API"
+      
+      echo "✅ Notification sent!"
+      echo "📊 Allure Report URL: ${REPORT_URL}"
+      echo "🔗 Pipeline URL: ${PIPELINE_URL}"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      when: always
+    - when: manual
   allow_failure: true
 
 # ==================== WORKFLOW RULES ====================

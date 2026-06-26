@@ -39,6 +39,21 @@ export class MU_Common_Methods {
     this.logger?.success('Sign in button clicked - login attempt complete');
   }
 
+    async loginToApplicationForTeas(): Promise<void> {
+    this.logger?.step('Logging into MU application');
+    await this.page.goto(process.env.baseUrl_MU || '');
+    this.logger?.info(`Navigated to: ${process.env.baseUrl_MU}`);
+
+    await this.locators.usernameInput.fill(process.env.muUserNameForTeas || '');
+    this.logger?.debug('Username entered');
+
+    await this.locators.passwordInput.fill(process.env.muUserPasswordForTeas || '');
+    this.logger?.debug('Password entered');
+
+    await this.locators.signInButton.click();
+    this.logger?.success('Sign in button clicked - login attempt complete');
+  }
+
   async assertNavigationUrl(expected: string | RegExp): Promise<void> {
     this.logger?.step(`Asserting navigation to URL pattern: ${expected}`);
     await expect(this.page).toHaveURL(expected);

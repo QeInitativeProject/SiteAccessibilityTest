@@ -375,10 +375,162 @@ export class MyATIPage {
    */
   clickAssessmentButton = async (assessmentName: string): Promise<void> => {
     const card = this.page.locator(`section.practice-assessment:has(div.description:text-is("${assessmentName}"))`);
-    const button = card.locator('a[data-atiid^="startAction_"], a[data-atiid^="continueAction_"], a[data-atiid^="retakeAction_"]').filter({ visible: true }).first();
+    const button = card.locator('a[data-atiid^="startAction_"], a[data-atiid^="continueAction_"], a[data-atiid^="retakeAction_"],a[aria-labelledby^="begin"]').filter({ visible: true }).first();
     await button.waitFor({ state: 'visible', timeout: 10000 });
     await button.click();
     this.logger?.success(`Clicked "${(await button.textContent())?.trim()}" for assessment "${assessmentName}"`);
+  };
+
+  /**
+   * Click on a proctored assessment button (Begin/Continue/Retake) by assessment name.
+   * If multiple instances popup appears, selects the one matching the given batchId.
+   * @param assessmentName - Exact name of the proctored assessment (e.g., 'AR Testing 1')
+   * @param batchId - The batch ID to select from multiple instances popup
+   */
+  clickOnProctoredAvailableAssessment = async (assessmentName: string, batchId?: string): Promise<void> => {
+    const card = this.page.locator(`li.flipper:has(section.proctored-assessment) :has(div.description:text-is("${assessmentName}"))`);
+    await card.first().waitFor({ state: 'visible', timeout: 15000 });
+    const button = card.locator('a[data-atiid^="startAction_"], a[data-atiid^="continueAction_"], a[data-atiid^="retakeAction_"]').filter({ visible: true }).first();
+    await button.waitFor({ state: 'visible', timeout: 10000 });
+    await button.click();
+    this.logger?.success(`Clicked "${(await button.textContent())?.trim()}" for proctored assessment "${assessmentName}"`);
+
+    // Handle multiple instances popup if it appears
+    const popup = this.page.locator('#selectInstanceContainerProctored');
+    const popupVisible = await popup.isVisible({ timeout: 5000 }).catch(() => false);
+    if (popupVisible && batchId) {
+      this.logger?.step(`Multiple instances popup detected, selecting batch ID: ${batchId}`);
+      // Find the list item containing the matching batch ID
+      const batchItem = popup.locator(`li:has(span:text("ID: ${batchId}"))`);
+      await batchItem.waitFor({ state: 'visible', timeout: 10000 });
+      // Click the visible action button (Begin/Continue/Retake) for that batch
+      const actionBtn = batchItem.locator('.duplicate-action-proctored a.button.primary-button, .duplicate-action-proctored a.secondary-button').filter({ visible: true }).first();
+      await actionBtn.waitFor({ state: 'visible', timeout: 10000 });
+      const btnText = (await actionBtn.textContent())?.trim();
+      await actionBtn.click();
+      this.logger?.success(`Selected batch ${batchId}: clicked "${btnText}"`);
+    } else if (popupVisible) {
+      this.logger?.step('Multiple instances popup detected, selecting first available');
+      const firstBtn = popup.locator('.duplicate-action-proctored a.button.primary-button').filter({ visible: true }).first();
+      await firstBtn.waitFor({ state: 'visible', timeout: 10000 });
+      await firstBtn.click();
+      this.logger?.success('Selected first available instance');
+    }
+  };
+
+  /**
+   * Get assessment name from the assessment page header and validate it matches expected
+   * @param expectedName - The expected assessment name to validate against
+   */
+  getAndValidateAssessmentName = async (expectedName: string): Promise<string> => {
+    const assessmentNameSpan = this.page.locator('span[data-bind="text: AssessmentName"]');
+    await assessmentNameSpan.waitFor({ state: 'visible', timeout: 15000 });
+    // Wait for Knockout.js to populate the text (data-bind fires after page load)
+    let actualName = '';
+    for (let attempt = 0; attempt < 20; attempt++) {
+      actualName = (await assessmentNameSpan.textContent())?.trim() ?? '';
+      if (actualName.length > 0) break;
+      await this.page.waitForTimeout(500);
+    }
+    if (actualName !== expectedName) {
+      throw new Error(`Assessment name mismatch! Expected: "${expectedName}", Got: "${actualName}"`);
+    }
+    this.logger?.success(`Assessment name validated: "${actualName}"`);
+    return actualName;
+  };
+
+  /**
+   * Validate that minutes spent is not 00:00
+   */
+  validateMinutesSpent = async (): Promise<string> => {
+    const minutesSpan = this.page.locator('span[data-bind="text: MinutesSpent"]');
+    await minutesSpan.waitFor({ state: 'visible', timeout: 15000 });
+    let actualMinutes = '';
+    for (let attempt = 0; attempt < 20; attempt++) {
+      actualMinutes = (await minutesSpan.textContent())?.trim() ?? '';
+      if (actualMinutes.length > 0) break;
+      await this.page.waitForTimeout(500);
+    }
+    if (actualMinutes === '00:00' || actualMinutes.length === 0) {
+      throw new Error(`Minutes spent should not be 00:00, Got: "${actualMinutes}"`);
+    }
+    this.logger?.success(`Minutes spent validated: ${actualMinutes} (not 00:00)`);
+    return actualMinutes;
+  };
+
+  /**
+   * Validate the individual total score percentage
+   * @returns The percentage score text
+   */
+  validateIndividualTotalScore = async (): Promise<string> => {
+    const scoreSpan = this.page.locator('span[data-bind*="numericText: PercentageScore"]');
+    await scoreSpan.waitFor({ state: 'visible', timeout: 15000 });
+    let score = '';
+    for (let attempt = 0; attempt < 20; attempt++) {
+      score = (await scoreSpan.textContent())?.trim() ?? '';
+      if (score.length > 0) break;
+      await this.page.waitForTimeout(500);
+    }
+    if (score.length === 0) {
+      throw new Error('Individual total score is empty');
+    }
+    this.logger?.success(`Individual total score validated: "${score}%"`);
+    return score;
+  };
+
+  /**
+   * Validate that the close/exit button is functional
+   */
+  validateCloseButtonFunctional = async (): Promise<void> => {
+    const closeBtn = this.page.locator('a[data-atiid="exitAction"]');
+    await closeBtn.waitFor({ state: 'visible', timeout: 15000 });
+    const isEnabled = await closeBtn.isEnabled();
+    if (!isEnabled) {
+      throw new Error('Close button is not enabled');
+    }
+    this.logger?.success('Close button is visible and functional');
+  };
+
+  /**
+   * Validate the test completed date matches today's date
+   */
+  validateTestCompletedDate = async (): Promise<string> => {
+    const dateSpan = this.page.locator('span[data-bind="text: TestDate"]');
+    await dateSpan.waitFor({ state: 'visible', timeout: 15000 });
+    let actualDate = '';
+    for (let attempt = 0; attempt < 20; attempt++) {
+      actualDate = (await dateSpan.textContent())?.trim() ?? '';
+      if (actualDate.length > 0) break;
+      await this.page.waitForTimeout(500);
+    }
+    if (actualDate.length === 0) {
+      throw new Error('Test completed date is empty');
+    }
+    // Check that the date contains today's date components (handles both M/D/YYYY and MM/DD/YYYY)
+    const today = new Date();
+    const month = String(today.getMonth() + 1);
+    const day = String(today.getDate());
+    const year = String(today.getFullYear());
+    if (!actualDate.includes(month) || !actualDate.includes(day) || !actualDate.includes(year)) {
+      throw new Error(`Test date mismatch! Expected today (${month}/${day}/${year}), Got: "${actualDate}"`);
+    }
+    this.logger?.success(`Test completed date validated: "${actualDate}"`);
+    return actualDate;
+  };
+
+  /**
+   * Validate that the URL contains a unique attempt ID after /ViewResult/
+   * @returns The attempt ID extracted from the URL
+   */
+  validateAttemptIdInUrl = async (): Promise<string> => {
+    const currentUrl = this.page.url();
+    const match = currentUrl.match(/\/ViewResult\/(\d+)/);
+    if (!match || !match[1]) {
+      throw new Error(`Attempt ID not found in URL! Current URL: "${currentUrl}"`);
+    }
+    const attemptId = match[1];
+    this.logger?.success(`Attempt ID validated in URL: ${attemptId}`);
+    return attemptId;
   };
 
   clickOnFlagButton = async (): Promise<void> => {
@@ -430,7 +582,7 @@ export class MyATIPage {
     }
     throw new Error(`"${name}" is not draggable. No drag attributes or cursor:move style found.`);
   }
-  /**
+   /**
    * Add product for a proctored assessment (batch ID only, no password).
    * Handles blockUI overlay, navigates to My ATI tab, opens Add Product dialog,
    * enters batch ID and clicks Continue.
@@ -592,6 +744,120 @@ export class MyATIPage {
     // await batchIdContinueButton.waitFor({ state: 'visible', timeout: 15000 });
     await batchIdContinueButton.click();
     this.logger?.success(`✅ Clicked Continue for batch ID: ${batchId}`);
+  };
+
+
+  /**
+   * Click on a specific assessment button (Begin/Continue/Retake) by assessment name
+   * @param assessmentName - Exact name of the assessment (e.g., 'All item_Neeraj')
+   * @param buttonText - Button text to click: 'Begin', 'Continue', or 'Retake'
+   */
+  clickOnResultButton = async (assessmentName: string): Promise<void> => {
+    const card = this.page.locator(`section.practice-assessment:has(div.description:text-is("${assessmentName}"))`);
+    const button = card.locator('a[data-atiid^="result"]').filter({ visible: true }).first();
+    await button.waitFor({ state: 'visible', timeout: 10000 });
+    await button.click();
+  };
+
+  /**
+   * Expire the session token by clearing all cookies and session/local storage.
+   * Simulates a session timeout scenario — the next page action should trigger a login redirect or 401.
+   */
+  expireSessionToken = async (): Promise<void> => {
+    this.logger?.step('Expiring session token (clearing cookies and storage)');
+
+    // Clear all browser cookies for the current context
+    const context = this.page.context();
+    await context.clearCookies();
+    this.logger?.success('All cookies cleared');
+
+    // Clear localStorage and sessionStorage
+    await this.page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+    this.logger?.success('localStorage and sessionStorage cleared');
+
+    this.logger?.success('✅ Session token expired — next action should trigger re-authentication');
+  };
+
+  /**
+   * Opens an assessment, waits for it to fully load (assessment frame visible),
+   * then opens a NEW browser window (separate context) and logs in to open the same assessment.
+   * This triggers "Multiple Device Detected" message since both windows have independent sessions.
+   * Steps:
+   * 1. Clicks on My ATI > Assessments > Assessment button to open the assessment
+   * 2. Waits for the assessment iframe to fully load (question visible)
+   * 3. Waits 5 seconds
+   * 4. Opens a NEW browser window (new context) — does NOT share cookies with first window
+   * 5. Logs in as same student in the new window
+   * 6. Navigates to same assessment and clicks it
+   * 7. Verifies "Multiple Device Detected" message appears
+   */
+  verifyMultipleDeviceDetection = async (assessmentName: string): Promise<{ newPage: import('@playwright/test').Page; message: string }> => {
+    this.logger?.step('Verifying multiple device detection');
+
+    // Step 1: Open the assessment in the first window
+    await this.clickOnMyATITab();
+    await this.clickOnAssessmentsTabOnMyAti();
+    await this.clickAssessmentButton(assessmentName);
+
+    // Step 2: Wait for the assessment to fully load (iframe and question visible)
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.page.waitForSelector('#assessmentFrame', { state: 'attached', timeout: 30000 });
+    const assessmentFrame = this.page.frameLocator('#assessmentFrame');
+    await assessmentFrame.locator('body').first().waitFor({ state: 'visible', timeout: 30000 });
+    this.logger?.success(`Assessment "${assessmentName}" fully loaded in first window`);
+
+    // Step 3: Wait 5 seconds to ensure assessment session is fully established on server
+    await this.page.waitForTimeout(5000);
+    this.logger?.success('Waited 5 seconds - assessment session established');
+
+    // Step 4: Open a NEW browser window (new context — independent session)
+    const browser = this.page.context().browser()!;
+    const newContext = await browser.newContext();
+    const newPage = await newContext.newPage();
+
+    // Step 5: Login as the same student in the new window
+    await newPage.goto(process.env.baseUrl!);
+    await newPage.waitForLoadState('load');
+    const usernameField = newPage.getByRole('textbox', { name: 'Username' });
+    await usernameField.click();
+    await usernameField.fill('');
+    await usernameField.type(process.env.stuUsername!);
+    const passwordField = newPage.getByRole('textbox', { name: 'Password' });
+    await passwordField.click();
+    await passwordField.fill('');
+    await passwordField.type(process.env.stuPassword!);
+    await newPage.getByRole('button', { name: /^Log ?In$/i }).click();
+    await newPage.waitForLoadState('load');
+    this.logger?.success('Logged in as same student in second window');
+
+    // Step 6: Wait 10 seconds after login on new window
+    await newPage.waitForTimeout(10000);
+    this.logger?.success('Waited 10 seconds after login on second window');
+
+    // Step 7: Switch back to the first window and check for the multi-session message
+    await this.page.bringToFront();
+    this.logger?.step('Switched back to first window');
+
+    // Wait for the "Multiple Active Test Sessions Detected" dialog in the assessment frame
+    const assessmentFrameCheck = this.page.frameLocator('#assessmentFrame');
+    const multiSessionTitle = assessmentFrameCheck.locator('#end-assessment-confirm-title');
+    await multiSessionTitle.waitFor({ state: 'visible', timeout: 15000 });
+    const messageText = await multiSessionTitle.textContent() || '';
+    this.logger?.success(`✅ Multiple device detected message on first window: "${messageText.trim()}"`);
+
+    return { newPage, message: messageText.trim() };
+  };
+
+  /**
+   * Verify that the Individual Performance Profile (IIP) page is visible.
+   */
+  verifyIIPPageVisible = async (): Promise<void> => {
+    const iipHeader = this.page.locator('h1[aria-label="Individual Performance Profile"]');
+    await iipHeader.waitFor({ state: 'visible', timeout: 30000 });
+    this.logger?.success('✅ IIP (Individual Performance Profile) page is visible');
   };
 
   /**
