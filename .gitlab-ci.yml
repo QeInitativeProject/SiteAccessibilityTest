@@ -504,6 +504,8 @@ allure_report:
     - job: ATI_Regression_Stage_Manual
       artifacts: true
       optional: true
+  before_script:
+    - apt-get update && apt-get install -y default-jre-headless
   script:
     - echo "📊 Generating Allure Report..."
     - npm install -g allure-commandline --save-dev || true
