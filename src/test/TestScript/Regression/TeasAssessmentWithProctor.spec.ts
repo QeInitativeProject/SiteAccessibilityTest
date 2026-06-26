@@ -7,6 +7,7 @@
  */
 
 import { test } from '@playwright/test';
+import { allure } from 'allure-playwright';
 import { createTestSuite } from '@utils/TestSetup';
 import { ProctorUtility } from '@utils/Proctorutillity';
 import { LoginPage } from '@delegates/LoginPage';
@@ -15,7 +16,7 @@ import { QuestionHandler } from '@utils/QuestionHandler';
 import { FACHomePage } from '@delegates/FACHomePage';
 import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators';
 
-const ASSESSMENT_NAME ='ATI TEAS Automation Set 1 AR Proctored';
+const ASSESSMENT_NAME = process.env.ProctoredAssessmentForTeas || '';
 const INSTITUTION = process.env.Institution_zzcab || '';
 
 
@@ -28,6 +29,10 @@ createTestSuite({
 
   test('TC1: Start proctoring and student takes assessment', async ({}, testInfo) => {
     test.setTimeout(900000);
+    await allure.epic('Proctored Assessment');
+    await allure.feature('TEAS Assessment');
+    await allure.story('Start Proctoring and Complete Assessment');
+
     const { page, logger, batchCreation, assertions ,myATIPage} = getCtx(testInfo, 'TC1');
     const proctorUtil = new ProctorUtility(page, testInfo);
 
@@ -75,6 +80,8 @@ createTestSuite({
 
       // Navigate to assessment and start it
       const studentATI = new MyATIPage(studentPage, testInfo);
+      await studentPage.waitForLoadState('load');
+      await studentPage.waitForLoadState('domcontentloaded');
       await studentATI.clickOnMyATITab();
       await studentATI.clickOnAssessmentsTabOnMyAti();
       await studentATI.clickOnAddProduct();
@@ -121,10 +128,19 @@ createTestSuite({
 
   test('TC2: Verify Go back to the last question from popup', async ({}, testInfo) => {
     test.setTimeout(900000);
+    await allure.epic('Proctored Assessment');
+    await allure.feature('TEAS Assessment');
+    await allure.story('Go Back to Last Question');
+
     const { page, logger, batchCreation, assertions } = getCtx(testInfo, 'TC2');
     const proctorUtil = new ProctorUtility(page, testInfo);
 
     try {
+      // Reset faculty page to home before starting TC2
+      await page.goto(process.env.baseUrl!);
+      await page.waitForLoadState('load');
+      await page.waitForLoadState('domcontentloaded');
+
       // === STEP 1: Create MU Batch to get Assessment ID ===
       logger.separator('BATCH CREATION');
       const stopTimer = logger.startTimer('Batch creation');

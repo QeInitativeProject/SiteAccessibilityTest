@@ -44,7 +44,14 @@ export default defineConfig({
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['allure-playwright'],
+    ['allure-playwright', {
+      detail: true,
+      suiteTitle: true,
+      environmentInfo: {
+        ENV: process.env.ENV || 'stage',
+        BASE_URL: process.env.baseUrl || '',
+      },
+    }],
   ],
 
   timeout: 20 * 60000,

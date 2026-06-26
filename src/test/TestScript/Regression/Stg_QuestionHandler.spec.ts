@@ -6,6 +6,7 @@
 import { test } from '@playwright/test';
 import { createTestSuite } from '@utils/TestSetup';
 import { QuestionHandler } from '@utils/QuestionHandler';
+import { MyATIPage } from '@delegates/MyATIPage';
 
 createTestSuite({
   suiteName: '@regression Stg_QuestionHandler',
@@ -18,7 +19,8 @@ createTestSuite({
     test.setTimeout(600000); 
     const { page, assertions, locators, myATIPage, logger } = getCtx(testInfo, 'TC1');
     try {
-       await page.waitForLoadState('load');
+      await page.waitForLoadState('load');
+      await page.waitForLoadState('domcontentloaded');
       await myATIPage.clickOnMyATITab();
       await myATIPage.clickOnAssessmentsTabOnMyAti();
       await myATIPage.clickAssessmentButton("All item_Neeraj");
@@ -45,6 +47,7 @@ createTestSuite({
       await questionHandler.answerAllQuestionsWithFeedback('UnifiedQuestions.json', 'STAGE', 4);
       logger.success('TC2 PASS: All 4 sections answered with feedback');
       await page.waitForLoadState('load');
+      await page.waitForLoadState('domcontentloaded');
       await myATIPage.getAndValidateAssessmentName("ATI TEAS Online Practice B");
       logger.success('TC3 PASS: Validated the assessment name after completion');
       await myATIPage.validateMinutesSpent();

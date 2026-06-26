@@ -134,7 +134,7 @@ export class BatchCreation {
     const muLocators = new MU_Batch_Creation_Locators(this.muPage);
 
     this.logger?.step('Logging into MU application');
-    await muLoginPage.loginToApplication();
+    await muLoginPage.loginToApplicationForTeas();
     await muLoginPage.assertNavigationToUrl(/main\.aspx$/);
 
     this.logger?.step('Navigating to Manage Assessments');
