@@ -520,33 +520,91 @@ notify:email:
   image: alpine:latest
   needs:
     - job: allure_report
-      artifacts: false
+      artifacts: true
   before_script:
-    - apk add --no-cache curl || true
+    - apk add --no-cache curl jq || true
   script:
     - |
-      echo "📧 Sending email notification..."
+      echo "📧 Sending notifications..."
       REPORT_URL="${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_REF_NAME}/file/allure-report/index.html?job=allure_report"
       PIPELINE_URL="${CI_PROJECT_URL}/-/pipelines/${CI_PIPELINE_ID}"
+      TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+      PAGE_TITLE="Test Report - ${CI_COMMIT_REF_NAME} - Pipeline #${CI_PIPELINE_ID} - ${TIMESTAMP}"
+
+      # --- Upload to Confluence ---
+      echo "📄 Uploading report to Confluence..."
       
-            curl --request POST \
+      # Create a child page under the parent page
+      PAGE_BODY="<h2>Test Execution Report</h2>
+      <table>
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Pipeline</td><td><a href=\"${PIPELINE_URL}\">#${CI_PIPELINE_ID}</a></td></tr>
+        <tr><td>Branch</td><td>${CI_COMMIT_REF_NAME}</td></tr>
+        <tr><td>Triggered by</td><td>${GITLAB_USER_NAME}</td></tr>
+        <tr><td>Timestamp</td><td>${TIMESTAMP}</td></tr>
+        <tr><td>Allure Report</td><td><a href=\"${REPORT_URL}\">Download Report</a></td></tr>
+      </table>
+      <p><em>The Allure HTML report is attached to this page. Download and open in a browser.</em></p>"
+
+      # Create the page
+      RESPONSE=$(curl --silent --request POST \
+        --url "${CONFLUENCE_URL}/rest/api/content" \
+        --user "${CONFLUENCE_USER}:${CONFLUENCE_TOKEN}" \
+        --header "Content-Type: application/json" \
+        --data "{
+          \"type\": \"page\",
+          \"title\": \"${PAGE_TITLE}\",
+          \"ancestors\": [{\"id\": ${CONFLUENCE_PARENT_PAGE_ID}}],
+          \"space\": {\"key\": \"${CONFLUENCE_SPACE_KEY}\"},
+          \"body\": {
+            \"storage\": {
+              \"value\": \"${PAGE_BODY}\",
+              \"representation\": \"storage\"
+            }
+          }
+        }")
+      
+      PAGE_ID=$(echo "$RESPONSE" | jq -r '.id // empty')
+      
+      if [ -n "$PAGE_ID" ]; then
+        echo "✅ Confluence page created: ${PAGE_ID}"
+        CONFLUENCE_PAGE_URL="${CONFLUENCE_URL}/spaces/${CONFLUENCE_SPACE_KEY}/pages/${PAGE_ID}"
+        
+        # Attach the Allure report HTML to the page
+        if [ -f "allure-report/index.html" ]; then
+          curl --silent --request POST \
+            --url "${CONFLUENCE_URL}/rest/api/content/${PAGE_ID}/child/attachment" \
+            --user "${CONFLUENCE_USER}:${CONFLUENCE_TOKEN}" \
+            --header "X-Atlassian-Token: nocheck" \
+            --form "file=@allure-report/index.html" \
+            --form "comment=Allure Report - Pipeline #${CI_PIPELINE_ID}" || echo "⚠️ Failed to attach report"
+          echo "✅ Report attached to Confluence page"
+        fi
+      else
+        echo "⚠️ Could not create Confluence page: $RESPONSE"
+        CONFLUENCE_PAGE_URL="N/A"
+      fi
+
+      # --- Post GitLab commit comment ---
+      echo "💬 Posting GitLab commit comment..."
+      curl --request POST \
         --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
         "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/commits/${CI_COMMIT_SHA}/comments" \
         --form "note=## 📊 Test Execution Complete
-        
+      
       **Pipeline:** [#${CI_PIPELINE_ID}](${PIPELINE_URL})  
       **Branch:** ${CI_COMMIT_REF_NAME}  
       **Allure Report:** [Download Report](${REPORT_URL})  
+      **Confluence:** [View on Confluence](${CONFLUENCE_PAGE_URL})  
       **Triggered by:** ${GITLAB_USER_NAME}
       " || echo "⚠️ Could not post comment via API"
       
-      echo "✅ Notification sent!"
-      echo "📊 Allure Report URL: ${REPORT_URL}"
-      echo "🔗 Pipeline URL: ${PIPELINE_URL}"
+      echo "✅ All notifications sent!"
+      echo "📊 Allure Report: ${REPORT_URL}"
+      echo "📄 Confluence: ${CONFLUENCE_PAGE_URL}"
+      echo "🔗 Pipeline: ${PIPELINE_URL}"
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      when: always
-    - when: manual
+    - when: always
   allow_failure: true
 
 # ==================== WORKFLOW RULES ====================
