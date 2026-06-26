@@ -518,11 +518,8 @@ allure_report:
 notify:email:
   stage: notify
   image: alpine:latest
-  needs:
-    - job: allure_report
-      artifacts: true
   before_script:
-    - apk add --no-cache curl jq || true
+    - apk add --no-cache curl jq bc || true
   script:
     - |
       echo "📧 Sending notifications..."
