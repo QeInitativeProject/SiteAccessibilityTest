@@ -508,6 +508,7 @@ allure_report:
     when: always
     paths:
       - allure-report/index.html
+      - allure-results/
     expose_as: 'Allure Report'
     expire_in: 30 days
   rules:
@@ -518,6 +519,9 @@ allure_report:
 notify:email:
   stage: notify
   image: alpine:latest
+  needs:
+    - job: allure_report
+      artifacts: true
   before_script:
     - apk add --no-cache curl jq bc || true
   script:
@@ -553,8 +557,24 @@ notify:email:
         TEST_ROWS="${TEST_ROWS}<tr><td>${NAME}</td><td>${STATUS_ICON} ${STATUS}</td><td>${DURATION_S}s</td></tr>"
       done
 
-      # Build the page body with summary and detailed results
-      PAGE_BODY="<h2>📊 Test Execution Summary</h2><table><tr><th>Metric</th><th>Value</th></tr><tr><td>Total Tests</td><td>${TOTAL}</td></tr><tr><td>✅ Passed</td><td>${PASSED}</td></tr><tr><td>❌ Failed</td><td>${FAILED}</td></tr><tr><td>⚠️ Broken</td><td>${BROKEN}</td></tr><tr><td>⏭️ Skipped</td><td>${SKIPPED}</td></tr></table><h2>📋 Pipeline Info</h2><table><tr><th>Field</th><th>Value</th></tr><tr><td>Pipeline</td><td><a href=\\\"${PIPELINE_URL}\\\">#${CI_PIPELINE_ID}</a></td></tr><tr><td>Branch</td><td>${CI_COMMIT_REF_NAME}</td></tr><tr><td>Triggered by</td><td>${GITLAB_USER_NAME}</td></tr><tr><td>Timestamp</td><td>${TIMESTAMP}</td></tr></table><p><strong>💡 The full Allure HTML report is attached to this page (see Attachments below).</strong></p><h2>📝 Test Results</h2><table><tr><th>Test Name</th><th>Status</th><th>Duration</th></tr>${TEST_ROWS}</table>"
+      # Build the page body with enhanced Confluence UI
+      PASS_RATE=0
+      if [ "$TOTAL" -gt 0 ]; then
+        PASS_RATE=$(echo "scale=0; ${PASSED}*100/${TOTAL}" | bc 2>/dev/null || echo "0")
+      fi
+
+      if [ "$FAILED" -eq 0 ] && [ "$BROKEN" -eq 0 ]; then
+        STATUS_COLOR="Green"
+        STATUS_TITLE="ALL TESTS PASSED"
+      elif [ "$PASS_RATE" -ge 80 ]; then
+        STATUS_COLOR="Yellow"
+        STATUS_TITLE="SOME TESTS FAILED"
+      else
+        STATUS_COLOR="Red"
+        STATUS_TITLE="CRITICAL - MANY FAILURES"
+      fi
+
+      PAGE_BODY="<ac:structured-macro ac:name=\\\"panel\\\"><ac:parameter ac:name=\\\"borderColor\\\">${STATUS_COLOR}</ac:parameter><ac:parameter ac:name=\\\"titleBGColor\\\">${STATUS_COLOR}</ac:parameter><ac:parameter ac:name=\\\"title\\\">${STATUS_TITLE} - Pass Rate: ${PASS_RATE}%</ac:parameter><ac:rich-text-body><h2>Test Execution Summary</h2><table><tbody><tr><th style=\\\"text-align:center;background:#f4f5f7\\\">Total</th><th style=\\\"text-align:center;background:#e3fcef\\\">Passed</th><th style=\\\"text-align:center;background:#ffebe6\\\">Failed</th><th style=\\\"text-align:center;background:#fffae6\\\">Broken</th><th style=\\\"text-align:center;background:#f4f5f7\\\">Skipped</th></tr><tr><td style=\\\"text-align:center\\\"><strong>${TOTAL}</strong></td><td style=\\\"text-align:center\\\"><strong>${PASSED}</strong></td><td style=\\\"text-align:center\\\"><strong>${FAILED}</strong></td><td style=\\\"text-align:center\\\"><strong>${BROKEN}</strong></td><td style=\\\"text-align:center\\\"><strong>${SKIPPED}</strong></td></tr></tbody></table></ac:rich-text-body></ac:structured-macro><h2>Pipeline Info</h2><table><tbody><tr><th>Pipeline</th><td><a href=\\\"${PIPELINE_URL}\\\">#${CI_PIPELINE_ID} (Click to open in GitLab)</a></td></tr><tr><th>Branch</th><td>${CI_COMMIT_REF_NAME}</td></tr><tr><th>Triggered by</th><td>${GITLAB_USER_NAME}</td></tr><tr><th>Timestamp</th><td>${TIMESTAMP}</td></tr><tr><th>Pass Rate</th><td>${PASS_RATE}%</td></tr></tbody></table><h2>Test Results Detail</h2><table><tbody><tr><th>Test Name</th><th>Status</th><th>Duration</th></tr>${TEST_ROWS}</tbody></table>"
 
       # Create the page using jq to build valid JSON
       JSON_PAYLOAD=$(jq -n \
