@@ -535,34 +535,22 @@ notify:email:
       echo "📄 Uploading report to Confluence..."
       
       # Create a child page under the parent page
-      PAGE_BODY="<h2>Test Execution Report</h2>
-      <table>
-        <tr><th>Field</th><th>Value</th></tr>
-        <tr><td>Pipeline</td><td><a href=\"${PIPELINE_URL}\">#${CI_PIPELINE_ID}</a></td></tr>
-        <tr><td>Branch</td><td>${CI_COMMIT_REF_NAME}</td></tr>
-        <tr><td>Triggered by</td><td>${GITLAB_USER_NAME}</td></tr>
-        <tr><td>Timestamp</td><td>${TIMESTAMP}</td></tr>
-        <tr><td>Allure Report</td><td><a href=\"${REPORT_URL}\">Download Report</a></td></tr>
-      </table>
-      <p><em>The Allure HTML report is attached to this page. Download and open in a browser.</em></p>"
+      PAGE_BODY="<h2>Test Execution Report</h2><table><tr><th>Field</th><th>Value</th></tr><tr><td>Pipeline</td><td><a href=\\\"${PIPELINE_URL}\\\">#${CI_PIPELINE_ID}</a></td></tr><tr><td>Branch</td><td>${CI_COMMIT_REF_NAME}</td></tr><tr><td>Triggered by</td><td>${GITLAB_USER_NAME}</td></tr><tr><td>Timestamp</td><td>${TIMESTAMP}</td></tr><tr><td>Allure Report</td><td><a href=\\\"${REPORT_URL}\\\">Download Report</a></td></tr></table><p><em>The Allure HTML report is attached to this page. Download and open in a browser.</em></p>"
 
-      # Create the page
+      # Create the page using jq to build valid JSON
+      JSON_PAYLOAD=$(jq -n \
+        --arg type "page" \
+        --arg title "$PAGE_TITLE" \
+        --arg space "$CONFLUENCE_SPACE_KEY" \
+        --arg ancestor "$CONFLUENCE_PARENT_PAGE_ID" \
+        --arg body "$PAGE_BODY" \
+        '{type: $type, title: $title, ancestors: [{id: ($ancestor | tonumber)}], space: {key: $space}, body: {storage: {value: $body, representation: "storage"}}}')
+
       RESPONSE=$(curl --silent --request POST \
         --url "${CONFLUENCE_URL}/rest/api/content" \
         --user "${CONFLUENCE_USER}:${CONFLUENCE_TOKEN}" \
         --header "Content-Type: application/json" \
-        --data "{
-          \"type\": \"page\",
-          \"title\": \"${PAGE_TITLE}\",
-          \"ancestors\": [{\"id\": ${CONFLUENCE_PARENT_PAGE_ID}}],
-          \"space\": {\"key\": \"${CONFLUENCE_SPACE_KEY}\"},
-          \"body\": {
-            \"storage\": {
-              \"value\": \"${PAGE_BODY}\",
-              \"representation\": \"storage\"
-            }
-          }
-        }")
+        --data "$JSON_PAYLOAD")
       
       PAGE_ID=$(echo "$RESPONSE" | jq -r '.id // empty')
       
