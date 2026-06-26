@@ -132,12 +132,19 @@ function writeAllureEnvironment(): void {
   console.log('  📊 Allure environment.properties written');
 
   // Executor info - shown in Allure report executor widget
+  const jobName = process.env.CI_JOB_NAME || '';
+  const branch = process.env.CI_COMMIT_REF_NAME || '';
+  const pipelineId = process.env.CI_PIPELINE_ID || '';
+  const reportName = process.env.CI
+    ? `ATI UI Automation Report - ${jobName} | ${branch} | Pipeline #${pipelineId}`
+    : `ATI UI Automation Report - ${env.toUpperCase()}`;
+
   const executor = {
     name: process.env.CI ? 'CI Pipeline' : 'Local Machine',
     type: process.env.CI ? 'ci' : 'local',
-    buildName: `${env.toUpperCase()} - Playwright ${playwrightVersion}`,
+    buildName: process.env.CI ? `${jobName} - ${branch}` : `${env.toUpperCase()} - Playwright ${playwrightVersion}`,
     buildOrder: Date.now(),
-    reportName: `ATI UI Automation Report - ${env.toUpperCase()}`,
+    reportName,
   };
 
   fs.writeFileSync(path.join(allureResultsDir, 'executor.json'), JSON.stringify(executor, null, 2));

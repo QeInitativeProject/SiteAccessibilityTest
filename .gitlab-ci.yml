@@ -498,42 +498,21 @@ allure_report:
     - apt-get update && apt-get install -y default-jre-headless
   script:
     - echo "📊 Collecting allure-results from all test jobs..."
-    - ls allure-results/ 2>/dev/null && echo "✅ allure-results found" || echo "⚠️ No allure-results found"
-    - echo "📊 Generating Allure Report..."
+    - test -d "allure-results" && ls allure-results/*-result.json >/dev/null 2>&1 || { echo "❌ ERROR No allure-results found! Run a test job first."; exit 1; }
+    - echo "✅ allure-results found $(ls allure-results/*-result.json | wc -l) result files"
+    - echo "📊 Generating Single-File Allure Report..."
     - npm install -g allure-commandline --save-dev || true
-    - npx allure generate allure-results --clean -o public/allure-report
-    - echo "✅ Allure report generated at public/allure-report"
+    - npx allure generate allure-results --clean --single-file -o allure-report
+    - echo "✅ Allure single-page report generated at allure-report/index.html"
   artifacts:
     when: always
     paths:
-      - public/allure-report/
+      - allure-report/index.html
     expose_as: 'Allure Report'
     expire_in: 30 days
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       when: always
-    - when: manual
-  allow_failure: true
-
-# ==================== GITLAB PAGES - ALLURE ====================
-pages:
-  stage: report
-  image: alpine:latest
-  needs:
-    - job: allure_report
-      artifacts: true
-  script:
-    - echo "🌐 Publishing Allure report to GitLab Pages..."
-    - mkdir -p public
-    - echo '<!DOCTYPE html><html><head><title>Test Reports</title><meta http-equiv="refresh" content="0; url=allure-report/index.html"></head><body><p>Redirecting to <a href="allure-report/index.html">Allure Report</a>...</p></body></html>' > public/index.html
-    - echo "✅ Report will be live at ${CI_PAGES_URL}"
-  artifacts:
-    paths:
-      - public
-    expire_in: 7 days
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      when: on_success
     - when: manual
   allow_failure: true
 
@@ -549,18 +528,17 @@ notify:email:
   script:
     - |
       echo "📧 Sending email notification..."
-      REPORT_URL="${CI_PAGES_URL}/allure-report/index.html"
+      REPORT_URL="${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_REF_NAME}/file/allure-report/index.html?job=allure_report"
       PIPELINE_URL="${CI_PROJECT_URL}/-/pipelines/${CI_PIPELINE_ID}"
       
-      # Use GitLab API to send notification (works without SMTP setup)
-      curl --request POST \
+            curl --request POST \
         --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
         "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/commits/${CI_COMMIT_SHA}/comments" \
         --form "note=## 📊 Test Execution Complete
         
       **Pipeline:** [#${CI_PIPELINE_ID}](${PIPELINE_URL})  
       **Branch:** ${CI_COMMIT_REF_NAME}  
-      **Allure Report:** [View Report](${REPORT_URL})  
+      **Allure Report:** [Download Report](${REPORT_URL})  
       **Triggered by:** ${GITLAB_USER_NAME}
       " || echo "⚠️ Could not post comment via API"
       
