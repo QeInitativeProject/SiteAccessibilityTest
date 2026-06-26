@@ -527,20 +527,8 @@ pages:
   script:
     - echo "🌐 Publishing Allure report to GitLab Pages..."
     - mkdir -p public
-    - |
-      cat > public/index.html << 'EOF'
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Test Reports</title>
-        <meta http-equiv="refresh" content="0; url=allure-report/index.html">
-      </head>
-      <body>
-        <p>Redirecting to <a href="allure-report/index.html">Allure Report</a>...</p>
-      </body>
-      </html>
-      EOF
-    - echo "✅ Report will be live at: ${CI_PAGES_URL}"
+    - echo '<!DOCTYPE html><html><head><title>Test Reports</title><meta http-equiv="refresh" content="0; url=allure-report/index.html"></head><body><p>Redirecting to <a href="allure-report/index.html">Allure Report</a>...</p></body></html>' > public/index.html
+    - echo "✅ Report will be live at ${CI_PAGES_URL}"
   artifacts:
     paths:
       - public
