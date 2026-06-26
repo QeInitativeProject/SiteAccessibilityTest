@@ -494,17 +494,11 @@ consolidated_report:
 allure_report:
   stage: report
   image: mcr.microsoft.com/playwright:v1.57.0-jammy
-  needs:
-    - job: ATI_Regression_OnMerge_Main
-      artifacts: true
-      optional: true
-    - job: ATI_Smoke_Stage
-      artifacts: true
-      optional: true
-    - job: ATI_Regression_Stage_Manual
-      artifacts: true
-      optional: true
+  before_script:
+    - apt-get update && apt-get install -y default-jre-headless
   script:
+    - echo "📊 Collecting allure-results from all test jobs..."
+    - ls allure-results/ 2>/dev/null && echo "✅ allure-results found" || echo "⚠️ No allure-results found"
     - echo "📊 Generating Allure Report..."
     - npm install -g allure-commandline --save-dev || true
     - npx allure generate allure-results --clean -o public/allure-report
