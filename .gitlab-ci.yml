@@ -106,9 +106,15 @@ ATI_Regression_Stage_Manual:
 
 # ==================== MANUAL JOBS (Run on demand) ====================
 smoke:qa:
-  extends: .smoke_test
+  extends: .test_base
+  stage: test
   variables:
     ENV: "qa"
+  script:
+    - echo "🧪 Running Smoke Tests on ${ENV} environment (QA)..."
+    - npx playwright test --grep @smoke src/test/TestScript/Smoke-Stage --workers=4
+  when: manual
+  allow_failure: true
 
 smoke:stage:
   extends: .smoke_test

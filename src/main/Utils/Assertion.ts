@@ -530,7 +530,7 @@ export class Assertions {
    * @param timeout - Timeout in milliseconds (default: 15000)
    */
   async waitAndAssertApproveButtonVisible(timeout: number = 15000): Promise<void> {
-    const approveButton = this.page.locator('//span[text()="APPROVE"]');
+    const approveButton = this.page.locator('//span[contains(normalize-space(text()),"APPROVE")]');
     this.logger?.info('Waiting for APPROVE button to be visible...');
     await approveButton.waitFor({ state: 'visible', timeout });
     await expect(approveButton).toBeVisible();
@@ -543,7 +543,7 @@ export class Assertions {
    * @param timeout - Timeout in milliseconds (default: 15000)
    */
   async waitAndAssertDenyButtonVisible(timeout: number = 15000): Promise<void> {
-    const denyButton = this.page.locator('//span[text()="DENY"]');
+    const denyButton = this.page.locator('//span[contains(normalize-space(text()),"DENY")]');
     this.logger?.info('Waiting for DENY button to be visible...');
    // await denyButton.waitFor({ state: 'visible', timeout });
     await expect(denyButton).toBeVisible();

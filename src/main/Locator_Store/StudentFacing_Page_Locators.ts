@@ -139,7 +139,7 @@ export class StudentFacingPageLocators {
    * Used in: TC4 - My ATI page functionality validation
    */
   get assessmentsTabLink() {
-    return this.page.getByRole('link', { name: 'Assessments Tab: Select to' });
+    return this.page.locator('#TestTabNav');
   }
 
   /**
@@ -153,17 +153,19 @@ export class StudentFacingPageLocators {
   /**
    * Learn Tab link on My ATI page
    * Used in: TC4 - My ATI page functionality validation
+   * Note: QA has role="button" on these tabs, Stage has default role="link"
    */
   get learnTabLink() {
-    return this.page.getByRole('link', { name: 'Learn Tab: Select to display' });
+    return this.page.locator('#LearnTabNav');
   }
 
   /**
    * NCLEX Prep Tab link on My ATI page
    * Used in: TC4 - My ATI page functionality validation
+   * Note: QA has role="button" on these tabs, Stage has default role="link"
    */
   get nclexPrepTabLink() {
-    return this.page.getByRole('link', { name: 'N CLEX Prep Tab: Select to' });
+    return this.page.locator('#NCLEXPrepTabNav');
   }
 
   // ============================================

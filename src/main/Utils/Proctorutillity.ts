@@ -359,7 +359,7 @@ export class ProctorUtility {
    * Approve student by proctor
    */
   approveByProctor = async (): Promise<void> => {
-    const approveBtn = this.page.locator('//span[text()="APPROVE"]').first();
+    const approveBtn = this.page.locator('//span[contains(normalize-space(text()),"APPROVE")]').first();
     await approveBtn.waitFor({ state: 'visible', timeout: 30000 });
     await approveBtn.click();
     this.logger?.success('Student approved by proctor');
