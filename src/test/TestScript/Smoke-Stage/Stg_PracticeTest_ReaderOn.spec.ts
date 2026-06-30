@@ -13,10 +13,10 @@ import { StudentFacingPageLocators } from '@locators/StudentFacing_Page_Locators
 
 const _EXPECTED_URL_PATTERN = '/ViewResult/IPPTestResult/';
 const EXPECTED_PERCENTAGE = '100.0%';
-const EXPECTED_ASSESSMENT_NAME = process.env.EXPECTED_ASSESSMENT_NAME;
+const EXPECTED_ASSESSMENT_NAME = process.env.ENV === 'qa' ? process.env.Assessment : process.env.EXPECTED_ASSESSMENT_NAME;
 const EXPECTED_INSTITUTION = process.env.Institution_zzcab;
 const QUESTION_ANSWER_FILE = '4_Correct_QnA.json';
-const ASSESSMENT_TYPE = 'Question Store_Stage';
+const ASSESSMENT_TYPE = process.env.ENV === 'qa' ? 'Question Store_QA' : 'Question Store_Stage';
 const SCENARIO_NAME = 'Stg_PracticeTest_ReaderOn';
 
 test.describe.serial('@smoke Stg_PracticeTest_ReaderOn', () => {

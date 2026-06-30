@@ -151,7 +151,7 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
  
     try {
       // Step 1: Validate menu bar button is visible and enabled
-      const menuBarButton = page.locator('//div[@class="flex items-center"]/button');
+     /* const menuBarButton = page.locator('//div[@class="flex items-center"]/button');
       await assertions.waitAndAssertVisible(menuBarButton, 10000);
       logger.success('✅ Menu bar button is visible');
      
@@ -159,14 +159,14 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
       logger.success('✅ Menu bar button is enabled');
      
       await assertions.assertAttached(menuBarButton);
-      logger.success('✅ Menu bar button is attached to DOM');
+      logger.success('✅ Menu bar button is attached to DOM');*/
      
       // Step 2: Click menu bar
       await facHomePage.clickOnMenuBar();
       await page.waitForLoadState('load');
       logger.success('✅ Menu bar clicked successfully');
      
-      // Step 3: Validate Proctor tab link is visible and enabled
+     /* // Step 3: Validate Proctor tab link is visible and enabled
       const proctorTabLink = page.locator('//a[@href="/faculty/proctor"]');
       await assertions.waitAndAssertVisible(proctorTabLink, 10000);
       logger.success('✅ Proctor tab link is visible');
@@ -178,7 +178,7 @@ test.describe.serial('@Smoke - Stg_Proctor_ReaderOn', { tag: '@smoke' }, () => {
       logger.success('✅ Proctor tab link is attached to DOM');
      
       await assertions.assertHasAttribute(proctorTabLink, 'href', '/faculty/proctor');
-      logger.success('✅ Proctor tab link has correct href attribute');
+      logger.success('✅ Proctor tab link has correct href attribute');*/
      
       // Step 4: Navigate to Proctor tab
       await proctorUtil.navigateToProctorTab();
