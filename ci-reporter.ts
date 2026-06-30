@@ -83,7 +83,22 @@ class CIReporter implements Reporter {
     }
 
     if (passedTests.length > 0) {
-      const passedFiles = [...new Set(passedTests.map(t => t.file))];
+      const testsByFile = new Map<string, TestEntry[]>();
+      for (const test of allResults) {
+        const list = testsByFile.get(test.file) || [];
+        list.push(test);
+        testsByFile.set(test.file, list);
+      }
+
+      const passedFiles = [...testsByFile.entries()]
+        .filter(([, tests]) => {
+          const hasFailure = tests.some(t => t.status === 'failed' || t.status === 'timedOut');
+          const hasPass = tests.some(t => t.status === 'passed');
+          return !hasFailure && hasPass;
+        })
+        .map(([file]) => file);
+
+      if (passedFiles.length > 0) {
       console.log('\n┌──────────────────────────────────────────────────────────────────────────────┐');
       console.log('│                            PASSED SPEC FILES                                  │');
       console.log('├──────────────────────────────────────────────────────────────────────────────┤');
@@ -91,6 +106,7 @@ class CIReporter implements Reporter {
         console.log(`│  ${i + 1}. ${file}`);
       });
       console.log('└──────────────────────────────────────────────────────────────────────────────┘');
+      }
     }
 
     // Generate HTML summary report for sharing
