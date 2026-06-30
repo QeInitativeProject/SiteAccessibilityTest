@@ -4,6 +4,8 @@ import path from 'path';
 
 // Get environment from ENV variable or default to 'prod'
 const currentEnv = process.env.ENV || 'stage';
+const viewportWidth = 1920;
+const viewportHeight = 1200;
 
 // Only load env if not already loaded
 if (!process.env.baseUrl) {
@@ -73,14 +75,15 @@ export default defineConfig({
     screenshot: 'only-on-failure', // Only auto-capture on failure; success screenshots handled via manual page.screenshot()
     video: 'off', // Disabled to reduce report size — use trace for debugging instead
 
-    viewport: { width: 1680, height: 1050 },
+    viewport: { width: viewportWidth, height: viewportHeight },
     launchOptions: {
       args: [
         '--disable-dev-shm-usage',
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-gpu',
-        '--window-size=1680,1050',
+        `--window-size=${viewportWidth},${viewportHeight}`,
+        '--force-device-scale-factor=1',
       ],
     },
   },
@@ -90,7 +93,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        viewport: { width: 1680, height: 1050 },
+        viewport: { width: viewportWidth, height: viewportHeight },
         deviceScaleFactor: undefined,
       
       },
