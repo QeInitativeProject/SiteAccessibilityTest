@@ -22,6 +22,7 @@ createTestSuite({
       await myATIPage.clickOnMyATITab();
       await myATIPage.clickOnAssessmentsTabOnMyAti();
       await myATIPage.clickAssessmentButton("All item_Neeraj");
+      
       await actions.click(locators.getCalculatorToggleButton(), 'Calculator Toggle Button');
       const calculatorDialog = locators.getCalculatorDialog();
       await myATIPage.verifyElementIsDraggable(calculatorDialog, 'Calculator Window');

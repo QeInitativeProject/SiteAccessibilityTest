@@ -511,6 +511,28 @@ consolidated_report:
 allure_report:
   stage: report
   image: mcr.microsoft.com/playwright:v1.57.0-jammy
+  needs:
+    - job: ATI_Regression_OnMerge_Main
+      artifacts: true
+      optional: true
+    - job: ATI_Smoke_Stage
+      artifacts: true
+      optional: true
+    - job: ATI_Regression_Stage_Manual
+      artifacts: true
+      optional: true
+    - job: smoke:qa
+      artifacts: true
+      optional: true
+    - job: smoke:stage
+      artifacts: true
+      optional: true
+    - job: smoke:prod
+      artifacts: true
+      optional: true
+    - job: regression:stage
+      artifacts: true
+      optional: true
   before_script:
     - apt-get update && apt-get install -y default-jre-headless
   script:
@@ -525,6 +547,7 @@ allure_report:
     when: always
     paths:
       - allure-report/index.html
+      - allure-results/
     expose_as: 'Allure Report'
     expire_in: 30 days
   rules:
@@ -537,33 +560,123 @@ notify:email:
   image: alpine:latest
   needs:
     - job: allure_report
-      artifacts: false
+      artifacts: true
   before_script:
-    - apk add --no-cache curl || true
+    - apk add --no-cache curl jq bc || true
   script:
     - |
-      echo "📧 Sending email notification..."
+      echo "📧 Sending notifications..."
       REPORT_URL="${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_REF_NAME}/file/allure-report/index.html?job=allure_report"
       PIPELINE_URL="${CI_PROJECT_URL}/-/pipelines/${CI_PIPELINE_ID}"
+      TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+      PAGE_TITLE="Test Report - ${CI_COMMIT_REF_NAME} - Pipeline #${CI_PIPELINE_ID} - ${TIMESTAMP}"
+
+      # --- Upload to Confluence ---
+      echo "📄 Uploading report to Confluence..."
       
-            curl --request POST \
+      # Parse allure-results to build test results table
+      TOTAL=0; PASSED=0; FAILED=0; BROKEN=0; SKIPPED=0
+      TEST_ROWS=""
+      for f in allure-results/*-result.json; do
+        [ -f "$f" ] || continue
+        NAME=$(jq -r '.name // "Unknown"' "$f")
+        STATUS=$(jq -r '.status // "unknown"' "$f")
+        DURATION_MS=$(jq -r '.stop - .start // 0' "$f" 2>/dev/null || echo "0")
+        DURATION_S=$(echo "scale=1; ${DURATION_MS}/1000" | bc 2>/dev/null || echo "0")
+        
+        TOTAL=$((TOTAL + 1))
+        case "$STATUS" in
+          passed) PASSED=$((PASSED + 1)); STATUS_ICON="✅" ;;
+          failed) FAILED=$((FAILED + 1)); STATUS_ICON="❌" ;;
+          broken) BROKEN=$((BROKEN + 1)); STATUS_ICON="⚠️" ;;
+          skipped) SKIPPED=$((SKIPPED + 1)); STATUS_ICON="⏭️" ;;
+          *) STATUS_ICON="❓" ;;
+        esac
+        
+        TEST_ROWS="${TEST_ROWS}<tr><td>${NAME}</td><td>${STATUS_ICON} ${STATUS}</td><td>${DURATION_S}s</td></tr>"
+      done
+
+      # Build the page body with enhanced Confluence UI
+      PASS_RATE=0
+      if [ "$TOTAL" -gt 0 ]; then
+        PASS_RATE=$(echo "scale=0; ${PASSED}*100/${TOTAL}" | bc 2>/dev/null || echo "0")
+      fi
+
+      if [ "$FAILED" -eq 0 ] && [ "$BROKEN" -eq 0 ]; then
+        STATUS_COLOR="Green"
+        STATUS_TITLE="ALL TESTS PASSED"
+      elif [ "$PASS_RATE" -ge 80 ]; then
+        STATUS_COLOR="Yellow"
+        STATUS_TITLE="SOME TESTS FAILED"
+      else
+        STATUS_COLOR="Red"
+        STATUS_TITLE="CRITICAL - MANY FAILURES"
+      fi
+
+      PAGE_BODY='<h2>Test Execution Summary</h2><table><tbody><tr><th style="text-align:center;background:#f4f5f7">Total</th><th style="text-align:center;background:#e3fcef">Passed</th><th style="text-align:center;background:#ffebe6">Failed</th><th style="text-align:center;background:#fffae6">Broken</th><th style="text-align:center;background:#f4f5f7">Skipped</th></tr><tr><td style="text-align:center"><strong>'"${TOTAL}"'</strong></td><td style="text-align:center"><strong>'"${PASSED}"'</strong></td><td style="text-align:center"><strong>'"${FAILED}"'</strong></td><td style="text-align:center"><strong>'"${BROKEN}"'</strong></td><td style="text-align:center"><strong>'"${SKIPPED}"'</strong></td></tr></tbody></table><h2>Pipeline Info</h2><table><tbody><tr><th>Pipeline</th><td><a href="'"${PIPELINE_URL}"'">#'"${CI_PIPELINE_ID}"' (Click to open in GitLab)</a></td></tr><tr><th>Branch</th><td>'"${CI_COMMIT_REF_NAME}"'</td></tr><tr><th>Triggered by</th><td>'"${GITLAB_USER_NAME}"'</td></tr><tr><th>Timestamp</th><td>'"${TIMESTAMP}"'</td></tr><tr><th>Pass Rate</th><td>'"${PASS_RATE}"'%</td></tr></tbody></table><h2>Test Results Detail</h2><table><tbody><tr><th>Test Name</th><th>Status</th><th>Duration</th></tr>'"${TEST_ROWS}"'</tbody></table>'
+
+      # Create the page using jq to build valid JSON
+      JSON_PAYLOAD=$(jq -n \
+        --arg type "page" \
+        --arg title "$PAGE_TITLE" \
+        --arg space "$CONFLUENCE_SPACE_KEY" \
+        --arg ancestor "$CONFLUENCE_PARENT_PAGE_ID" \
+        --arg body "$PAGE_BODY" \
+        '{type: $type, title: $title, ancestors: [{id: ($ancestor | tonumber)}], space: {key: $space}, body: {storage: {value: $body, representation: "storage"}}}')
+
+      RESPONSE=$(curl --silent --request POST \
+        --url "${CONFLUENCE_URL}/rest/api/content" \
+        --user "${CONFLUENCE_USER}:${CONFLUENCE_TOKEN}" \
+        --header "Content-Type: application/json" \
+        --data "$JSON_PAYLOAD")
+      
+      PAGE_ID=$(echo "$RESPONSE" | jq -r '.id // empty')
+      
+      if [ -n "$PAGE_ID" ]; then
+        echo "✅ Confluence page created: ${PAGE_ID}"
+        CONFLUENCE_PAGE_URL="${CONFLUENCE_URL}/spaces/${CONFLUENCE_SPACE_KEY}/pages/${PAGE_ID}"
+        
+        # Attach the Allure report HTML to the page
+        if [ -f "allure-report/index.html" ]; then
+          ATTACH_RESPONSE=$(curl --silent --request POST \
+            --url "${CONFLUENCE_URL}/rest/api/content/${PAGE_ID}/child/attachment" \
+            --user "${CONFLUENCE_USER}:${CONFLUENCE_TOKEN}" \
+            --header "X-Atlassian-Token: nocheck" \
+            --form "file=@allure-report/index.html" \
+            --form "comment=Allure Report - Pipeline #${CI_PIPELINE_ID}")
+          
+          ATTACH_LINK=$(echo "$ATTACH_RESPONSE" | jq -r '.results[0]._links.download // empty')
+          if [ -n "$ATTACH_LINK" ]; then
+            echo "✅ Report attached: ${CONFLUENCE_URL}${ATTACH_LINK}"
+          else
+            echo "⚠️ Attachment response: $ATTACH_RESPONSE"
+          fi
+        fi
+      else
+        echo "⚠️ Could not create Confluence page: $RESPONSE"
+        CONFLUENCE_PAGE_URL="N/A"
+      fi
+
+      # --- Post GitLab commit comment ---
+      echo "💬 Posting GitLab commit comment..."
+      curl --request POST \
         --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
         "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/commits/${CI_COMMIT_SHA}/comments" \
         --form "note=## 📊 Test Execution Complete
-        
+      
       **Pipeline:** [#${CI_PIPELINE_ID}](${PIPELINE_URL})  
       **Branch:** ${CI_COMMIT_REF_NAME}  
       **Allure Report:** [Download Report](${REPORT_URL})  
+      **Confluence:** [View on Confluence](${CONFLUENCE_PAGE_URL})  
       **Triggered by:** ${GITLAB_USER_NAME}
       " || echo "⚠️ Could not post comment via API"
       
-      echo "✅ Notification sent!"
-      echo "📊 Allure Report URL: ${REPORT_URL}"
-      echo "🔗 Pipeline URL: ${PIPELINE_URL}"
+      echo "✅ All notifications sent!"
+      echo "📊 Allure Report: ${REPORT_URL}"
+      echo "📄 Confluence: ${CONFLUENCE_PAGE_URL}"
+      echo "🔗 Pipeline: ${PIPELINE_URL}"
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      when: always
-    - when: manual
+    - when: always
   allow_failure: true
 
 # ==================== WORKFLOW RULES ====================
