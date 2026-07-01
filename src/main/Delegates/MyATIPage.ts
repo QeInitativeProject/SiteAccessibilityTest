@@ -379,6 +379,26 @@ export class MyATIPage {
     await button.waitFor({ state: 'visible', timeout: 10000 });
     await button.click();
     this.logger?.success(`Clicked "${(await button.textContent())?.trim()}" for assessment "${assessmentName}"`);
+
+    // Handle multiple instances popup if it appears
+    await this.handleDuplicateInstancePopup();
+  };
+
+  /**
+   * Handle the "You have multiple versions of this product" popup.
+   * Clicks the first visible Continue/Begin/Retake button.
+   */
+  handleDuplicateInstancePopup = async (): Promise<void> => {
+    const popup = this.page.locator('#selectInstanceContainer');
+    const popupVisible = await popup.isVisible().catch(() => false);
+    if (popupVisible) {
+      this.logger?.step('Multiple versions popup detected, selecting first available instance');
+      const firstBtn = popup.locator('li').first().locator('a[data-atiid^="continueAction_"], a[data-atiid^="startAction_"], a[data-atiid^="retakeAction_"]').filter({ visible: true }).first();
+      await firstBtn.waitFor({ state: 'visible', timeout: 10000 });
+      const btnText = (await firstBtn.textContent())?.trim();
+      await firstBtn.click();
+      this.logger?.success(`Selected first instance: clicked "${btnText}"`);
+    }
   };
 
   /**

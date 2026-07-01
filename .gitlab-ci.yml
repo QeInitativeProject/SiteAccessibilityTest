@@ -494,6 +494,28 @@ consolidated_report:
 allure_report:
   stage: report
   image: mcr.microsoft.com/playwright:v1.57.0-jammy
+  needs:
+    - job: ATI_Regression_OnMerge_Main
+      artifacts: true
+      optional: true
+    - job: ATI_Smoke_Stage
+      artifacts: true
+      optional: true
+    - job: ATI_Regression_Stage_Manual
+      artifacts: true
+      optional: true
+    - job: smoke:qa
+      artifacts: true
+      optional: true
+    - job: smoke:stage
+      artifacts: true
+      optional: true
+    - job: smoke:prod
+      artifacts: true
+      optional: true
+    - job: regression:stage
+      artifacts: true
+      optional: true
   before_script:
     - apt-get update && apt-get install -y default-jre-headless
   script:
