@@ -240,14 +240,14 @@ regression:stage:100_Percent:
   when: manual
   allow_failure: true 
 
-regression:stage:Multi_Select:
+regression:stage:Stg_Practice_MultiSelect_DownloadReportVal:
   extends: .test_base
   stage: test
   variables:
     ENV: "stage"
   script:
-    - echo "🔬 Running Stg_Multi_Select..."
-    - npx playwright test src/test/TestScript/Regression/Stg_Multi_Select.spec.ts
+    - echo "🔬 Running Stg_Practice_MultiSelect_DownloadReportVal..."
+    - npx playwright test src/test/TestScript/Regression/Stg_Practice_MultiSelect_DownloadReportVal.spec.ts
   when: manual
   allow_failure: true 
 

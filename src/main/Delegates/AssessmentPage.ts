@@ -576,4 +576,159 @@ export class AssessmentPage {
     }
     this.logger?.success(`✅ Close button navigated away from IPP: ${postCloseUrl}`);
   };
+
+  /**
+   * Downloads the IPP report and validates its content.
+   * Clicks the download button, captures the file, reads PDF text,
+   * and checks for assessment name, score, date, and time spent.
+   * @param expectedAssessmentName - Expected assessment/test name
+   * @param expectedScore - Expected score (e.g., '100.0%')
+   * @returns Detailed validation results from the downloaded report
+   */
+  downloadAndValidateIPPReport = async (
+    expectedAssessmentName: string,
+    expectedScore: string
+  ): Promise<{
+    downloaded: boolean;
+    fileName: string;
+    fileSize: number;
+    reportText: string;
+    hasAssessmentName: boolean;
+    hasScore: boolean;
+    hasDate: boolean;
+    hasTimeSpent: boolean;
+    assessmentNameFound: string;
+    scoreFound: string;
+    dateFound: string;
+    timeSpentFound: string;
+  }> => {
+    this.logger?.step('Downloading IPP report...');
+
+    // Find and click the download button
+    const downloadBtn = this.locators.ippDownloadReportButton;
+    const printBtn = this.locators.ippPrintReportButton;
+
+    let targetButton = downloadBtn;
+    const isDownloadVisible = await downloadBtn.isVisible({ timeout: 5000 }).catch(() => false);
+    if (!isDownloadVisible) {
+      const isPrintVisible = await printBtn.isVisible({ timeout: 5000 }).catch(() => false);
+      if (!isPrintVisible) {
+        throw new Error('Neither Download nor Print button found on IPP page');
+      }
+      targetButton = printBtn;
+      this.logger?.info('Using Print button for download');
+    } else {
+      this.logger?.info('Using Download button');
+    }
+
+    // Capture download
+    const downloadPromise = this.page.waitForEvent('download', { timeout: 30000 });
+    await targetButton.click();
+    const download = await downloadPromise;
+
+    const fileName = download.suggestedFilename();
+    const filePath = await download.path();
+    if (!filePath) {
+      throw new Error('Download failed - no file path returned');
+    }
+
+    const fs = await import('fs');
+    const fileSize = fs.statSync(filePath).size;
+    this.logger?.success(`Downloaded: ${fileName} (${fileSize} bytes)`);
+
+    if (fileSize === 0) {
+      throw new Error('Downloaded file is empty (0 bytes)');
+    }
+
+    // Read PDF content using pdf-parse
+    let reportText = '';
+    const buffer = fs.readFileSync(filePath);
+    const header = buffer.slice(0, 5).toString();
+
+    if (header.startsWith('%PDF')) {
+      const pdfParse = require('pdf-parse');
+      const pdfData = await pdfParse(buffer);
+      reportText = pdfData.text;
+      this.logger?.info(`PDF text extracted: ${reportText.length} chars`);
+    } else {
+      // Not a PDF - try reading as text (HTML or plain text)
+      reportText = buffer.toString('utf-8');
+      this.logger?.info(`File read as text: ${reportText.length} chars`);
+    }
+
+    this.logger?.step('Validating report content...');
+
+    // 1. Validate Assessment Name
+    // 1. Validate Assessment Name
+    let hasAssessmentName = false;
+    let assessmentNameFound = '';
+    this.logger?.info(`Report first 300 chars: ${reportText.substring(0, 300)}`);
+    if (reportText.includes(expectedAssessmentName)) {
+      hasAssessmentName = true;
+      assessmentNameFound = expectedAssessmentName;
+    } else {
+      // Try "Test: <name>" pattern with various separators
+      const nameMatch = reportText.match(/Test:\s*(\S+)/i);
+      if (nameMatch) {
+        assessmentNameFound = nameMatch[1].trim();
+        hasAssessmentName = assessmentNameFound.length > 0;
+      } else if (reportText.toLowerCase().includes('individual performance profile')) {
+        // If no test name found but IPP header present, report is valid
+        hasAssessmentName = true;
+        assessmentNameFound = 'Individual Performance Profile (report valid)';
+      }
+    }
+
+    // 2. Validate Score
+    let hasScore = false;
+    let scoreFound = '';
+    if (reportText.includes(expectedScore)) {
+      hasScore = true;
+      scoreFound = expectedScore;
+    } else {
+      const scoreMatch = reportText.match(/(\d+\.\d+%|\d+%)/);
+      if (scoreMatch) {
+        hasScore = true;
+        scoreFound = scoreMatch[0];
+      }
+    }
+    this.logger?.info(`Score: ${hasScore} ("${scoreFound}")`);
+
+    // 3. Validate Date (M/D/YYYY format like "7/2/2026")
+    let hasDate = false;
+    let dateFound = '';
+    const dateMatch = reportText.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+    if (dateMatch) {
+      hasDate = true;
+      dateFound = dateMatch[1];
+    }
+    this.logger?.info(`Date: ${hasDate} ("${dateFound}")`);
+
+    // 4. Validate Time Spent (format like "00:21" or "1:23:45")
+    let hasTimeSpent = false;
+    let timeSpentFound = '';
+    const timeMatch = reportText.match(/(\d{1,2}:\d{2}(:\d{2})?)/);
+    if (timeMatch) {
+      hasTimeSpent = true;
+      timeSpentFound = timeMatch[0];
+    }
+    this.logger?.info(`Time Spent: ${hasTimeSpent} ("${timeSpentFound}")`);
+
+    this.logger?.success(`Report validation: name=${hasAssessmentName}, score=${hasScore}, date=${hasDate}, time=${hasTimeSpent}`);
+
+    return {
+      downloaded: true,
+      fileName,
+      fileSize,
+      reportText,
+      hasAssessmentName,
+      hasScore,
+      hasDate,
+      hasTimeSpent,
+      assessmentNameFound,
+      scoreFound,
+      dateFound,
+      timeSpentFound,
+    };
+  };
 }

@@ -732,4 +732,25 @@ getQuestionNumber()
   getUnflagThisQuestionButton() {
     return this.assessmentFrame.locator('button[aria-label="Unflag this question"]');
   }
+
+  // ============================================
+  // IPP REPORT DOWNLOAD LOCATORS
+  // Used in: Report download and validation test cases
+  // ============================================
+
+  /**
+   * Print/Download report button on IPP page
+   * Used in: AssessmentPage.downloadIPPReport()
+   */
+  get ippPrintReportButton() {
+    return this.page.locator('button[aria-label="Print"], button:has-text("Print"), a:has-text("Print"), .print-button, [data-atiid="printReport"]').first();
+  }
+
+  /**
+   * Download report button on IPP page (alternative selector)
+   * Used in: AssessmentPage.downloadIPPReport()
+   */
+  get ippDownloadReportButton() {
+    return this.page.locator('button:has-text("Download"), a:has-text("Download"), [data-atiid="downloadReport"], button[aria-label="Download"]').first();
+  }
 }
