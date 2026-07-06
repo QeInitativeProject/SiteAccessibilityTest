@@ -47,7 +47,7 @@ test.describe.serial('@Regression - Stg_Multi_Select', { tag: '@regression' }, (
     browser = await chromium.launch({
       headless: process.env.CI ? true : false,
     });
-    context = await browser.newContext();
+    context = await browser.newContext({ acceptDownloads: true });
     page = await context.newPage();
     assertions = new Assertions(page);
     atiLoginPage = new LoginPage(page);

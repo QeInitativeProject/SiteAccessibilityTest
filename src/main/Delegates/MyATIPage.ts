@@ -930,4 +930,14 @@ export class MyATIPage {
       throw new Error(`Results were generated after abandon - "${assessmentName}" is visible on Results page`);
     }
   };
+
+  /**
+   * Waits for blockUI overlay to disappear before proceeding.
+   */
+  waitForBlockUIOverlay = async (): Promise<void> => {
+    this.logger?.step('Waiting for blockUI overlay to disappear');
+    await this.page.locator('.blockUI.blockOverlay').waitFor({ state: 'hidden', timeout: 60000 }).catch(() => {});
+    await this.page.waitForFunction(() => !document.querySelector('.blockUI.blockOverlay'), { timeout: 30000 }).catch(() => {});
+    this.logger?.success('BlockUI overlay cleared');
+  };
 }
