@@ -188,11 +188,12 @@ export class ProctorUtility {
    */
   fillAssessmentID = async (assessmentId: string): Promise<void> => {
     this.logger?.step(`Filling assessment ID: ${assessmentId}`);
+    await this.page.waitForTimeout(5000);
     await this.page.locator('//mat-label[starts-with(text(),"Search")]').click({ timeout: 3000 }).catch(() => this.logger?.info('Close button not found or already closed'));
     await this.page.locator('//mat-label[starts-with(text(),"Search")]').fill(assessmentId);
     await this.page.keyboard.press('Enter');
     await this.page.waitForTimeout(2000);
-    await this.page.locator('//input[@type="checkbox"]').click();
+    await this.page.locator('//input[@type="checkbox"]').first().click();
     //await this.page.locator('(//span[text()="CONTINUE"])[2]').click();
     await this.page.locator('//button[@color="primary"]//span[text()="CONTINUE"]').click();
 
@@ -915,5 +916,138 @@ export class ProctorUtility {
     }
 
     throw new Error(`Student not in assessment page. URL: ${currentUrl}`);
+  };
+
+  /**
+   * Stops a specific student's assessment by expanding the batch panel, selecting their checkbox,
+   * and clicking STOP ASSESSMENT -> CONFIRM.
+   * Scopes to the correct batch panel using batchId to avoid ambiguity with multiple batches.
+   * @param batchId - The batch ID to scope the operation to
+   * @param rowIndex - 0-based index of the student row within the batch panel (default: 0)
+   */
+  closeIndividualStudent = async (rowIndex: number = 0, batchId?: string): Promise<void> => {
+    await this.page.bringToFront();
+    await this.page.waitForTimeout(2000);
+
+    let batchPanel;
+    if (batchId) {
+      // Scope to the specific batch panel
+      batchPanel = this.page.locator('mat-expansion-panel', { hasText: batchId }).first();
+      await batchPanel.waitFor({ state: 'visible', timeout: 15000 });
+
+      // Expand the panel if collapsed
+      const isExpanded = await batchPanel.evaluate(el => el.classList.contains('mat-expanded'));
+      if (!isExpanded) {
+        this.logger?.step(`Expanding batch panel for batch ID: ${batchId}`);
+        await batchPanel.locator('mat-expansion-panel-header').click();
+        await this.page.waitForTimeout(1000);
+      }
+      this.logger?.success(`Scoped to batch panel: ${batchId}`);
+    } else {
+      batchPanel = this.page;
+    }
+
+    // Find student rows within the batch panel
+    const studentRows = batchPanel.locator('mat-row');
+    const rowCount = await studentRows.count();
+    if (rowIndex >= rowCount) {
+      throw new Error(`Row index ${rowIndex} out of bounds. Only ${rowCount} rows in batch panel.`);
+    }
+
+    // Click the checkbox for the target student row
+    const targetRow = studentRows.nth(rowIndex);
+    const checkbox = targetRow.locator('mat-checkbox').first();
+    await checkbox.waitFor({ state: 'visible', timeout: 15000 });
+    await checkbox.click();
+    await this.page.waitForTimeout(1000);
+    this.logger?.success(`Selected checkbox for student row ${rowIndex}`);
+
+    // Click STOP ASSESSMENT button (appears in the batch toolbar after selection)
+    const stopAssessmentBtn = batchPanel.locator('button, a', { hasText: /STOP ASSESSMENT/i }).first();
+    await stopAssessmentBtn.waitFor({ state: 'visible', timeout: 10000 });
+    await stopAssessmentBtn.click();
+    await this.page.waitForTimeout(2000);
+    this.logger?.success('Clicked STOP ASSESSMENT button');
+
+    // Click CONFIRM on the dialog
+    const confirmButton = this.page.locator('button', { hasText: /CONFIRM/i }).first();
+    await confirmButton.waitFor({ state: 'visible', timeout: 10000 });
+    await confirmButton.click();
+    await this.page.waitForTimeout(3000);
+    this.logger?.success('Confirmed stop assessment for selected student');
+  };
+
+  /**
+   * Validates that a student's assessment is still active (not stopped).
+   * Checks URL contains '/Assessment' and no stop dialog is present.
+   * @param studentTab - The student's page/tab
+   * @returns true if assessment is still active
+   */
+  validateStudentAssessmentStillActive = async (studentTab: Page): Promise<boolean> => {
+    await studentTab.bringToFront();
+    await studentTab.waitForTimeout(5000);
+
+    // Check no stop dialog appeared
+    const okButton = studentTab.locator('button[aria-label="OK"]').first();
+    const stopDialogVisible = await okButton.isVisible().catch(() => false);
+    if (stopDialogVisible) {
+      this.logger?.info('? Stop dialog found - assessment was stopped');
+      return false;
+    }
+
+    // Check URL is still on assessment
+    const currentUrl = studentTab.url();
+    if (currentUrl.includes('/Assessment')) {
+      this.logger?.success('? Student is still on assessment page - not stopped');
+      return true;
+    }
+
+    // Check iframe content
+    const assessmentFrame = studentTab.frameLocator('iframe').first();
+    const assessmentContent = assessmentFrame.locator('.stem-text, .question-content, .item-content').first();
+    const contentVisible = await assessmentContent.isVisible({ timeout: 10000 }).catch(() => false);
+    if (contentVisible) {
+      this.logger?.success('? Assessment content still visible - student is active');
+      return true;
+    }
+
+    this.logger?.info(`Student URL: ${currentUrl} - unable to confirm active state`);
+    return false;
+  };
+
+  /**
+   * Validates that a student has been redirected to the Self Attestation page.
+   * This happens when the faculty logs out mid-test or assessment is stopped.
+   * Checks for "ATI Examinee Attestation" heading, Full Name field, or END ASSESSMENT button.
+   * @param studentTab - The student's page/tab
+   * @returns true if attestation page is visible
+   */
+  validateStudentOnAttestationPage = async (studentTab: Page): Promise<boolean> => {
+    await studentTab.bringToFront();
+    await studentTab.reload({ waitUntil: 'load' });
+    await studentTab.waitForLoadState('load');
+    await studentTab.waitForTimeout(5000);
+
+    const attestationHeading = studentTab.locator('text=ATI Examinee Attestation').first();
+    const attestationVisible = await attestationHeading.waitFor({ state: 'visible', timeout: 30000 }).then(() => true).catch(() => false);
+
+    if (attestationVisible) {
+      this.logger?.success('Student is on Self Attestation page');
+      return true;
+    }
+
+    // Fallback checks
+    const fullNameField = studentTab.locator('text=Full Name').first();
+    const endAssessmentBtn = studentTab.locator('button, a', { hasText: /END ASSESSMENT/i }).first();
+    const hasFullName = await fullNameField.isVisible().catch(() => false);
+    const hasEndBtn = await endAssessmentBtn.isVisible().catch(() => false);
+
+    if (hasFullName || hasEndBtn) {
+      this.logger?.success('Student is on Self Attestation page (fallback check)');
+      return true;
+    }
+
+    this.logger?.info('Student is NOT on attestation page');
+    return false;
   };
 }

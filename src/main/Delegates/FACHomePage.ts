@@ -429,4 +429,12 @@ export class FACHomePage {
   InstitutionDropdownNotDisplayed = async () => {
     await expect(this.page.getByRole('button', { name: 'Institution' })).toBeHidden();
   };
+
+  logoutFaculty = async (): Promise<void> => {
+    this.logger?.step('Logging out faculty');
+    await this.page.goto(process.env.baseUrl + '/logout', { waitUntil: 'load' });
+    await this.page.waitForLoadState('load');
+    await this.page.waitForTimeout(3000);
+    this.logger?.success('Faculty logged out successfully');
+  };
 }
