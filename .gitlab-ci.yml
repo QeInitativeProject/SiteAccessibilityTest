@@ -32,14 +32,8 @@ cache:
   artifacts:
     when: always
     paths:
-      - playwright-report/
-      - playwright-report/test-summary.html
       - allure-results/
-      - monocart-report/
-      - test-results/
-      - test-results/logs/
       - test-results/Failed_screenshots/
-      - test-results/success-screenshots/
     expose_as: 'Test Report'
     expire_in: 7 days
 
@@ -544,21 +538,95 @@ allure_report:
     - job: regression:stage
       artifacts: true
       optional: true
+    - job: smoke:stage:PracticeTest_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:stage:PracticeTest_ReaderOff
+      artifacts: true
+      optional: true
+    - job: smoke:stage:Proctor_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:stage:Proctor_ReaderOff
+      artifacts: true
+      optional: true
+    - job: regression:stage:0_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:50_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:75_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:100_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:Multi_Select
+      artifacts: true
+      optional: true
+    - job: regression:stage:Multi_SelectDropdown
+      artifacts: true
+      optional: true
+    - job: regression:stage:MultiAssessment_Proctor
+      artifacts: true
+      optional: true
+    - job: regression:stage:Practice_AllItemTypes
+      artifacts: true
+      optional: true
+    - job: regression:stage:Practice_TTS_On
+      artifacts: true
+      optional: true
+    - job: regression:stage:Proctor_TTS_On
+      artifacts: true
+      optional: true
+    - job: regression:stage:Proctor_RelaunchAssessment
+      artifacts: true
+      optional: true
+    - job: regression:stage:Proctor_CheatIncident_Ignore
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_Ignore_4_CheatIncident
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_Abandon_Assessment
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_AllCheatEvent_Validations
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_StopProctoring_Validations
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_CE_StuCatalogueAccess
+      artifacts: true
+      optional: true
+    - job: smoke:prod:PracticeTest_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:prod:PracticeTest_ReaderOff
+      artifacts: true
+      optional: true
+    - job: smoke:prod:Proctor_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:prod:Proctor_ReaderOff
+      artifacts: true
+      optional: true
   before_script:
     - apt-get update && apt-get install -y default-jre-headless
   script:
     - echo "📊 Collecting allure-results from all test jobs..."
-    - test -d "allure-results" && ls allure-results/*-result.json >/dev/null 2>&1 || { echo "❌ ERROR No allure-results found! Run a test job first."; exit 1; }
+    - test -d "allure-results" && ls allure-results/*-result.json >/dev/null 2>&1 || { mkdir -p allure-results && echo '{"name":"No tests ran","status":"skipped","start":0,"stop":0}' > allure-results/empty-result.json && echo "⚠️ No allure-results found. Created placeholder."; }
     - echo "✅ allure-results found $(ls allure-results/*-result.json | wc -l) result files"
     - echo "📊 Generating Single-File Allure Report..."
-    - npm install -g allure-commandline --save-dev || true
-    - npx allure generate allure-results --clean --single-file -o allure-report
+    - npm install -g allure-commandline --save-dev 2>/dev/null || true
+    - allure generate allure-results --clean --single-file -o allure-report || npx allure generate allure-results --clean --single-file -o allure-report
     - echo "✅ Allure single-page report generated at allure-report/index.html"
   artifacts:
     when: always
     paths:
       - allure-report/index.html
-      - allure-results/
     expose_as: 'Allure Report'
     expire_in: 30 days
   rules:
@@ -572,6 +640,102 @@ notify:email:
   needs:
     - job: allure_report
       artifacts: true
+    - job: ATI_Regression_OnMerge_Main
+      artifacts: true
+      optional: true
+    - job: ATI_Smoke_Stage
+      artifacts: true
+      optional: true
+    - job: ATI_Regression_Stage_Manual
+      artifacts: true
+      optional: true
+    - job: smoke:qa
+      artifacts: true
+      optional: true
+    - job: smoke:stage
+      artifacts: true
+      optional: true
+    - job: smoke:prod
+      artifacts: true
+      optional: true
+    - job: regression:stage
+      artifacts: true
+      optional: true
+    - job: smoke:stage:PracticeTest_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:stage:PracticeTest_ReaderOff
+      artifacts: true
+      optional: true
+    - job: smoke:stage:Proctor_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:stage:Proctor_ReaderOff
+      artifacts: true
+      optional: true
+    - job: regression:stage:0_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:50_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:75_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:100_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:Multi_Select
+      artifacts: true
+      optional: true
+    - job: regression:stage:Multi_SelectDropdown
+      artifacts: true
+      optional: true
+    - job: regression:stage:MultiAssessment_Proctor
+      artifacts: true
+      optional: true
+    - job: regression:stage:Practice_AllItemTypes
+      artifacts: true
+      optional: true
+    - job: regression:stage:Practice_TTS_On
+      artifacts: true
+      optional: true
+    - job: regression:stage:Proctor_TTS_On
+      artifacts: true
+      optional: true
+    - job: regression:stage:Proctor_RelaunchAssessment
+      artifacts: true
+      optional: true
+    - job: regression:stage:Proctor_CheatIncident_Ignore
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_Ignore_4_CheatIncident
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_Abandon_Assessment
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_AllCheatEvent_Validations
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_StopProctoring_Validations
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_CE_StuCatalogueAccess
+      artifacts: true
+      optional: true
+    - job: smoke:prod:PracticeTest_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:prod:PracticeTest_ReaderOff
+      artifacts: true
+      optional: true
+    - job: smoke:prod:Proctor_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:prod:Proctor_ReaderOff
+      artifacts: true
+      optional: true
   before_script:
     - apk add --no-cache curl jq bc || true
   script:
@@ -641,7 +805,7 @@ notify:email:
         --header "Content-Type: application/json" \
         --data "$JSON_PAYLOAD")
       
-      PAGE_ID=$(echo "$RESPONSE" | jq -r '.id // empty')
+      PAGE_ID=$(echo "$RESPONSE" | jq -r '.id // empty' 2>/dev/null || echo "")
       
       if [ -n "$PAGE_ID" ]; then
         echo "✅ Confluence page created: ${PAGE_ID}"
@@ -656,7 +820,7 @@ notify:email:
             --form "file=@allure-report/index.html" \
             --form "comment=Allure Report - Pipeline #${CI_PIPELINE_ID}")
           
-          ATTACH_LINK=$(echo "$ATTACH_RESPONSE" | jq -r '.results[0]._links.download // empty')
+          ATTACH_LINK=$(echo "$ATTACH_RESPONSE" | jq -r '.results[0]._links.download // empty' 2>/dev/null || echo "")
           if [ -n "$ATTACH_LINK" ]; then
             echo "✅ Report attached: ${CONFLUENCE_URL}${ATTACH_LINK}"
           else

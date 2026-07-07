@@ -39,6 +39,7 @@ createTestSuite({
     const { page, assertions, locators, myATIPage, logger } = getCtx(testInfo, 'TC2');
     try {
       await page.waitForLoadState('load');
+      await page.waitForLoadState('domcontentloaded');
       await myATIPage.clickOnMyATITab();
       await myATIPage.clickOnAssessmentsTabOnMyAti();
       await myATIPage.clickAssessmentButton("ATI TEAS Online Practice B");
