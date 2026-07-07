@@ -361,6 +361,7 @@ export class MyATIPage {
     // Verify navigation to Assessment page
     await this.waitForPageLoadAndVerifyNavigation('/Assessment');
     this.logger?.success('✅ Navigated to Assessment page');
+    await this.page.waitForTimeout(5000);
   };
 
   clickOnAssessmentsTabfromHome = async (): Promise<void> => {
