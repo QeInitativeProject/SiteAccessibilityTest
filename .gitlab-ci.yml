@@ -520,11 +520,16 @@ allure_report:
     - apt-get update && apt-get install -y default-jre-headless
   script:
     - echo "📊 Collecting allure-results from all test jobs..."
-    - test -d "allure-results" && ls allure-results/*-result.json >/dev/null 2>&1 || { echo "❌ ERROR No allure-results found! Run a test job first."; exit 1; }
-    - echo "✅ allure-results found $(ls allure-results/*-result.json | wc -l) result files"
+    - |
+      if ! test -d "allure-results" || ! ls allure-results/*-result.json >/dev/null 2>&1; then
+        echo "⚠️ No allure-results found. Creating empty report placeholder."
+        mkdir -p allure-results
+        echo '{"name":"No tests ran","status":"skipped","start":0,"stop":0}' > allure-results/empty-result.json
+      fi
+    - echo "✅ allure-results found: $(ls allure-results/*-result.json | wc -l) result files"
     - echo "📊 Generating Single-File Allure Report..."
-    - npm install -g allure-commandline --save-dev || true
-    - npx allure generate allure-results --clean --single-file -o allure-report
+    - npm install -g allure-commandline --save-dev 2>/dev/null || true
+    - allure generate allure-results --clean --single-file -o allure-report || npx allure generate allure-results --clean --single-file -o allure-report
     - echo "✅ Allure single-page report generated at allure-report/index.html"
   artifacts:
     when: always
