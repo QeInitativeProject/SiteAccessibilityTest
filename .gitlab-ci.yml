@@ -401,6 +401,7 @@ regression:stage:Stg_Proctor_MultiFaculty_MultiStudentStop:
   when: manual
   allow_failure: true
 
+
 regression:stage:Practice_AllItemTypesTTS_On:
   extends: .test_base
   stage: test
@@ -411,6 +412,7 @@ regression:stage:Practice_AllItemTypesTTS_On:
     - npx playwright test src/test/TestScript/Regression/Stg_Practice_AllItemTypesTTS_On.spec.ts
   when: manual
   allow_failure: true
+
 
 # ==================== INDIVIDUAL SPEC FILE JOBS - SMOKE PROD ====================
 smoke:prod:PracticeTest_ReaderOn:
