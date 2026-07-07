@@ -777,7 +777,7 @@ notify:email:
         --header "Content-Type: application/json" \
         --data "$JSON_PAYLOAD")
       
-      PAGE_ID=$(echo "$RESPONSE" | jq -r '.id // empty')
+      PAGE_ID=$(echo "$RESPONSE" | jq -r '.id // empty' 2>/dev/null || echo "")
       
       if [ -n "$PAGE_ID" ]; then
         echo "✅ Confluence page created: ${PAGE_ID}"
@@ -792,7 +792,7 @@ notify:email:
             --form "file=@allure-report/index.html" \
             --form "comment=Allure Report - Pipeline #${CI_PIPELINE_ID}")
           
-          ATTACH_LINK=$(echo "$ATTACH_RESPONSE" | jq -r '.results[0]._links.download // empty')
+          ATTACH_LINK=$(echo "$ATTACH_RESPONSE" | jq -r '.results[0]._links.download // empty' 2>/dev/null || echo "")
           if [ -n "$ATTACH_LINK" ]; then
             echo "✅ Report attached: ${CONFLUENCE_URL}${ATTACH_LINK}"
           else
