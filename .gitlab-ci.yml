@@ -400,6 +400,18 @@ regression:stage:Stg_Proctor_MultiFaculty_MultiStudentStop:
     - npx playwright test src/test/TestScript/Regression/Stg_Proctor_MultiFaculty_MultiStudentStop.spec.ts
   when: manual
   allow_failure: true
+
+regression:stage:Practice_AllItemTypesTTS_On:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "Running Stg_Practice_AllItemTypesTTS_On..."
+    - npx playwright test src/test/TestScript/Regression/Stg_Practice_AllItemTypesTTS_On.spec.ts
+  when: manual
+  allow_failure: true
+  
 # ==================== INDIVIDUAL SPEC FILE JOBS - SMOKE PROD ====================
 smoke:prod:PracticeTest_ReaderOn:
   extends: .test_base
