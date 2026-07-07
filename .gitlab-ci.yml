@@ -510,6 +510,81 @@ allure_report:
     - job: regression:stage
       artifacts: true
       optional: true
+    - job: smoke:stage:PracticeTest_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:stage:PracticeTest_ReaderOff
+      artifacts: true
+      optional: true
+    - job: smoke:stage:Proctor_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:stage:Proctor_ReaderOff
+      artifacts: true
+      optional: true
+    - job: regression:stage:0_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:50_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:75_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:100_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:Multi_Select
+      artifacts: true
+      optional: true
+    - job: regression:stage:Multi_SelectDropdown
+      artifacts: true
+      optional: true
+    - job: regression:stage:MultiAssessment_Proctor
+      artifacts: true
+      optional: true
+    - job: regression:stage:Practice_AllItemTypes
+      artifacts: true
+      optional: true
+    - job: regression:stage:Practice_TTS_On
+      artifacts: true
+      optional: true
+    - job: regression:stage:Proctor_TTS_On
+      artifacts: true
+      optional: true
+    - job: regression:stage:Proctor_RelaunchAssessment
+      artifacts: true
+      optional: true
+    - job: regression:stage:Proctor_CheatIncident_Ignore
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_Ignore_4_CheatIncident
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_Abandon_Assessment
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_AllCheatEvent_Validations
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_StopProctoring_Validations
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_CE_StuCatalogueAccess
+      artifacts: true
+      optional: true
+    - job: smoke:prod:PracticeTest_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:prod:PracticeTest_ReaderOff
+      artifacts: true
+      optional: true
+    - job: smoke:prod:Proctor_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:prod:Proctor_ReaderOff
+      artifacts: true
+      optional: true
   before_script:
     - apt-get update && apt-get install -y default-jre-headless
   script:
@@ -556,6 +631,81 @@ notify:email:
       artifacts: true
       optional: true
     - job: regression:stage
+      artifacts: true
+      optional: true
+    - job: smoke:stage:PracticeTest_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:stage:PracticeTest_ReaderOff
+      artifacts: true
+      optional: true
+    - job: smoke:stage:Proctor_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:stage:Proctor_ReaderOff
+      artifacts: true
+      optional: true
+    - job: regression:stage:0_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:50_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:75_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:100_Percent
+      artifacts: true
+      optional: true
+    - job: regression:stage:Multi_Select
+      artifacts: true
+      optional: true
+    - job: regression:stage:Multi_SelectDropdown
+      artifacts: true
+      optional: true
+    - job: regression:stage:MultiAssessment_Proctor
+      artifacts: true
+      optional: true
+    - job: regression:stage:Practice_AllItemTypes
+      artifacts: true
+      optional: true
+    - job: regression:stage:Practice_TTS_On
+      artifacts: true
+      optional: true
+    - job: regression:stage:Proctor_TTS_On
+      artifacts: true
+      optional: true
+    - job: regression:stage:Proctor_RelaunchAssessment
+      artifacts: true
+      optional: true
+    - job: regression:stage:Proctor_CheatIncident_Ignore
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_Ignore_4_CheatIncident
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_Abandon_Assessment
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_AllCheatEvent_Validations
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_Proctor_StopProctoring_Validations
+      artifacts: true
+      optional: true
+    - job: regression:stage:Stg_CE_StuCatalogueAccess
+      artifacts: true
+      optional: true
+    - job: smoke:prod:PracticeTest_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:prod:PracticeTest_ReaderOff
+      artifacts: true
+      optional: true
+    - job: smoke:prod:Proctor_ReaderOn
+      artifacts: true
+      optional: true
+    - job: smoke:prod:Proctor_ReaderOff
       artifacts: true
       optional: true
   before_script:
