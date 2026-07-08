@@ -34,13 +34,24 @@ cache:
   after_script:
     - echo "📊 Generating Allure report for this job..."
     - test -d "allure-results" && ls allure-results/*-result.json >/dev/null 2>&1 || { mkdir -p allure-results && echo '{"name":"No tests ran","status":"skipped","start":0,"stop":0}' > allure-results/empty-result.json && echo "⚠️ No allure-results found. Created placeholder."; }
+    - |
+      # Playwright traces (.zip) are huge (hundreds of MB) and would be base64-embedded
+      # into the single-file report, blowing past GitLab's artifact upload limit (413).
+      # Remove trace attachment references from the result JSON, then delete the .zip files.
+      # Screenshots (.png) are kept so failures are still visually debuggable in the report.
+      node -e "const fs=require('fs');const d='allure-results';for(const f of fs.readdirSync(d)){if(!f.endsWith('-result.json')&&!f.endsWith('-container.json'))continue;const p=d+'/'+f;try{const j=JSON.parse(fs.readFileSync(p,'utf8'));const strip=o=>{if(!o||typeof o!=='object')return;if(Array.isArray(o.attachments))o.attachments=o.attachments.filter(a=>!String(a.source||'').endsWith('.zip'));if(Array.isArray(o.steps))o.steps.forEach(strip);if(Array.isArray(o.befores))o.befores.forEach(strip);if(Array.isArray(o.afters))o.afters.forEach(strip);};strip(j);fs.writeFileSync(p,JSON.stringify(j));}catch(e){}}" || true
+      rm -f allure-results/*.zip || true
     - npx allure generate allure-results --clean --single-file -o allure-report || echo "⚠️ Allure report generation failed."
     - echo "✅ Allure single-page report ready at allure-report/index.html"
   artifacts:
     when: always
     paths:
-      - allure-results/
+      # Self-contained single-file HTML report (screenshots embedded, traces stripped) — main deliverable
       - allure-report/index.html
+      # Only the small result/container JSON needed by notify:email — NOT the large
+      # raw trace attachments, which have been removed above
+      - allure-results/*-result.json
+      - allure-results/*-container.json
       - test-results/Failed_screenshots/
     expose_as: 'Test Report'
     expire_in: 7 days
