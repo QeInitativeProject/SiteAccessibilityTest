@@ -48,10 +48,10 @@ cache:
     paths:
       # Self-contained single-file HTML report (screenshots embedded, traces stripped) — main deliverable
       - allure-report/index.html
-      # Only the small result/container JSON needed by notify:email — NOT the large
-      # raw trace attachments, which have been removed above
-      - allure-results/*-result.json
-      - allure-results/*-container.json
+      # Result/container JSON needed by notify:email. The large trace .zip attachments
+      # have already been removed above, so the whole directory is small. A directory
+      # path is used (no glob) because 'expose_as' does not allow '*' in paths.
+      - allure-results/
       - test-results/Failed_screenshots/
     expose_as: 'Test Report'
     expire_in: 7 days
