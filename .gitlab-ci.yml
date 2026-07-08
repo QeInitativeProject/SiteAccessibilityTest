@@ -28,11 +28,19 @@ cache:
     - npm ci --prefer-offline --no-audit || npm install --no-audit
     - echo "🎭 Installing Playwright..."
     - npx playwright install chromium --with-deps || true
+    - echo "☕ Installing Java (required by Allure)..."
+    - apt-get update && apt-get install -y default-jre-headless || true
     - npm run clear
+  after_script:
+    - echo "📊 Generating Allure report for this job..."
+    - test -d "allure-results" && ls allure-results/*-result.json >/dev/null 2>&1 || { mkdir -p allure-results && echo '{"name":"No tests ran","status":"skipped","start":0,"stop":0}' > allure-results/empty-result.json && echo "⚠️ No allure-results found. Created placeholder."; }
+    - npx allure generate allure-results --clean --single-file -o allure-report || echo "⚠️ Allure report generation failed."
+    - echo "✅ Allure single-page report ready at allure-report/index.html"
   artifacts:
     when: always
     paths:
       - allure-results/
+      - allure-report/index.html
       - test-results/Failed_screenshots/
     expose_as: 'Test Report'
     expire_in: 7 days
@@ -484,134 +492,14 @@ consolidated_report:
     - when: always  # Run after ANY job in previous stage completes
   allow_failure: true
 
-# ==================== ALLURE REPORT ====================
-allure_report:
-  stage: report
-  image: mcr.microsoft.com/playwright:v1.57.0-jammy
-  needs:
-    - job: ATI_Regression_OnMerge_Main
-      artifacts: true
-      optional: true
-    - job: ATI_Smoke_Stage
-      artifacts: true
-      optional: true
-    - job: ATI_Regression_Stage_Manual
-      artifacts: true
-      optional: true
-    - job: smoke:qa
-      artifacts: true
-      optional: true
-    - job: smoke:stage
-      artifacts: true
-      optional: true
-    - job: smoke:prod
-      artifacts: true
-      optional: true
-    - job: regression:stage
-      artifacts: true
-      optional: true
-    - job: smoke:stage:PracticeTest_ReaderOn
-      artifacts: true
-      optional: true
-    - job: smoke:stage:PracticeTest_ReaderOff
-      artifacts: true
-      optional: true
-    - job: smoke:stage:Proctor_ReaderOn
-      artifacts: true
-      optional: true
-    - job: smoke:stage:Proctor_ReaderOff
-      artifacts: true
-      optional: true
-    - job: regression:stage:0_Percent
-      artifacts: true
-      optional: true
-    - job: regression:stage:50_Percent
-      artifacts: true
-      optional: true
-    - job: regression:stage:75_Percent
-      artifacts: true
-      optional: true
-    - job: regression:stage:100_Percent
-      artifacts: true
-      optional: true
-    - job: regression:stage:Multi_Select
-      artifacts: true
-      optional: true
-    - job: regression:stage:Multi_SelectDropdown
-      artifacts: true
-      optional: true
-    - job: regression:stage:MultiAssessment_Proctor
-      artifacts: true
-      optional: true
-    - job: regression:stage:Practice_AllItemTypes
-      artifacts: true
-      optional: true
-    - job: regression:stage:Practice_TTS_On
-      artifacts: true
-      optional: true
-    - job: regression:stage:Proctor_TTS_On
-      artifacts: true
-      optional: true
-    - job: regression:stage:Proctor_RelaunchAssessment
-      artifacts: true
-      optional: true
-    - job: regression:stage:Proctor_CheatIncident_Ignore
-      artifacts: true
-      optional: true
-    - job: regression:stage:Stg_Proctor_Ignore_4_CheatIncident
-      artifacts: true
-      optional: true
-    - job: regression:stage:Stg_Proctor_Abandon_Assessment
-      artifacts: true
-      optional: true
-    - job: regression:stage:Stg_Proctor_AllCheatEvent_Validations
-      artifacts: true
-      optional: true
-    - job: regression:stage:Stg_Proctor_StopProctoring_Validations
-      artifacts: true
-      optional: true
-    - job: regression:stage:Stg_CE_StuCatalogueAccess
-      artifacts: true
-      optional: true
-    - job: smoke:prod:PracticeTest_ReaderOn
-      artifacts: true
-      optional: true
-    - job: smoke:prod:PracticeTest_ReaderOff
-      artifacts: true
-      optional: true
-    - job: smoke:prod:Proctor_ReaderOn
-      artifacts: true
-      optional: true
-    - job: smoke:prod:Proctor_ReaderOff
-      artifacts: true
-      optional: true
-  before_script:
-    - apt-get update && apt-get install -y default-jre-headless
-  script:
-    - echo "📊 Collecting allure-results from all test jobs..."
-    - test -d "allure-results" && ls allure-results/*-result.json >/dev/null 2>&1 || { mkdir -p allure-results && echo '{"name":"No tests ran","status":"skipped","start":0,"stop":0}' > allure-results/empty-result.json && echo "⚠️ No allure-results found. Created placeholder."; }
-    - echo "✅ allure-results found $(ls allure-results/*-result.json | wc -l) result files"
-    - echo "📊 Generating Single-File Allure Report..."
-    - npm install -g allure-commandline --save-dev 2>/dev/null || true
-    - allure generate allure-results --clean --single-file -o allure-report || npx allure generate allure-results --clean --single-file -o allure-report
-    - echo "✅ Allure single-page report generated at allure-report/index.html"
-  artifacts:
-    when: always
-    paths:
-      - allure-report/index.html
-    expose_as: 'Allure Report'
-    expire_in: 30 days
-  rules:
-    - when: always
-  allow_failure: true
-
 # ==================== EMAIL NOTIFICATION ====================
 notify:email:
   stage: notify
   image: alpine:latest
   needs:
-    - job: allure_report
+    - job: consolidated_report
       artifacts: true
+      optional: true
     - job: ATI_Regression_OnMerge_Main
       artifacts: true
       optional: true
@@ -713,8 +601,10 @@ notify:email:
   script:
     - |
       echo "📧 Sending notifications..."
-      REPORT_URL="${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_REF_NAME}/file/allure-report/index.html?job=allure_report"
       PIPELINE_URL="${CI_PROJECT_URL}/-/pipelines/${CI_PIPELINE_ID}"
+      # Each test job generates its own Allure report artifact; link to the pipeline
+      # where the per-job report artifacts can be downloaded.
+      REPORT_URL="${PIPELINE_URL}"
       TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
       PAGE_TITLE="Test Report - ${CI_COMMIT_REF_NAME} - Pipeline #${CI_PIPELINE_ID} - ${TIMESTAMP}"
 
@@ -823,7 +713,18 @@ notify:email:
       echo "📄 Confluence: ${CONFLUENCE_PAGE_URL}"
       echo "🔗 Pipeline: ${PIPELINE_URL}"
   rules:
-    - when: always
+    # Skip security-scan-only pipelines (Secret Detection, Semgrep SAST on MR/branch push)
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "pipeline"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      when: always
+    - when: never
   allow_failure: true
 
 # ==================== WORKFLOW RULES ====================
