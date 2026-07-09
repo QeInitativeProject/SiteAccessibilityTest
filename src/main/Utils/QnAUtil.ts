@@ -154,7 +154,8 @@ export class QnAUtil {
   answerAssessmentQuestions = 
   async (
     jsonFileName: string,
-    assessmentType: string = 'Scoring_QA_STAGE'
+    assessmentType: string = 'Scoring_QA_STAGE',
+    maxQuestions?: number
   ): Promise<void> => {
     this.logger?.separator('📚 STARTING GENERIC ASSESSMENT ANSWERING METHOD');
 
@@ -216,7 +217,8 @@ export class QnAUtil {
     this.logger?.success('Assessment iframe attached');
 
     // === ANSWER EACH QUESTION ===
-    for (let i = 0; i < TOTAL_QUESTIONS; i++) {
+    const questionsToAnswer = maxQuestions ? Math.min(maxQuestions, TOTAL_QUESTIONS) : TOTAL_QUESTIONS;
+    for (let i = 0; i < questionsToAnswer; i++) {
       this.logger?.separator(`📝 Question ${i + 1}/${TOTAL_QUESTIONS}`);
 
       // 1. Find question text using multiple selector fallbacks

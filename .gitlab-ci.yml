@@ -414,6 +414,18 @@ regression:stage:Practice_AllItemTypesTTS_On:
   allow_failure: true
 
 
+
+regression:stage:Stg_Practice_PartialSave_Resume:
+  extends: .test_base
+  stage: test
+  variables:
+    ENV: "stage"
+  script:
+    - echo "Running Stg_Practice_PartialSave_Resume..."
+    - npx playwright test src/test/TestScript/Regression/Stg_Practice_PartialSave_Resume.spec.ts
+  when: manual
+  allow_failure: true
+  
 # ==================== INDIVIDUAL SPEC FILE JOBS - SMOKE PROD ====================
 smoke:prod:PracticeTest_ReaderOn:
   extends: .test_base

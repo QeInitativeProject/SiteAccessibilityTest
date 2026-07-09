@@ -36,9 +36,10 @@ export class AssessmentPage {
    */
   answerAssessmentQuestions = async (
     jsonFileName: string,
-    assessmentType: string = 'Scoring_QA_STAGE'
+    assessmentType: string = 'Scoring_QA_STAGE',
+    maxQuestions?: number
   ): Promise<void> => {
-    await this.qnaUtil.answerAssessmentQuestions(jsonFileName, assessmentType);
+    await this.qnaUtil.answerAssessmentQuestions(jsonFileName, assessmentType, maxQuestions);
   };
 
   /**
