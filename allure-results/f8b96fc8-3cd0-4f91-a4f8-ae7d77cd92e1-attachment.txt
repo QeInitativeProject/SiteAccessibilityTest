@@ -1,3 +1,0 @@
-HTML report was saved into the following directory C:\Users\ashok.singh\Downloads\Day 3 - Mandatory AI-Powered Playwright Training\ati-ui-automation-v2/axe-reports/accessibility-report.html
-HTML report was saved into the following directory C:\Users\ashok.singh\Downloads\Day 3 - Mandatory AI-Powered Playwright Training\ati-ui-automation-v2/axe-reports/accessibility-report.html
-HTML report was saved into the following directory C:\Users\ashok.singh\Downloads\Day 3 - Mandatory AI-Powered Playwright Training\ati-ui-automation-v2/axe-reports/accessibility-report.html

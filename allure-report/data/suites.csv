@@ -1,2 +1,0 @@
-"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
-"","21758","search for a chair on amazon.com","chromium","2026-07-14","passed","2026-07-14","Amazon Search @smoke","amazon_search.spec.ts","",""

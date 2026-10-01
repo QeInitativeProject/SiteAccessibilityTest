@@ -51,14 +51,7 @@ export default defineConfig({
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['allure-playwright', {
-      detail: true,
-      suiteTitle: true,
-      environmentInfo: {
-        ENV: process.env.ENV || 'stage',
-        BASE_URL: process.env.baseUrl || '',
-      },
-    }],
+    
     ['./ci-reporter.ts'],
   ],
 
@@ -73,12 +66,6 @@ export default defineConfig({
     navigationTimeout: 2 * 60000,
     actionTimeout: 3 * 60000,
     headless: process.env.CI ? true : false,
-    ignoreHTTPSErrors: true,
-
-    trace: 'retain-on-failure', // Only keeps trace for tests that ultimately fail (avoids allure ENOENT crash)
-    screenshot: 'only-on-failure', // Only auto-capture on failure; success screenshots handled via manual page.screenshot()
-    video: 'off', // Disabled to reduce report size — use trace for debugging instead
-
     viewport: { width: viewportWidth, height: viewportHeight },
     launchOptions: {
       args: [
