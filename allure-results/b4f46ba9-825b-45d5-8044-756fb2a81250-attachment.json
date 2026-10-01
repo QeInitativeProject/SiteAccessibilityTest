@@ -1,0 +1,470 @@
+[
+  {
+    "id": "aria-prohibited-attr",
+    "impact": "serious",
+    "tags": [
+      "cat.aria",
+      "wcag2a",
+      "wcag412",
+      "EN-301-549",
+      "EN-9.4.1.2",
+      "RGAAv4",
+      "RGAA-7.1.1"
+    ],
+    "description": "Ensure ARIA attributes are not prohibited for an element's role",
+    "help": "Elements must only use permitted ARIA attributes",
+    "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/aria-prohibited-attr?application=playwright",
+    "nodes": [
+      {
+        "any": [],
+        "all": [],
+        "none": [
+          {
+            "id": "aria-prohibited-attr",
+            "data": {
+              "role": null,
+              "nodeName": "span",
+              "messageKey": "noRoleSingular",
+              "prohibited": [
+                "aria-label"
+              ]
+            },
+            "relatedNodes": [],
+            "impact": "serious",
+            "message": "aria-label attribute cannot be used on a span with no valid role attribute."
+          }
+        ],
+        "impact": "serious",
+        "html": "<span class=\"footer-logo display-block float-sm-right m-x-a m-t-2 m-b-1\" aria-label=\"ATI Logo\"></span>",
+        "target": [
+          ".footer-logo"
+        ],
+        "failureSummary": "Fix all of the following:\n  aria-label attribute cannot be used on a span with no valid role attribute."
+      }
+    ]
+  },
+  {
+    "id": "aria-required-children",
+    "impact": "critical",
+    "tags": [
+      "cat.aria",
+      "wcag2a",
+      "wcag131",
+      "EN-301-549",
+      "EN-9.1.3.1",
+      "RGAAv4",
+      "RGAA-9.3.1"
+    ],
+    "description": "Ensure elements with an ARIA role that require child roles contain them",
+    "help": "Certain ARIA roles must contain particular children",
+    "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/aria-required-children?application=playwright",
+    "nodes": [
+      {
+        "any": [
+          {
+            "id": "aria-required-children",
+            "data": {
+              "messageKey": "unallowed",
+              "values": "li"
+            },
+            "relatedNodes": [
+              {
+                "html": "<li class=\"dropdown sub-dropdown \">",
+                "target": [
+                  ".nav > .sub-dropdown.dropdown:nth-child(1)"
+                ]
+              },
+              {
+                "html": "<li class=\"dropdown sub-dropdown \">",
+                "target": [
+                  ".nav > .sub-dropdown.dropdown:nth-child(2)"
+                ]
+              },
+              {
+                "html": "<li class=\"dropdown sub-dropdown \">",
+                "target": [
+                  ".sub-dropdown.dropdown:nth-child(3)"
+                ]
+              },
+              {
+                "html": "<li class=\"\">\n\t\t\t\t\t<a href=\"/events\" target=\"_self\" role=\"link\" tabindex=\"0\">Events</a>\n\t\t\t\t</li>",
+                "target": [
+                  ".nav > li:nth-child(4)"
+                ]
+              },
+              {
+                "html": "<li class=\"\">\n\t\t\t\t\t<a href=\"/about\" target=\"_self\" role=\"link\" tabindex=\"0\">About Us</a>\n\t\t\t\t</li>",
+                "target": [
+                  ".nav > li:nth-child(5)"
+                ]
+              },
+              {
+                "html": "<li class=\"\">\n\t\t\t\t\t<a href=\"/student-blog\" target=\"_self\" role=\"link\" tabindex=\"0\">Blog</a>\n\t\t\t\t</li>",
+                "target": [
+                  ".nav > li:nth-child(6)"
+                ]
+              }
+            ],
+            "impact": "critical",
+            "message": "Element has children which are not allowed: li"
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "critical",
+        "html": "<ul class=\"nav nav-justified\" role=\"menubar\">",
+        "target": [
+          ".nav"
+        ],
+        "failureSummary": "Fix any of the following:\n  Element has children which are not allowed: li"
+      }
+    ]
+  },
+  {
+    "id": "color-contrast",
+    "impact": "serious",
+    "tags": [
+      "cat.color",
+      "wcag2aa",
+      "wcag143",
+      "TTv5",
+      "TT13.c",
+      "EN-301-549",
+      "EN-9.1.4.3",
+      "ACT",
+      "RGAAv4",
+      "RGAA-3.2.1"
+    ],
+    "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+    "nodes": [
+      {
+        "any": [
+          {
+            "id": "color-contrast",
+            "data": {
+              "fgColor": "#ffffff",
+              "bgColor": "#dd5850",
+              "contrastRatio": 3.75,
+              "fontSize": "10.5pt (14px)",
+              "fontWeight": "normal",
+              "messageKey": null,
+              "expectedContrastRatio": "4.5:1"
+            },
+            "relatedNodes": [
+              {
+                "html": "<button id=\"five9OpenChatButton\" style=\"position: fixed; bor...\">",
+                "target": [
+                  "#five9OpenChatButton"
+                ]
+              }
+            ],
+            "impact": "serious",
+            "message": "Element has insufficient color contrast of 3.75 (foreground color: #ffffff, background color: #dd5850, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "serious",
+        "html": "<span id=\"five9OpenChatText\" style=\"color: var(--f9-chat-button-text-color); font-size: 14px; margin-left: 10px; font-family: Alverta-ExtraBold; display: block;\">Need help?</span>",
+        "target": [
+          "#five9OpenChatText"
+        ],
+        "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.75 (foreground color: #ffffff, background color: #dd5850, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+      }
+    ]
+  },
+  {
+    "id": "image-alt",
+    "impact": "critical",
+    "tags": [
+      "cat.text-alternatives",
+      "wcag2a",
+      "wcag111",
+      "section508",
+      "section508.22.a",
+      "TTv5",
+      "TT7.a",
+      "TT7.b",
+      "EN-301-549",
+      "EN-9.1.1.1",
+      "ACT",
+      "RGAAv4",
+      "RGAA-1.1.1"
+    ],
+    "description": "Ensure <img> elements have alternative text or a role of none or presentation",
+    "help": "Images must have alternative text",
+    "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/image-alt?application=playwright",
+    "nodes": [
+      {
+        "any": [
+          {
+            "id": "has-alt",
+            "data": null,
+            "relatedNodes": [],
+            "impact": "critical",
+            "message": "Element does not have an alt attribute"
+          },
+          {
+            "id": "aria-label",
+            "data": null,
+            "relatedNodes": [],
+            "impact": "critical",
+            "message": "aria-label attribute does not exist or is empty"
+          },
+          {
+            "id": "aria-labelledby",
+            "data": null,
+            "relatedNodes": [],
+            "impact": "critical",
+            "message": "aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty"
+          },
+          {
+            "id": "non-empty-title",
+            "data": {
+              "messageKey": "noAttr"
+            },
+            "relatedNodes": [],
+            "impact": "critical",
+            "message": "Element has no title attribute"
+          },
+          {
+            "id": "presentational-role",
+            "data": null,
+            "relatedNodes": [],
+            "impact": "critical",
+            "message": "Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "critical",
+        "html": "<img src=\"/images/default-source/web/student/banners/student-webinar-banner.webp?sfvrsn=8e7e07c3_4\">",
+        "target": [
+          "div[data-date=\"2026-12-11\"] > .hero-content.container > .hero-grid > .center.hidden-xs.hero-column > img"
+        ],
+        "failureSummary": "Fix any of the following:\n  Element does not have an alt attribute\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute\n  Element's default semantics were not overridden with role=\"none\" or role=\"presentation\""
+      }
+    ]
+  },
+  {
+    "id": "link-name",
+    "impact": "serious",
+    "tags": [
+      "cat.name-role-value",
+      "wcag2a",
+      "wcag244",
+      "wcag412",
+      "section508",
+      "section508.22.a",
+      "TTv5",
+      "TT6.a",
+      "EN-301-549",
+      "EN-9.2.4.4",
+      "EN-9.4.1.2",
+      "ACT",
+      "RGAAv4",
+      "RGAA-6.2.1"
+    ],
+    "description": "Ensure links have discernible text",
+    "help": "Links must have discernible text",
+    "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/link-name?application=playwright",
+    "nodes": [
+      {
+        "any": [
+          {
+            "id": "has-visible-text",
+            "data": null,
+            "relatedNodes": [],
+            "impact": "serious",
+            "message": "Element does not have text that is visible to screen readers"
+          },
+          {
+            "id": "aria-label",
+            "data": null,
+            "relatedNodes": [],
+            "impact": "serious",
+            "message": "aria-label attribute does not exist or is empty"
+          },
+          {
+            "id": "aria-labelledby",
+            "data": null,
+            "relatedNodes": [],
+            "impact": "serious",
+            "message": "aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty"
+          },
+          {
+            "id": "non-empty-title",
+            "data": {
+              "messageKey": "noAttr"
+            },
+            "relatedNodes": [],
+            "impact": "serious",
+            "message": "Element has no title attribute"
+          }
+        ],
+        "all": [],
+        "none": [
+          {
+            "id": "focusable-no-name",
+            "data": null,
+            "relatedNodes": [],
+            "impact": "serious",
+            "message": "Element is in tab order and does not have accessible text"
+          }
+        ],
+        "impact": "serious",
+        "html": "<a class=\"icon-cartlink-ati\" href=\"https://shop.atitesting.com/ascend-cart/cart/redirect\">\n                <span class=\"sr-only\">Cart</span>\n            </a>",
+        "target": [
+          ".icon-cartlink-ati"
+        ],
+        "failureSummary": "Fix all of the following:\n  Element is in tab order and does not have accessible text\n\nFix any of the following:\n  Element does not have text that is visible to screen readers\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute"
+      }
+    ]
+  },
+  {
+    "id": "listitem",
+    "impact": "serious",
+    "tags": [
+      "cat.structure",
+      "wcag2a",
+      "wcag131",
+      "EN-301-549",
+      "EN-9.1.3.1",
+      "RGAAv4",
+      "RGAA-9.3.1"
+    ],
+    "description": "Ensure <li> elements are used semantically",
+    "help": "<li> elements must be contained in a <ul> or <ol>",
+    "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/listitem?application=playwright",
+    "nodes": [
+      {
+        "any": [
+          {
+            "id": "listitem",
+            "data": {
+              "messageKey": "roleNotValid"
+            },
+            "relatedNodes": [],
+            "impact": "serious",
+            "message": "List item parent element has a role that is not role=\"list\""
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "serious",
+        "html": "<li class=\"dropdown sub-dropdown \">",
+        "target": [
+          ".nav > .sub-dropdown.dropdown:nth-child(1)"
+        ],
+        "failureSummary": "Fix any of the following:\n  List item parent element has a role that is not role=\"list\""
+      },
+      {
+        "any": [
+          {
+            "id": "listitem",
+            "data": {
+              "messageKey": "roleNotValid"
+            },
+            "relatedNodes": [],
+            "impact": "serious",
+            "message": "List item parent element has a role that is not role=\"list\""
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "serious",
+        "html": "<li class=\"dropdown sub-dropdown \">",
+        "target": [
+          ".nav > .sub-dropdown.dropdown:nth-child(2)"
+        ],
+        "failureSummary": "Fix any of the following:\n  List item parent element has a role that is not role=\"list\""
+      },
+      {
+        "any": [
+          {
+            "id": "listitem",
+            "data": {
+              "messageKey": "roleNotValid"
+            },
+            "relatedNodes": [],
+            "impact": "serious",
+            "message": "List item parent element has a role that is not role=\"list\""
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "serious",
+        "html": "<li class=\"dropdown sub-dropdown \">",
+        "target": [
+          ".sub-dropdown.dropdown:nth-child(3)"
+        ],
+        "failureSummary": "Fix any of the following:\n  List item parent element has a role that is not role=\"list\""
+      },
+      {
+        "any": [
+          {
+            "id": "listitem",
+            "data": {
+              "messageKey": "roleNotValid"
+            },
+            "relatedNodes": [],
+            "impact": "serious",
+            "message": "List item parent element has a role that is not role=\"list\""
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "serious",
+        "html": "<li class=\"\">\n\t\t\t\t\t<a href=\"/events\" target=\"_self\" role=\"link\" tabindex=\"0\">Events</a>\n\t\t\t\t</li>",
+        "target": [
+          ".nav > li:nth-child(4)"
+        ],
+        "failureSummary": "Fix any of the following:\n  List item parent element has a role that is not role=\"list\""
+      },
+      {
+        "any": [
+          {
+            "id": "listitem",
+            "data": {
+              "messageKey": "roleNotValid"
+            },
+            "relatedNodes": [],
+            "impact": "serious",
+            "message": "List item parent element has a role that is not role=\"list\""
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "serious",
+        "html": "<li class=\"\">\n\t\t\t\t\t<a href=\"/about\" target=\"_self\" role=\"link\" tabindex=\"0\">About Us</a>\n\t\t\t\t</li>",
+        "target": [
+          ".nav > li:nth-child(5)"
+        ],
+        "failureSummary": "Fix any of the following:\n  List item parent element has a role that is not role=\"list\""
+      },
+      {
+        "any": [
+          {
+            "id": "listitem",
+            "data": {
+              "messageKey": "roleNotValid"
+            },
+            "relatedNodes": [],
+            "impact": "serious",
+            "message": "List item parent element has a role that is not role=\"list\""
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "serious",
+        "html": "<li class=\"\">\n\t\t\t\t\t<a href=\"/student-blog\" target=\"_self\" role=\"link\" tabindex=\"0\">Blog</a>\n\t\t\t\t</li>",
+        "target": [
+          ".nav > li:nth-child(6)"
+        ],
+        "failureSummary": "Fix any of the following:\n  List item parent element has a role that is not role=\"list\""
+      }
+    ]
+  }
+]

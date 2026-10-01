@@ -14,10 +14,14 @@ if (!process.env.baseUrl) {
   const result = dotenv.config({ path: envPath });
 
   if (result.error) {
-    console.error(`❌ Failed to load environment file: ${envPath}`);
-    throw result.error;
+    console.warn(
+      `⚠️  Could not load environment file: ${envPath}\n` +
+        `   Copy src/ENV/.env.example to src/ENV/.env.${currentEnv} and set your values, ` +
+        `or pass variables via the shell/CI. Continuing with existing process.env.`
+    );
+  } else {
+    console.log(`✅ Environment loaded from: .env.${currentEnv}`);
   }
-  console.log(`✅ Environment loaded from: .env.${currentEnv}`);
 } else {
   console.log(`✅ Using environment: ${currentEnv} (already loaded)`);
 }

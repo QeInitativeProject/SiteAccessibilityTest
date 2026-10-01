@@ -1,0 +1,36 @@
+[
+  {
+    "name": "Product Defects",
+    "matchedStatuses": [
+      "failed"
+    ],
+    "messageRegex": ".*AssertionError.*|.*expect\\(.*"
+  },
+  {
+    "name": "Timeout Issues",
+    "matchedStatuses": [
+      "broken"
+    ],
+    "messageRegex": ".*Timeout.*|.*timeout.*|.*exceeded.*"
+  },
+  {
+    "name": "Element Not Found",
+    "matchedStatuses": [
+      "broken"
+    ],
+    "messageRegex": ".*not visible.*|.*not found.*|.*No element.*"
+  },
+  {
+    "name": "Environment Issues",
+    "matchedStatuses": [
+      "broken"
+    ],
+    "messageRegex": ".*ECONNREFUSED.*|.*net::ERR.*|.*Navigation.*"
+  },
+  {
+    "name": "Skipped / Known Issues",
+    "matchedStatuses": [
+      "skipped"
+    ]
+  }
+]
